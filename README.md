@@ -157,3 +157,4 @@ The platform uses a Celery task queue with up to 16 concurrent threads per worke
 - HTTPS enforced in nginx config
 - Rate limiting: 30 req/s per IP on API
 - Audit log on all destructive operations
+# docuextract
