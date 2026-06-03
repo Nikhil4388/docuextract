@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # CORS
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "https://docuextract.app"]
+    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "https://docuextract.app", "https://docuextract-ashen.vercel.app"]
 
     # OAuth
     GOOGLE_CLIENT_ID: Optional[str] = None
