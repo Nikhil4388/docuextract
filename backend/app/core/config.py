@@ -56,7 +56,8 @@ class Settings(BaseSettings):
     # Encryption (for API keys at rest)
     ENCRYPTION_KEY: str = secrets.token_urlsafe(32)
 
-    # Email / SMTP
+    # Email
+    RESEND_API_KEY: Optional[str] = None
     SMTP_HOST: Optional[str] = None
     SMTP_PORT: int = 587
     SMTP_USER: Optional[str] = None
