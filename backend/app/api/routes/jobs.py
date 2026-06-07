@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, UploadFile, File
+from typing import List
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -218,3 +219,30 @@ def _job_to_response(job: ExtractionJob) -> JobResponse:
         completed_at=job.completed_at.isoformat() if job.completed_at else None,
         error_message=job.error_message,
     )
+
+
+@router.post("/upload-files", status_code=200)
+async def upload_files(
+    files: List[UploadFile],
+    session_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+):
+    """Upload PDF files in batches. Use session_id to combine batches into one folder."""
+    import os, uuid, aiofiles, asyncio
+    sid = session_id or str(uuid.uuid4())
+    upload_dir = f"/tmp/docuextract/uploads/{current_user.id}/{sid}"
+    os.makedirs(upload_dir, exist_ok=True)
+
+    async def save_file(file: UploadFile):
+        if not file.filename.lower().endswith('.pdf'):
+            return None
+        dest = os.path.join(upload_dir, file.filename)
+        content = await file.read()
+        async with aiofiles.open(dest, 'wb') as f:
+            await f.write(content)
+        return file.filename
+
+    # Save all files in parallel
+    results = await asyncio.gather(*[save_file(f) for f in files])
+    saved = [r for r in results if r]
+    return {"upload_path": upload_dir, "session_id": sid, "files": saved}

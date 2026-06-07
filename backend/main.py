@@ -18,6 +18,8 @@ def create_app() -> FastAPI:
         docs_url="/api/docs",
         redoc_url="/api/redoc",
         openapi_url="/api/openapi.json",
+        # Allow large uploads (500MB)
+        max_upload_size=500 * 1024 * 1024,
     )
 
     # ── Middleware ────────────────────────────────────────────────────────────

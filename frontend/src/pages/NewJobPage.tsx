@@ -3,7 +3,7 @@ import {
   Box, Button, Paper, Typography, Stepper, Step, StepLabel,
   FormControl, InputLabel, Select, MenuItem, TextField,
   FormControlLabel, Switch, Alert, CircularProgress, Grid,
-  Accordion, AccordionSummary, AccordionDetails,
+  Accordion, AccordionSummary, AccordionDetails, LinearProgress,
 } from '@mui/material';
 import { ExpandMore, CloudUpload, SmartToy, PlayArrow } from '@mui/icons-material';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -33,6 +33,9 @@ export default function NewJobPage() {
   const [storageProvider, setStorageProvider] = useState<StorageProvider>('local');
   const [storagePath, setStoragePath] = useState('');
   const [storageCredentials, setStorageCredentials] = useState<Record<string, string>>({});
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [llmProvider, setLlmProvider] = useState<LLMProvider>('claude');
   const [llmModel, setLlmModel] = useState('claude-3-haiku-20240307');
   const [useUserApiKey, setUseUserApiKey] = useState(false);
@@ -49,16 +52,49 @@ export default function NewJobPage() {
     onError: (err: any) => setError(err?.response?.data?.detail ?? 'Failed to create job'),
   });
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!jobName || !templateId) {
       setError('Job name and template are required');
       return;
+    }
+    let finalPath = storagePath;
+    if (storageProvider === 'local' && uploadedFiles.length > 0) {
+      setUploading(true);
+      setUploadProgress(0);
+      try {
+        // Upload in parallel batches of 10 for speed
+        const BATCH_SIZE = 10;
+        const sessionId = crypto.randomUUID();
+        const batches = [];
+        for (let i = 0; i < uploadedFiles.length; i += BATCH_SIZE) {
+          batches.push(uploadedFiles.slice(i, i + BATCH_SIZE));
+        }
+        let completed = 0;
+        // Upload all batches in parallel to same session folder
+        const results = await Promise.all(batches.map(async (batch) => {
+          const formData = new FormData();
+          batch.forEach((f) => formData.append('files', f));
+          formData.append('session_id', sessionId);
+          const res = await api.post('/jobs/upload-files', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          completed += batch.length;
+          setUploadProgress(Math.round((completed / uploadedFiles.length) * 100));
+          return res.data.upload_path;
+        }));
+        finalPath = results[0];
+      } catch (e) {
+        setError('File upload failed');
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
     }
     createJob.mutate({
       name: jobName,
       template_id: templateId,
       storage_provider: storageProvider,
-      storage_path: storagePath || undefined,
+      storage_path: finalPath || undefined,
       storage_credentials: Object.keys(storageCredentials).length ? storageCredentials : undefined,
       llm_provider: llmProvider,
       llm_model: llmModel,
@@ -126,11 +162,45 @@ export default function NewJobPage() {
                 {STORAGE_OPTIONS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
               </Select>
             </FormControl>
-            <TextField
-              label={storageProvider === 's3' ? 'S3 Bucket/Prefix (bucket/path)' : storageProvider === 'google_drive' ? 'Google Drive Folder ID' : storageProvider === 'dropbox' ? 'Dropbox Folder Path' : 'Local Directory Path'}
-              fullWidth value={storagePath}
-              onChange={(e) => setStoragePath(e.target.value)} sx={{ mb: 2 }}
-            />
+            {storageProvider === 'local' ? (
+              <Box sx={{ border: '2px dashed #667eea', borderRadius: 2, p: 3, textAlign: 'center', mb: 2 }}>
+                <CloudUpload sx={{ fontSize: 40, color: '#667eea', mb: 1 }} />
+                <Typography mb={1}>Drag & drop PDFs or click to select</Typography>
+                <input
+                  type="file" accept=".pdf" multiple
+                  style={{ display: 'none' }} id="pdf-upload"
+                  onChange={(e) => setUploadedFiles(Array.from(e.target.files || []))}
+                />
+                <label htmlFor="pdf-upload">
+                  <Button variant="outlined" component="span">Select PDF Files</Button>
+                </label>
+                {uploadedFiles.length > 0 && (
+                  <Box mt={2}>
+                    <Typography variant="body2" color="success.main" fontWeight={600}>
+                      ✅ {uploadedFiles.length} file{uploadedFiles.length > 1 ? 's' : ''} selected
+                    </Typography>
+                    {uploadedFiles.slice(0, 5).map((f) => (
+                      <Typography key={f.name} variant="body2" color="text.secondary">📄 {f.name}</Typography>
+                    ))}
+                    {uploadedFiles.length > 5 && (
+                      <Typography variant="body2" color="text.secondary">...and {uploadedFiles.length - 5} more</Typography>
+                    )}
+                  </Box>
+                )}
+                {uploading && (
+                  <Box mt={2}>
+                    <Typography variant="body2" mb={0.5}>Uploading... {uploadProgress}%</Typography>
+                    <LinearProgress variant="determinate" value={uploadProgress} />
+                  </Box>
+                )}
+              </Box>
+            ) : (
+              <TextField
+                label={storageProvider === 's3' ? 'S3 Bucket/Prefix (bucket/path)' : storageProvider === 'google_drive' ? 'Google Drive Folder ID' : 'Dropbox Folder Path'}
+                fullWidth value={storagePath}
+                onChange={(e) => setStoragePath(e.target.value)} sx={{ mb: 2 }}
+              />
+            )}
             {storageProvider !== 'local' && (
               <Accordion sx={{ mt: 1 }}>
                 <AccordionSummary expandIcon={<ExpandMore />}>
@@ -228,12 +298,12 @@ export default function NewJobPage() {
             ? <Button variant="contained" onClick={() => setStep((s) => s + 1)} disabled={!canProceed[step]}>Next</Button>
             : <Button
                 variant="contained"
-                startIcon={createJob.isPending ? <CircularProgress size={16} color="inherit" /> : <PlayArrow />}
+                startIcon={(createJob.isPending || uploading) ? <CircularProgress size={16} color="inherit" /> : <PlayArrow />}
                 onClick={handleSubmit}
-                disabled={createJob.isPending}
+                disabled={createJob.isPending || uploading}
                 sx={{ bgcolor: '#4caf50', '&:hover': { bgcolor: '#388e3c' } }}
               >
-                {createJob.isPending ? 'Submitting…' : 'Start Extraction'}
+                {uploading ? 'Uploading…' : createJob.isPending ? 'Submitting…' : 'Start Extraction'}
               </Button>
           }
         </Box>
