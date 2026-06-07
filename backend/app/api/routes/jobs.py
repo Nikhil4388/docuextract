@@ -227,22 +227,41 @@ async def upload_files(
     session_id: Optional[str] = None,
     current_user: User = Depends(get_current_user),
 ):
-    """Upload PDF files in batches. Use session_id to combine batches into one folder."""
-    import os, uuid, aiofiles, asyncio
-    sid = session_id or str(uuid.uuid4())
-    upload_dir = f"/tmp/docuextract/uploads/{current_user.id}/{sid}"
-    os.makedirs(upload_dir, exist_ok=True)
+    """Upload PDF files to S3 so the Celery worker can access them."""
+    import uuid, asyncio, boto3
+    from app.core.config import settings
 
-    async def save_file(file: UploadFile):
+    if not settings.S3_BUCKET or not settings.AWS_ACCESS_KEY_ID:
+        raise HTTPException(status_code=500, detail="S3 not configured. Set S3_BUCKET, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY in env.")
+
+    sid = session_id or str(uuid.uuid4())
+    prefix = f"uploads/{current_user.id}/{sid}"
+
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        region_name=settings.AWS_DEFAULT_REGION,
+    )
+
+    async def upload_file(file: UploadFile):
         if not file.filename.lower().endswith('.pdf'):
             return None
-        dest = os.path.join(upload_dir, file.filename)
         content = await file.read()
-        async with aiofiles.open(dest, 'wb') as f:
-            await f.write(content)
+        key = f"{prefix}/{file.filename}"
+        # Run blocking S3 upload in thread pool
+        import asyncio
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, lambda: s3.put_object(
+            Bucket=settings.S3_BUCKET,
+            Key=key,
+            Body=content,
+            ContentType="application/pdf",
+        ))
         return file.filename
 
-    # Save all files in parallel
-    results = await asyncio.gather(*[save_file(f) for f in files])
+    results = await asyncio.gather(*[upload_file(f) for f in files])
     saved = [r for r in results if r]
-    return {"upload_path": upload_dir, "session_id": sid, "files": saved}
+    # Return S3 path in format "bucket/prefix" for _collect_pdfs
+    upload_path = f"{settings.S3_BUCKET}/{prefix}"
+    return {"upload_path": upload_path, "storage_provider": "s3", "session_id": sid, "files": saved}

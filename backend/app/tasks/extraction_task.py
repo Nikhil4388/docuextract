@@ -153,6 +153,14 @@ def _collect_pdfs(job: ExtractionJob, db: Session) -> List[str]:
     creds = json.loads(decrypt_secret(job.storage_credentials_enc)) if job.storage_credentials_enc else {}
     tmpdir = tempfile.mkdtemp(prefix="docuextract_")
 
+    # For S3 with no user-provided creds, fall back to system env var credentials
+    if job.storage_provider == "s3" and not creds:
+        creds = {
+            "access_key": settings.AWS_ACCESS_KEY_ID,
+            "secret_key": settings.AWS_SECRET_ACCESS_KEY,
+            "region": settings.AWS_DEFAULT_REGION,
+        }
+
     from app.services.storage.s3_service import get_storage_service
     svc = get_storage_service(job.storage_provider, creds)
     local_paths = []
@@ -162,6 +170,7 @@ def _collect_pdfs(job: ExtractionJob, db: Session) -> List[str]:
         keys = svc.list_pdfs(bucket, prefix)
         for key in keys:
             local_paths.append(svc.download_pdf(bucket, key, tmpdir))
+        return local_paths
     elif job.storage_provider == "google_drive":
         files = svc.list_pdfs(job.storage_path)
         for f in files:
