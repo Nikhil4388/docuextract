@@ -50,11 +50,11 @@ class ExtractionJob(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     template_id = Column(UUID(as_uuid=True), ForeignKey("column_templates.id"), nullable=True)
     name = Column(String(255), nullable=False)
-    status = Column(SAEnum(JobStatus), default=JobStatus.PENDING)
-    storage_provider = Column(SAEnum(StorageProvider), default=StorageProvider.LOCAL)
-    storage_path = Column(Text, nullable=True)  # Cloud path or local dir
-    storage_credentials_enc = Column(Text, nullable=True)  # Encrypted JSON
-    llm_provider = Column(SAEnum(LLMProvider), default=LLMProvider.CLAUDE)
+    status = Column(SAEnum(JobStatus, values_callable=lambda x: [e.value for e in x]), default=JobStatus.PENDING)
+    storage_provider = Column(SAEnum(StorageProvider, values_callable=lambda x: [e.value for e in x]), default=StorageProvider.LOCAL)
+    storage_path = Column(Text, nullable=True)
+    storage_credentials_enc = Column(Text, nullable=True)
+    llm_provider = Column(SAEnum(LLMProvider, values_callable=lambda x: [e.value for e in x]), default=LLMProvider.CLAUDE)
     llm_model = Column(String(100), nullable=True)
     use_user_api_key = Column(Boolean, default=False)
     total_files = Column(Integer, default=0)
