@@ -36,6 +36,7 @@ export default function NewJobPage() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadedStorageProvider, setUploadedStorageProvider] = useState<StorageProvider | null>(null);
   const [llmProvider, setLlmProvider] = useState<LLMProvider>('claude');
   const [llmModel, setLlmModel] = useState('claude-3-haiku-20240307');
   const [useUserApiKey, setUseUserApiKey] = useState(false);
@@ -80,9 +81,10 @@ export default function NewJobPage() {
           });
           completed += batch.length;
           setUploadProgress(Math.round((completed / uploadedFiles.length) * 100));
-          return res.data.upload_path;
+          return res.data;
         }));
-        finalPath = results[0];
+        finalPath = results[0].upload_path;
+        setUploadedStorageProvider(results[0].storage_provider ?? 'local');
       } catch (e) {
         setError('File upload failed');
         setUploading(false);
@@ -93,7 +95,7 @@ export default function NewJobPage() {
     createJob.mutate({
       name: jobName,
       template_id: templateId,
-      storage_provider: storageProvider,
+      storage_provider: uploadedStorageProvider ?? storageProvider,
       storage_path: finalPath || undefined,
       storage_credentials: Object.keys(storageCredentials).length ? storageCredentials : undefined,
       llm_provider: llmProvider,
