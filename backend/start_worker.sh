@@ -20,4 +20,4 @@ HEALTH_PID=$!
 echo "Healthcheck server PID: $HEALTH_PID"
 
 # Start Celery worker (foreground)
-python -m celery -A app.tasks.celery_app worker --loglevel=info -Q extraction
+python -m celery -A app.tasks.celery_app worker --loglevel=info -Q extraction --concurrency=2
