@@ -1,12 +1,23 @@
+import ssl
 from celery import Celery
 from app.core.config import settings
 
+# Strip any ?ssl_cert_reqs=... query params — we configure SSL properly below
+def _clean_redis_url(url: str) -> str:
+    return url.split("?")[0] if url else url
+
+broker_url = _clean_redis_url(settings.CELERY_BROKER_URL)
+backend_url = _clean_redis_url(settings.CELERY_RESULT_BACKEND)
+
 celery_app = Celery(
     "docuextract",
-    broker=settings.CELERY_BROKER_URL,
-    backend=settings.CELERY_RESULT_BACKEND,
+    broker=broker_url,
+    backend=backend_url,
     include=["app.tasks.extraction_task"],
 )
+
+# Use proper SSL config for rediss:// (Upstash)
+_ssl_opts = {"ssl_cert_reqs": ssl.CERT_NONE} if broker_url.startswith("rediss://") else {}
 
 celery_app.conf.update(
     task_serializer="json",
@@ -20,4 +31,6 @@ celery_app.conf.update(
     task_routes={
         "app.tasks.extraction_task.run_extraction_job": {"queue": "extraction"},
     },
+    broker_use_ssl=_ssl_opts or None,
+    redis_backend_use_ssl=_ssl_opts or None,
 )
