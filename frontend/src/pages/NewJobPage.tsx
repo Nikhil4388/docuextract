@@ -59,6 +59,7 @@ export default function NewJobPage() {
       return;
     }
     let finalPath = storagePath;
+    let resolvedProvider: StorageProvider = storageProvider;
     if (storageProvider === 'local' && uploadedFiles.length > 0) {
       setUploading(true);
       setUploadProgress(0);
@@ -84,7 +85,8 @@ export default function NewJobPage() {
           return res.data;
         }));
         finalPath = results[0].upload_path;
-        setUploadedStorageProvider(results[0].storage_provider ?? 'local');
+        resolvedProvider = (results[0].storage_provider ?? 'local') as StorageProvider;
+        setUploadedStorageProvider(resolvedProvider);
       } catch (e) {
         setError('File upload failed');
         setUploading(false);
@@ -95,7 +97,7 @@ export default function NewJobPage() {
     createJob.mutate({
       name: jobName,
       template_id: templateId,
-      storage_provider: uploadedStorageProvider ?? storageProvider,
+      storage_provider: resolvedProvider,
       storage_path: finalPath || undefined,
       storage_credentials: Object.keys(storageCredentials).length ? storageCredentials : undefined,
       llm_provider: llmProvider,
