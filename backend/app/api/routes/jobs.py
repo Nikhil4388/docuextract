@@ -94,11 +94,13 @@ async def create_job(
     )
     db.add(job)
     await db.flush()
+    await db.commit()  # Commit BEFORE dispatching so worker can find the job
 
     # Dispatch Celery task
     from app.tasks.extraction_task import run_extraction_job
     task = run_extraction_job.delay(str(job.id))
     job.celery_task_id = task.id
+    await db.commit()  # Save celery_task_id
 
     return _job_to_response(job)
 
