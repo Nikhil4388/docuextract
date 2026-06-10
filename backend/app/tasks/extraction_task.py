@@ -141,6 +141,9 @@ def _process_single_pdf(extractor: PDFExtractor, llm, pdf_path: str, columns: li
 
 def _collect_pdfs(job: ExtractionJob, db: Session) -> List[str]:
     """Download PDFs from cloud or collect local paths."""
+    import logging
+    logger = logging.getLogger(__name__)
+
     if job.storage_provider == "local":
         if job.storage_path and os.path.isdir(job.storage_path):
             return [
@@ -167,7 +170,9 @@ def _collect_pdfs(job: ExtractionJob, db: Session) -> List[str]:
 
     if job.storage_provider == "s3":
         bucket, prefix = (job.storage_path or "/").split("/", 1) if "/" in (job.storage_path or "") else (job.storage_path, "")
+        logger.warning(f"[S3] storage_path={job.storage_path!r} bucket={bucket!r} prefix={prefix!r} region={creds.get('region')!r}")
         keys = svc.list_pdfs(bucket, prefix)
+        logger.warning(f"[S3] list_pdfs returned {len(keys)} keys: {keys}")
         for key in keys:
             local_paths.append(svc.download_pdf(bucket, key, tmpdir))
         return local_paths
