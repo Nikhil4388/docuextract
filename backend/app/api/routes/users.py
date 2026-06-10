@@ -55,6 +55,7 @@ async def update_profile(
         current_user.full_name = payload.full_name
     if payload.avatar_url is not None:
         current_user.avatar_url = payload.avatar_url
+    await db.commit()
     return {"message": "Profile updated"}
 
 
@@ -68,6 +69,7 @@ async def update_api_keys(
         current_user.anthropic_api_key_enc = encrypt_secret(payload.anthropic_api_key)
     if payload.openai_api_key is not None:
         current_user.openai_api_key_enc = encrypt_secret(payload.openai_api_key)
+    await db.commit()
     return {"message": "API keys updated"}
 
 
