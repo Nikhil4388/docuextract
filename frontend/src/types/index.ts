@@ -47,6 +47,7 @@ export interface ExtractionJob {
   created_at: string;
   started_at?: string;
   completed_at?: string;
+  status_message?: string;
   error_message?: string;
 }
 

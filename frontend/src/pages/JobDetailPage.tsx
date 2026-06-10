@@ -24,7 +24,7 @@ export default function JobDetailPage() {
   const { data: job, refetch: refetchJob } = useQuery<ExtractionJob>({
     queryKey: ['job', jobId],
     queryFn: () => api.get(`/jobs/${jobId}`).then((r) => r.data),
-    refetchInterval: (q) => q.state.data?.status === 'processing' ? 3000 : false,
+    refetchInterval: (q) => ['pending', 'processing'].includes(q.state.data?.status ?? '') ? 2000 : false,
   });
 
   const { data: results, isLoading: resultsLoading, refetch: refetchResults } = useQuery<ExtractionResult[]>({
@@ -91,14 +91,22 @@ export default function JobDetailPage() {
       {/* Progress */}
       {(job.status === 'processing' || job.status === 'pending') && (
         <Paper sx={{ p: 3, borderRadius: 3, mb: 3 }}>
-          <Typography variant="body2" color="text.secondary" mb={1}>
-            Processing {job.processed_files} of {job.total_files} files…
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <CircularProgress size={14} thickness={5} />
+            <Typography variant="body2" color="text.secondary">
+              {job.status_message || (job.status === 'pending' ? 'Waiting in queue…' : `Processing ${job.processed_files} of ${job.total_files} files…`)}
+            </Typography>
+          </Box>
           <LinearProgress
             variant={job.total_files > 0 ? 'determinate' : 'indeterminate'}
             value={job.total_files > 0 ? (job.processed_files / job.total_files) * 100 : undefined}
             sx={{ height: 8, borderRadius: 4 }}
           />
+          {job.total_files > 0 && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              {job.processed_files} of {job.total_files} files
+            </Typography>
+          )}
         </Paper>
       )}
 

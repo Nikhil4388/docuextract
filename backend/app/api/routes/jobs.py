@@ -38,6 +38,7 @@ class JobResponse(BaseModel):
     created_at: str
     started_at: Optional[str]
     completed_at: Optional[str]
+    status_message: Optional[str]
     error_message: Optional[str]
 
 
@@ -219,6 +220,7 @@ def _job_to_response(job: ExtractionJob) -> JobResponse:
         created_at=job.created_at.isoformat(),
         started_at=job.started_at.isoformat() if job.started_at else None,
         completed_at=job.completed_at.isoformat() if job.completed_at else None,
+        status_message=job.status_message,
         error_message=job.error_message,
     )
 

@@ -61,6 +61,7 @@ class ExtractionJob(Base):
     processed_files = Column(Integer, default=0)
     failed_files = Column(Integer, default=0)
     celery_task_id = Column(String(255), nullable=True)
+    status_message = Column(Text, nullable=True)
     error_message = Column(Text, nullable=True)
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)

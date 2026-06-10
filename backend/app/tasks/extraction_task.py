@@ -50,6 +50,7 @@ def run_extraction_job(self, job_id: str):
         print(f"[TASK] job={job_id} provider={job.storage_provider!r} path={job.storage_path!r}", flush=True)
 
         job.status = JobStatus.PROCESSING
+        job.status_message = "Starting extraction…"
         job.started_at = datetime.utcnow()
         db.commit()
 
@@ -69,8 +70,11 @@ def run_extraction_job(self, job_id: str):
         llm = get_llm_service(job.llm_provider, api_key)
 
         # Collect PDF paths
+        job.status_message = "Downloading files…"
+        db.commit()
         pdf_paths = _collect_pdfs(job, db)
         job.total_files = len(pdf_paths)
+        job.status_message = f"Found {len(pdf_paths)} file{'s' if len(pdf_paths) != 1 else ''}, extracting with AI…"
         db.commit()
 
         # Process with thread pool (max 16 workers)
@@ -106,9 +110,11 @@ def run_extraction_job(self, job_id: str):
                     )
                     db.add(result)
                     job.failed_files += 1
+                job.status_message = f"Processed {job.processed_files + job.failed_files} of {job.total_files} files…"
                 db.commit()
 
         job.status = JobStatus.COMPLETED
+        job.status_message = None
         job.completed_at = datetime.utcnow()
         db.commit()
 
