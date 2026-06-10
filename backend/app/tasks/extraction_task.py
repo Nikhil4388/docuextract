@@ -45,7 +45,9 @@ def run_extraction_job(self, job_id: str):
     try:
         job: ExtractionJob = db.query(ExtractionJob).filter_by(id=job_id).first()
         if not job:
+            print(f"[TASK] job {job_id} not found in DB", flush=True)
             return
+        print(f"[TASK] job={job_id} provider={job.storage_provider!r} path={job.storage_path!r}", flush=True)
 
         job.status = JobStatus.PROCESSING
         job.started_at = datetime.utcnow()
@@ -170,9 +172,9 @@ def _collect_pdfs(job: ExtractionJob, db: Session) -> List[str]:
 
     if job.storage_provider == "s3":
         bucket, prefix = (job.storage_path or "/").split("/", 1) if "/" in (job.storage_path or "") else (job.storage_path, "")
-        logger.warning(f"[S3] storage_path={job.storage_path!r} bucket={bucket!r} prefix={prefix!r} region={creds.get('region')!r}")
+        print(f"[S3] storage_path={job.storage_path!r} bucket={bucket!r} prefix={prefix!r} region={creds.get('region')!r}", flush=True)
         keys = svc.list_pdfs(bucket, prefix)
-        logger.warning(f"[S3] list_pdfs returned {len(keys)} keys: {keys}")
+        print(f"[S3] list_pdfs returned {len(keys)} keys: {keys}", flush=True)
         for key in keys:
             local_paths.append(svc.download_pdf(bucket, key, tmpdir))
         return local_paths
