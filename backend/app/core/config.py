@@ -58,6 +58,8 @@ class Settings(BaseSettings):
 
     # Email
     RESEND_API_KEY: Optional[str] = None
+    GMAIL_USER: Optional[str] = None
+    GMAIL_APP_PASSWORD: Optional[str] = None
     SMTP_HOST: Optional[str] = None
     SMTP_PORT: int = 587
     SMTP_USER: Optional[str] = None
