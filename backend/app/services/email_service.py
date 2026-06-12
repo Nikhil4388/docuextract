@@ -1,11 +1,9 @@
 """
-Email service using Gmail SMTP.
-Set GMAIL_USER and GMAIL_APP_PASSWORD in environment variables.
+Email service using Brevo (Sendinblue) HTTP API.
+Set BREVO_API_KEY and BREVO_SENDER_EMAIL in environment variables.
 """
 import logging
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import requests
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -14,20 +12,26 @@ logger = logging.getLogger(__name__)
 def send_email(to_email: str, subject: str, html_body: str) -> bool:
     try:
         from app.core.config import settings
-        if not settings.GMAIL_USER or not settings.GMAIL_APP_PASSWORD:
+        if not settings.BREVO_API_KEY:
             logger.warning(f"[DEV MODE - EMAIL NOT SENT]\nTo: {to_email}\nSubject: {subject}")
             return True
 
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = f"DocuExtract <{settings.GMAIL_USER}>"
-        msg["To"] = to_email
-        msg.attach(MIMEText(html_body, "html"))
-
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(settings.GMAIL_USER, settings.GMAIL_APP_PASSWORD)
-            server.sendmail(settings.GMAIL_USER, to_email, msg.as_string())
-
+        sender_email = settings.BREVO_SENDER_EMAIL or "pdftodata.noreply@gmail.com"
+        response = requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={
+                "api-key": settings.BREVO_API_KEY,
+                "Content-Type": "application/json",
+            },
+            json={
+                "sender": {"name": "DocuExtract", "email": sender_email},
+                "to": [{"email": to_email}],
+                "subject": subject,
+                "htmlContent": html_body,
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
         logger.info(f"Email sent to {to_email}: {subject}")
         return True
     except Exception as e:
