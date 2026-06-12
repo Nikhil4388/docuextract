@@ -68,6 +68,7 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: Optional[str] = None
     SMTP_TLS: bool = True
     FRONTEND_URL: str = "http://localhost:3000"
+    BACKEND_URL: str = "http://localhost:8000"
 
     # Session
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 5  # 5 min inactivity timeout

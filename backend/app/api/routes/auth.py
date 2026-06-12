@@ -94,18 +94,13 @@ async def register(
         hashed_password=get_password_hash(payload.password),
         full_name=payload.full_name,
         auth_provider=AuthProvider.EMAIL,
-        verification_token=otp,
-        reset_token_expires=otp_expires,  # reuse field for OTP expiry
-        is_verified=False,
+        is_verified=True,  # Auto-verify — no OTP required
     )
     db.add(user)
     await db.flush()
 
-    # Send OTP email in background
-    background_tasks.add_task(send_otp_email, payload.email, otp, payload.full_name)
-
     return {
-        "message": "Registration successful. Check your email for the 6-digit verification code.",
+        "message": "Registration successful. You can now log in.",
         "email": payload.email,
     }
 
@@ -240,9 +235,10 @@ async def change_password(
 @router.get("/google")
 async def google_auth():
     from urllib.parse import urlencode
+    redirect_uri = f"{settings.BACKEND_URL}/api/v1/auth/google/callback"
     params = {
         "client_id": settings.GOOGLE_CLIENT_ID,
-        "redirect_uri": f"{settings.FRONTEND_URL}/api/v1/auth/google/callback",
+        "redirect_uri": redirect_uri,
         "response_type": "code",
         "scope": "openid email profile",
     }
@@ -251,6 +247,7 @@ async def google_auth():
 
 @router.get("/google/callback")
 async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
+    redirect_uri = f"{settings.BACKEND_URL}/api/v1/auth/google/callback"
     async with httpx.AsyncClient() as client:
         token_resp = await client.post(
             "https://oauth2.googleapis.com/token",
@@ -258,7 +255,7 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
                 "code": code,
                 "client_id": settings.GOOGLE_CLIENT_ID,
                 "client_secret": settings.GOOGLE_CLIENT_SECRET,
-                "redirect_uri": f"{settings.FRONTEND_URL}/api/v1/auth/google/callback",
+                "redirect_uri": redirect_uri,
                 "grant_type": "authorization_code",
             },
         )
