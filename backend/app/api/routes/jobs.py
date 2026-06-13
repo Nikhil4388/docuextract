@@ -94,14 +94,13 @@ async def create_job(
         status=JobStatus.PENDING,
     )
     db.add(job)
-    await db.flush()
     await db.commit()  # Commit BEFORE dispatching so worker can find the job
 
     # Dispatch Celery task explicitly to the extraction queue
     from app.tasks.extraction_task import run_extraction_job
     task = run_extraction_job.apply_async(args=[str(job.id)], queue="extraction")
     job.celery_task_id = task.id
-    await db.commit()  # Save celery_task_id
+    await db.commit()
 
     return _job_to_response(job)
 
