@@ -194,10 +194,11 @@ async def forgot_password(
 ):
     result = await db.execute(select(User).where(User.email == payload.email))
     user = result.scalar_one_or_none()
-    if user and user.is_verified:
+    if user:
         token = secrets.token_urlsafe(32)
         user.reset_token = token
         user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
+        await db.commit()
         background_tasks.add_task(send_password_reset_email, user.email, token)
     return {"message": "If that email exists, a password reset link has been sent."}
 

@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
         <Paper sx={{ p: 4, maxWidth: 400, textAlign: 'center', borderRadius: 3 }}>
           <Typography variant="h5" fontWeight={700} gutterBottom>Check Your Email</Typography>
           <Typography color="text.secondary" mb={3}>
-            If <strong>{email}</strong> is registered, we sent a password reset link. Check your inbox and spam folder.
+            If <strong>{email}</strong> is registered, we sent a password reset link.
           </Typography>
           <Button component={Link} to="/login" variant="contained" sx={{ borderRadius: 2 }}>Back to Login</Button>
         </Paper>
