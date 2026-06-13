@@ -109,11 +109,11 @@ export default function AppLayout() {
         sx={{
           flexGrow: 1,
           mt: '64px',
-          ml: open && !isMobile ? `${DRAWER_WIDTH}px` : 0,
           transition: 'margin 0.2s',
           p: 3,
           bgcolor: '#f8f9fa',
           minHeight: 'calc(100vh - 64px)',
+          overflow: 'auto',
         }}
       >
         <Outlet />

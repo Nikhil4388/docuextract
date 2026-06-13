@@ -116,7 +116,7 @@ export default function JobDetailPage() {
           ['Started', job.started_at ? new Date(job.started_at).toLocaleTimeString() : '—'],
           ['Completed', job.completed_at ? new Date(job.completed_at).toLocaleTimeString() : '—'],
         ].map(([label, value]) => (
-          <Paper key={label as string} sx={{ px: 2.5, py: 1.5, borderRadius: 2, flex: 1, textAlign: 'center' }}>
+          <Paper key={label as string} sx={{ px: 2.5, py: 1.5, borderRadius: 2, minWidth: 120, textAlign: 'center' }}>
             <Typography variant="caption" color="text.secondary" display="block">{label}</Typography>
             <Typography fontWeight={700}>{value as string}</Typography>
           </Paper>
