@@ -130,6 +130,35 @@ async def get_template(
     )
 
 
+@router.put("/{template_id}", response_model=TemplateResponse)
+async def update_template(
+    template_id: str,
+    payload: TemplateCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(ColumnTemplate).where(
+            ColumnTemplate.id == template_id,
+            ColumnTemplate.user_id == current_user.id,
+        )
+    )
+    template = result.scalar_one_or_none()
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    template.name = payload.name
+    template.description = payload.description
+    template.columns = [c.dict() for c in payload.columns]
+    await db.flush()
+    return TemplateResponse(
+        id=str(template.id),
+        name=template.name,
+        description=template.description,
+        columns=template.columns,
+        created_at=template.created_at.isoformat(),
+    )
+
+
 @router.delete("/{template_id}", status_code=204)
 async def delete_template(
     template_id: str,

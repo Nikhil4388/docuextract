@@ -5,7 +5,7 @@ import {
   TextField, Select, MenuItem, FormControl, InputLabel,
   IconButton, Chip, Stack, Alert, CircularProgress,
 } from '@mui/material';
-import { Add, Delete, AutoAwesome, Upload, DragIndicator } from '@mui/icons-material';
+import { Add, Delete, Edit, AutoAwesome, DragIndicator } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
@@ -50,13 +50,21 @@ function ColumnRow({
 
 export default function TemplatesPage() {
   const qc = useQueryClient();
-  const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Create dialog state
+  const [createOpen, setCreateOpen] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [columns, setColumns] = useState<ColumnDefinition[]>([
     { name: '', description: '', data_type: 'text', extraction_hint: '' },
   ]);
   const [uploadAlert, setUploadAlert] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Edit dialog state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<ColumnTemplate | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editColumns, setEditColumns] = useState<ColumnDefinition[]>([]);
 
   const { data: templates, isLoading } = useQuery<ColumnTemplate[]>({
     queryKey: ['templates'],
@@ -66,7 +74,16 @@ export default function TemplatesPage() {
   const createMutation = useMutation({
     mutationFn: () =>
       api.post('/templates/', { name: templateName, columns: columns.filter((c) => c.name) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['templates'] }); setDialogOpen(false); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['templates'] }); setCreateOpen(false); },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: () =>
+      api.put(`/templates/${editingTemplate?.id}`, {
+        name: editName,
+        columns: editColumns.filter((c) => c.name),
+      }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['templates'] }); setEditOpen(false); },
   });
 
   const deleteMutation = useMutation({
@@ -102,21 +119,40 @@ export default function TemplatesPage() {
     setColumns((prev) => prev.map((c, idx) => idx === i ? { ...c, [field]: value } : c));
   };
 
+  const updateEditColumn = (i: number, field: keyof ColumnDefinition, value: string) => {
+    setEditColumns((prev) => prev.map((c, idx) => idx === i ? { ...c, [field]: value } : c));
+  };
+
   const addColumn = () => setColumns((prev) => [...prev, { name: '', data_type: 'text', extraction_hint: '' }]);
   const deleteColumn = (i: number) => setColumns((prev) => prev.filter((_, idx) => idx !== i));
 
-  const openDialog = () => {
+  const addEditColumn = () => setEditColumns((prev) => [...prev, { name: '', data_type: 'text', extraction_hint: '' }]);
+  const deleteEditColumn = (i: number) => setEditColumns((prev) => prev.filter((_, idx) => idx !== i));
+
+  const openCreate = () => {
     setTemplateName('');
     setColumns([{ name: '', data_type: 'text', extraction_hint: '' }]);
     setUploadAlert(null);
-    setDialogOpen(true);
+    setCreateOpen(true);
+  };
+
+  const openEdit = (t: ColumnTemplate) => {
+    setEditingTemplate(t);
+    setEditName(t.name);
+    setEditColumns(t.columns.map((c: any) => ({
+      name: c.name ?? '',
+      description: c.description ?? '',
+      data_type: c.data_type ?? 'text',
+      extraction_hint: c.extraction_hint ?? '',
+    })));
+    setEditOpen(true);
   };
 
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5" fontWeight={700}>Column Templates</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={openDialog} sx={{ borderRadius: 2 }}>
+        <Button variant="contained" startIcon={<Add />} onClick={openCreate} sx={{ borderRadius: 2 }}>
           New Template
         </Button>
       </Box>
@@ -140,6 +176,9 @@ export default function TemplatesPage() {
                     </Typography>
                   </CardContent>
                   <CardActions>
+                    <Button size="small" startIcon={<Edit />} onClick={() => openEdit(t)}>
+                      Edit
+                    </Button>
                     <Button size="small" color="error" startIcon={<Delete />}
                       onClick={() => deleteMutation.mutate(t.id)}>
                       Delete
@@ -158,7 +197,8 @@ export default function TemplatesPage() {
           </Grid>
         )}
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
+      {/* ── Create Dialog ─────────────────────────────────────────────── */}
+      <Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>Create Column Template</DialogTitle>
         <DialogContent>
           <TextField
@@ -166,7 +206,6 @@ export default function TemplatesPage() {
             onChange={(e) => setTemplateName(e.target.value)} sx={{ mb: 3, mt: 1 }}
           />
 
-          {/* PDF Upload for AI detection */}
           <Box
             {...getRootProps()}
             sx={{
@@ -200,12 +239,39 @@ export default function TemplatesPage() {
           </Button>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setCreateOpen(false)}>Cancel</Button>
           <Button
             variant="contained" onClick={() => createMutation.mutate()}
             disabled={!templateName || createMutation.isPending}
           >
             {createMutation.isPending ? <CircularProgress size={20} /> : 'Create Template'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Edit Dialog ───────────────────────────────────────────────── */}
+      <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Edit Template</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Template Name" fullWidth value={editName}
+            onChange={(e) => setEditName(e.target.value)} sx={{ mb: 3, mt: 1 }}
+          />
+          <Typography variant="subtitle2" fontWeight={600} mb={1}>Columns</Typography>
+          {editColumns.map((col, i) => (
+            <ColumnRow key={i} col={col} index={i} onChange={updateEditColumn} onDelete={deleteEditColumn} />
+          ))}
+          <Button startIcon={<Add />} onClick={addEditColumn} size="small" sx={{ mt: 1 }}>
+            Add Column
+          </Button>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setEditOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained" onClick={() => updateMutation.mutate()}
+            disabled={!editName || updateMutation.isPending}
+          >
+            {updateMutation.isPending ? <CircularProgress size={20} /> : 'Save Changes'}
           </Button>
         </DialogActions>
       </Dialog>
