@@ -49,9 +49,9 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_MB: int = 50
     UPLOAD_DIR: str = "/tmp/docuextract/uploads"
 
-    # Celery
+    # Celery — only broker needed; results are tracked in PostgreSQL
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
-    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/1"
+    CELERY_RESULT_BACKEND: Optional[str] = None  # not used; keep for env var compat
 
     # Encryption (for API keys at rest)
     ENCRYPTION_KEY: str = secrets.token_urlsafe(32)
