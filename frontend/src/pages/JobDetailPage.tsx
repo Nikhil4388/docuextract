@@ -72,20 +72,13 @@ export default function JobDetailPage() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
         <IconButton onClick={() => navigate('/jobs')}><ArrowBack /></IconButton>
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="h5" fontWeight={700}>{job.name}</Typography>
-          <Chip label={job.status} color={statusColor(job.status)} size="small" sx={{ mt: 0.5 }} />
-        </Box>
+        <Typography variant="h5" fontWeight={700}>{job.name}</Typography>
+        <Chip label={job.status} color={statusColor(job.status)} size="small" />
         <Tooltip title="Refresh">
           <IconButton onClick={() => { refetchJob(); refetchResults(); }}><Refresh /></IconButton>
         </Tooltip>
-        {job.status === 'completed' && (
-          <Button variant="contained" startIcon={<Download />} onClick={handleExport} sx={{ borderRadius: 2 }}>
-            Export Excel
-          </Button>
-        )}
       </Box>
 
       {/* Progress */}
@@ -115,7 +108,7 @@ export default function JobDetailPage() {
       )}
 
       {/* Stats */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
         {[
           ['Total Files', job.total_files],
           ['Processed', job.processed_files],
@@ -123,7 +116,7 @@ export default function JobDetailPage() {
           ['Started', job.started_at ? new Date(job.started_at).toLocaleTimeString() : '—'],
           ['Completed', job.completed_at ? new Date(job.completed_at).toLocaleTimeString() : '—'],
         ].map(([label, value]) => (
-          <Paper key={label as string} sx={{ px: 2.5, py: 1.5, borderRadius: 2 }}>
+          <Paper key={label as string} sx={{ px: 2.5, py: 1.5, borderRadius: 2, flex: 1, textAlign: 'center' }}>
             <Typography variant="caption" color="text.secondary" display="block">{label}</Typography>
             <Typography fontWeight={700}>{value as string}</Typography>
           </Paper>
@@ -141,8 +134,13 @@ export default function JobDetailPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               InputProps={{ startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment> }}
-              sx={{ width: 240 }}
+              sx={{ width: 220 }}
             />
+            {job.status === 'completed' && (
+              <Button variant="contained" startIcon={<Download />} onClick={handleExport} sx={{ borderRadius: 2, whiteSpace: 'nowrap' }}>
+                Export Excel
+              </Button>
+            )}
           </Box>
           <DataGrid
             rows={rows}
