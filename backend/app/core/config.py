@@ -58,7 +58,8 @@ class Settings(BaseSettings):
     PAYPAL_CLIENT_SECRET: Optional[str] = None
     PAYPAL_PLAN_ID: Optional[str] = None           # Billing plan ID from PayPal dashboard
     PAYPAL_MODE: str = "sandbox"                    # "sandbox" for testing, "live" for production
-    FREE_JOB_LIMIT: int = 1                         # Free jobs before paywall
+    FREE_JOB_LIMIT: int = 2                         # Free jobs before paywall
+    KOFI_WEBHOOK_TOKEN: Optional[str] = None        # From Ko-fi Settings → API
 
     # Encryption (for API keys at rest)
     ENCRYPTION_KEY: str = secrets.token_urlsafe(32)

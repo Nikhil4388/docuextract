@@ -136,8 +136,23 @@ export default function PricingPage() {
             Support with ${selected} — One Click
           </Button>
           <Typography fontSize={11} color="text.secondary" mt={1.5}>
-            Completely optional · Secure via PayPal · No account required
+            Secure via PayPal · One-time donation · Unlocks your account instantly
           </Typography>
+
+          {/* Post-donation refresh */}
+          <Box sx={{ mt: 2.5, p: 2, bgcolor: '#f0fdf4', borderRadius: 2, border: '1px solid #bbf7d0' }}>
+            <Typography fontSize={13} fontWeight={600} color="#15803d" mb={0.5}>
+              ✅ Already donated?
+            </Typography>
+            <Typography fontSize={12} color="text.secondary" mb={1}>
+              Your account unlocks automatically once we receive your donation. Use the same email you signed up with on Ko-fi.
+            </Typography>
+            <Button fullWidth size="small" variant="outlined"
+              onClick={() => window.location.reload()}
+              sx={{ borderRadius: 2, borderColor: '#22c55e', color: '#16a34a', fontSize: 12 }}>
+              Refresh to Check Access
+            </Button>
+          </Box>
         </Paper>
 
         {/* FAQ */}

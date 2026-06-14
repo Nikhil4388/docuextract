@@ -77,7 +77,20 @@ async def create_job(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    # Free for everyone — no paywall
+    # ── Free tier gate: 2 free jobs, then must donate $10 via Ko-fi ─────────
+    if not current_user.is_subscribed:
+        jobs_used = current_user.jobs_used or 0
+        if jobs_used >= settings.FREE_JOB_LIMIT:
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "code": "FREE_LIMIT_REACHED",
+                    "message": f"You've used your {settings.FREE_JOB_LIMIT} free extractions. Please support the project with a $10 donation to unlock unlimited access.",
+                    "jobs_used": jobs_used,
+                    "free_limit": settings.FREE_JOB_LIMIT,
+                }
+            )
+
     creds_enc = None
     if payload.storage_credentials:
         import json

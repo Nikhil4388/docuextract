@@ -204,6 +204,83 @@ async def paypal_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     return {"received": True}
 
 
+# ── Ko-fi Webhook (auto-unlock on $10+ donation) ─────────────────────────────
+
+@router.post("/kofi-webhook")
+async def kofi_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Ko-fi sends a form POST with a 'data' field containing a JSON string.
+    We verify the token, parse the payload, and unlock the user if amount >= $10.
+    """
+    import json as _json
+
+    form = await request.form()
+    raw_data = form.get("data")
+    if not raw_data:
+        # Some Ko-fi versions send JSON body
+        try:
+            body = await request.json()
+            raw_data = body.get("data") or _json.dumps(body)
+        except Exception:
+            raise HTTPException(status_code=400, detail="No data received")
+
+    try:
+        data = _json.loads(raw_data) if isinstance(raw_data, str) else raw_data
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON in data field")
+
+    logger.info("kofi_webhook_received", data=data)
+
+    # Verify webhook token if configured
+    verification_token = data.get("verification_token", "")
+    if settings.KOFI_WEBHOOK_TOKEN and verification_token != settings.KOFI_WEBHOOK_TOKEN:
+        logger.warning("kofi_invalid_token")
+        raise HTTPException(status_code=403, detail="Invalid verification token")
+
+    email = (data.get("email") or "").strip().lower()
+    amount_str = data.get("amount", "0")
+    currency = data.get("currency", "USD")
+    donation_type = data.get("type", "")
+
+    try:
+        amount = float(amount_str)
+    except (ValueError, TypeError):
+        amount = 0.0
+
+    logger.info("kofi_donation", email=email, amount=amount, currency=currency, type=donation_type)
+
+    # Only unlock for USD donations >= $10
+    # For other currencies, use approximate equivalent (generous threshold)
+    threshold = 10.0
+    if currency != "USD":
+        threshold = 8.0  # ~$10 in most currencies
+
+    if not email:
+        logger.warning("kofi_no_email")
+        return {"received": True, "unlocked": False, "reason": "no_email"}
+
+    if amount < threshold:
+        logger.info("kofi_amount_too_low", amount=amount, threshold=threshold)
+        return {"received": True, "unlocked": False, "reason": "amount_too_low"}
+
+    # Find user by email and unlock
+    result = await db.execute(select(User).where(User.email == email))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        logger.warning("kofi_user_not_found", email=email)
+        # Store the unlock for when they sign up (future enhancement)
+        return {"received": True, "unlocked": False, "reason": "user_not_found"}
+
+    if not user.is_subscribed:
+        user.is_subscribed = True
+        user.stripe_subscription_id = f"kofi_{data.get('kofi_transaction_id', 'manual')}"
+        await db.commit()
+        logger.info("kofi_user_unlocked", email=email, user_id=str(user.id), amount=amount)
+
+    return {"received": True, "unlocked": True}
+
+
 # ── Get subscription status ───────────────────────────────────────────────────
 
 @router.get("/status")
