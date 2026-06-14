@@ -1,14 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box, Button, Typography, Container, Paper, Chip,
   List, ListItem, ListItemIcon, ListItemText,
+  Dialog, DialogContent, IconButton, CircularProgress,
 } from '@mui/material';
-import { CheckCircle, Star, ArrowBack, Favorite, Coffee } from '@mui/icons-material';
+import { CheckCircle, Star, ArrowBack, Favorite, Coffee, Close } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
-// ── Replace this with your actual Ko-fi or Buy Me a Coffee link ──────────────
-const SUPPORT_LINK = 'https://ko-fi.com/MultiPDFToExcel';
-// ─────────────────────────────────────────────────────────────────────────────
+const KOFI_USERNAME = 'multipdfstoexcel';
 
 const ALL_FEATURES = [
   'Unlimited extraction jobs',
@@ -20,8 +19,19 @@ const ALL_FEATURES = [
   'Priority support',
 ];
 
+const AMOUNTS = [3, 5, 10, 20];
+
 export default function PricingPage() {
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState(5);
+  const [iframeLoading, setIframeLoading] = useState(true);
+
+  const handleDonate = () => {
+    // Open Ko-fi directly with the amount pre-filled
+    const url = `https://ko-fi.com/${KOFI_USERNAME}`;
+    window.open(url, '_blank', 'width=550,height=650,scrollbars=yes,resizable=yes');
+  };
 
   return (
     <Box sx={{
@@ -71,7 +81,6 @@ export default function PricingPage() {
               </ListItem>
             ))}
           </List>
-
           <Button
             fullWidth variant="contained" size="large"
             onClick={() => navigate('/jobs/new')}
@@ -89,23 +98,45 @@ export default function PricingPage() {
           <Coffee sx={{ fontSize: 40, color: '#d97706', mb: 1 }} />
           <Typography fontWeight={800} fontSize={18} mb={0.5}>Like the tool? Buy us a coffee ☕</Typography>
           <Typography color="text.secondary" fontSize={14} mb={3}>
-            MultiPDFToExcel is free, but servers cost money. If this tool saves you hours of manual work,
-            a small donation helps keep it running and improving.
+            Servers cost money. If this saves you hours of manual work, any donation helps keep it running.
           </Typography>
+
+          {/* Amount selector */}
+          <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', mb: 3 }}>
+            {AMOUNTS.map(amt => (
+              <Box
+                key={amt}
+                onClick={() => setSelected(amt)}
+                sx={{
+                  px: 2.5, py: 1.2, borderRadius: 2, cursor: 'pointer', fontWeight: 700,
+                  fontSize: 15, border: '2px solid',
+                  borderColor: selected === amt ? '#f59e0b' : '#e5e7eb',
+                  bgcolor: selected === amt ? '#fef3c7' : 'white',
+                  color: selected === amt ? '#92400e' : 'text.secondary',
+                  transition: 'all 0.15s',
+                  '&:hover': { borderColor: '#f59e0b', bgcolor: '#fffbeb' },
+                }}
+              >
+                ${amt}
+              </Box>
+            ))}
+          </Box>
+
           <Button
             fullWidth variant="contained" size="large"
             startIcon={<Favorite />}
-            onClick={() => window.open(SUPPORT_LINK, '_blank')}
+            onClick={() => setOpen(true)}
             sx={{
-              borderRadius: 2, py: 1.4, fontSize: 15, fontWeight: 700,
+              borderRadius: 2, py: 1.5, fontSize: 16, fontWeight: 700,
               bgcolor: '#f59e0b', color: 'white',
               '&:hover': { bgcolor: '#d97706' },
+              boxShadow: '0 4px 14px rgba(245,158,11,0.4)',
             }}
           >
-            Support on Ko-fi — any amount
+            Support with ${selected} — One Click
           </Button>
           <Typography fontSize={11} color="text.secondary" mt={1.5}>
-            Completely optional · No account required
+            Completely optional · Secure via PayPal · No account required
           </Typography>
         </Paper>
 
@@ -114,9 +145,9 @@ export default function PricingPage() {
           <Typography variant="h5" fontWeight={700} textAlign="center" mb={3}>Questions</Typography>
           {[
             { q: 'Is it really free?', a: 'Yes, 100% free. All features including unlimited extractions are free to use.' },
-            { q: 'Why is it free?', a: 'We\'re just getting started and want people to use it. Donations from supporters help cover server costs.' },
+            { q: 'Why is it free?', a: "We're just getting started and want people to use it. Donations from supporters help cover server costs." },
             { q: 'Will it stay free?', a: 'We plan to keep a generous free tier always. If we ever add a paid plan, existing users will get notice in advance.' },
-            { q: 'How do I support the project?', a: 'Click the Ko-fi button above to make a one-time donation of any amount. It goes directly to keeping the servers running.' },
+            { q: 'How do I support?', a: 'Click the button above, pick an amount, and pay via PayPal. No Ko-fi account needed — just your PayPal or card.' },
           ].map(f => (
             <Box key={f.q} sx={{ mb: 2.5, p: 3, bgcolor: 'white', borderRadius: 3, borderLeft: '3px solid #667eea' }}>
               <Typography fontWeight={700} mb={0.5}>{f.q}</Typography>
@@ -125,6 +156,57 @@ export default function PricingPage() {
           ))}
         </Box>
       </Container>
+
+      {/* ── Donation popup ── */}
+      <Dialog
+        open={open}
+        onClose={() => { setOpen(false); setIframeLoading(true); }}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden', m: 2 } }}
+      >
+        <Box sx={{
+          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+          px: 3, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Coffee sx={{ color: 'white', fontSize: 22 }} />
+            <Typography fontWeight={800} color="white" fontSize={16}>Support MultiPDFToExcel</Typography>
+          </Box>
+          <IconButton size="small" onClick={() => { setOpen(false); setIframeLoading(true); }} sx={{ color: 'white' }}>
+            <Close fontSize="small" />
+          </IconButton>
+        </Box>
+
+        <DialogContent sx={{ p: 0, position: 'relative', minHeight: 500 }}>
+          {iframeLoading && (
+            <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, bgcolor: 'white' }}>
+              <CircularProgress sx={{ color: '#f59e0b' }} />
+              <Typography color="text.secondary" fontSize={13}>Loading payment form…</Typography>
+            </Box>
+          )}
+          <iframe
+            id="kofiframe"
+            src={`https://ko-fi.com/${KOFI_USERNAME}/?hidefeed=true&widget=true&embed=true&preview=true`}
+            style={{ border: 'none', width: '100%', height: '500px', display: 'block' }}
+            title="Support MultiPDFToExcel on Ko-fi"
+            onLoad={() => setIframeLoading(false)}
+          />
+        </DialogContent>
+
+        <Box sx={{ px: 3, py: 2, bgcolor: '#f9fafb', borderTop: '1px solid #f3f4f6', textAlign: 'center' }}>
+          <Typography fontSize={11} color="text.secondary">
+            🔒 Secure payment via PayPal · No Ko-fi account needed
+          </Typography>
+          <Button
+            size="small" variant="text"
+            onClick={handleDonate}
+            sx={{ mt: 0.5, fontSize: 11, color: '#f59e0b', textDecoration: 'underline' }}
+          >
+            Open in new window instead
+          </Button>
+        </Box>
+      </Dialog>
     </Box>
   );
 }
