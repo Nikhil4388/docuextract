@@ -53,13 +53,25 @@ def create_app() -> FastAPI:
     app.include_router(templates.router, prefix=prefix)
     app.include_router(jobs.router, prefix=prefix)
 
-    # ── Startup: reset stuck jobs from previous restarts ──────────────────────
+    # ── Startup: apply any missing DB columns + reset stuck jobs ─────────────
     @app.on_event("startup")
-    async def reset_stuck_jobs():
+    async def startup_tasks():
         from app.core.database import AsyncSessionLocal
         from app.models.extraction import ExtractionJob, JobStatus
-        from sqlalchemy import select, update
+        from sqlalchemy import text, update
         async with AsyncSessionLocal() as db:
+            # Safely add any missing columns (idempotent — IF NOT EXISTS)
+            migrations = [
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(255)",
+            ]
+            for sql in migrations:
+                try:
+                    await db.execute(text(sql))
+                except Exception as e:
+                    logger.warning("startup_migration_skipped", sql=sql, error=str(e))
+            await db.commit()
+
+            # Reset stuck processing jobs
             await db.execute(
                 update(ExtractionJob)
                 .where(ExtractionJob.status == JobStatus.PROCESSING)
