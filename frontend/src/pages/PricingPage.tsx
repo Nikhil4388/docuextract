@@ -1,50 +1,27 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box, Button, Typography, Container, Paper, Chip,
-  List, ListItem, ListItemIcon, ListItemText, CircularProgress,
+  List, ListItem, ListItemIcon, ListItemText,
 } from '@mui/material';
-import { CheckCircle, Lock, Star, ArrowBack } from '@mui/icons-material';
+import { CheckCircle, Star, ArrowBack, Favorite, Coffee } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
-import api from '../services/api';
 
-const FREE_FEATURES = [
-  '1 free extraction job',
-  'Up to 10 PDFs per job',
-  'Custom extraction templates',
-  'Excel / CSV export',
-  'Google login',
-];
+// ── Replace this with your actual Ko-fi or Buy Me a Coffee link ──────────────
+const SUPPORT_LINK = 'https://ko-fi.com/multipdftoexcel'; // change to your link
+// ─────────────────────────────────────────────────────────────────────────────
 
-const PRO_FEATURES = [
+const ALL_FEATURES = [
   'Unlimited extraction jobs',
-  'Unlimited PDFs per job',
+  'Upload multiple PDFs at once',
   'Custom extraction templates',
   'Excel / CSV export',
-  'Priority processing',
-  'Email support',
-  'API access (coming soon)',
+  'AI-powered data extraction',
+  'Google login',
+  'Priority support',
 ];
 
 export default function PricingPage() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleUpgrade = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const res = await api.post('/payments/create-checkout-session');
-      window.location.href = res.data.checkout_url;
-    } catch (e: any) {
-      setError(e?.response?.data?.detail || 'Something went wrong. Please try again.');
-      setLoading(false);
-    }
-  };
-
-  const isSubscribed = user?.is_subscribed;
 
   return (
     <Box sx={{
@@ -52,117 +29,94 @@ export default function PricingPage() {
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       pt: 6, pb: 10, px: 2,
     }}>
-      <Container maxWidth="md">
+      <Container maxWidth="sm">
         {/* Back */}
         <Button startIcon={<ArrowBack />} onClick={() => navigate(-1)} sx={{ mb: 4, color: 'text.secondary' }}>
           Back
         </Button>
 
         {/* Header */}
-        <Box textAlign="center" mb={6}>
-          <Chip label="💳 Simple Pricing" sx={{ mb: 2, bgcolor: '#667eea15', color: '#667eea', fontWeight: 700 }} />
+        <Box textAlign="center" mb={5}>
+          <Chip label="☕ Support the project" sx={{ mb: 2, bgcolor: '#fff3e0', color: '#e65100', fontWeight: 700 }} />
           <Typography variant="h3" fontWeight={800} mb={1.5}>
-            Upgrade to Pro
+            MultiPDFToExcel is Free
           </Typography>
           <Typography color="text.secondary" fontSize={18}>
-            One flat price. Unlimited extractions. Cancel anytime.
+            All features are completely free. If it saves you time, consider buying us a coffee to keep the servers running!
           </Typography>
         </Box>
 
-        {/* Cards */}
-        <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
+        {/* Free card */}
+        <Paper sx={{
+          p: 4, borderRadius: 4,
+          border: '2px solid #667eea',
+          background: 'linear-gradient(145deg, #ffffff 0%, #f5f4ff 100%)',
+          mb: 3,
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+            <Star sx={{ color: '#667eea', fontSize: 22 }} />
+            <Typography fontWeight={800} fontSize={20} color="#667eea">Everything Free</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 3 }}>
+            <Typography variant="h2" fontWeight={900}>$0</Typography>
+            <Typography color="text.secondary" fontSize={18}>/forever</Typography>
+          </Box>
+          <List dense>
+            {ALL_FEATURES.map(f => (
+              <ListItem key={f} disableGutters sx={{ py: 0.6 }}>
+                <ListItemIcon sx={{ minWidth: 32 }}>
+                  <CheckCircle sx={{ fontSize: 18, color: '#667eea' }} />
+                </ListItemIcon>
+                <ListItemText primary={f} primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
+              </ListItem>
+            ))}
+          </List>
 
-          {/* Free */}
-          <Paper sx={{ flex: 1, p: 4, borderRadius: 4, border: '2px solid #e5e7eb' }}>
-            <Typography fontWeight={800} fontSize={18} mb={0.5}>Free</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 3 }}>
-              <Typography variant="h3" fontWeight={900}>$0</Typography>
-              <Typography color="text.secondary">/forever</Typography>
-            </Box>
-            <List dense>
-              {FREE_FEATURES.map(f => (
-                <ListItem key={f} disableGutters sx={{ py: 0.5 }}>
-                  <ListItemIcon sx={{ minWidth: 32 }}>
-                    <CheckCircle sx={{ fontSize: 18, color: '#9ca3af' }} />
-                  </ListItemIcon>
-                  <ListItemText primary={f} primaryTypographyProps={{ fontSize: 14, color: 'text.secondary' }} />
-                </ListItem>
-              ))}
-            </List>
-            <Button
-              fullWidth variant="outlined" disabled
-              sx={{ mt: 3, borderRadius: 2, py: 1.2, borderColor: '#e5e7eb', color: 'text.secondary' }}
-            >
-              Current Plan
-            </Button>
-          </Paper>
+          <Button
+            fullWidth variant="contained" size="large"
+            onClick={() => navigate('/jobs/new')}
+            sx={{
+              mt: 3, borderRadius: 2, py: 1.4, fontSize: 15, fontWeight: 700,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            }}
+          >
+            Start Extracting — It's Free
+          </Button>
+        </Paper>
 
-          {/* Pro */}
-          <Paper sx={{
-            flex: 1, p: 4, borderRadius: 4,
-            border: '2px solid #667eea',
-            background: 'linear-gradient(145deg, #ffffff 0%, #f5f4ff 100%)',
-            position: 'relative', overflow: 'hidden',
-          }}>
-            <Chip
-              label="⭐ RECOMMENDED"
-              size="small"
-              sx={{ position: 'absolute', top: 16, right: 16, bgcolor: '#667eea', color: 'white', fontWeight: 700, fontSize: 10 }}
-            />
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-              <Star sx={{ color: '#667eea', fontSize: 20 }} />
-              <Typography fontWeight={800} fontSize={18} color="#667eea">Pro</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 3 }}>
-              <Typography variant="h3" fontWeight={900}>$10</Typography>
-              <Typography color="text.secondary">/month</Typography>
-            </Box>
-            <List dense>
-              {PRO_FEATURES.map(f => (
-                <ListItem key={f} disableGutters sx={{ py: 0.5 }}>
-                  <ListItemIcon sx={{ minWidth: 32 }}>
-                    <CheckCircle sx={{ fontSize: 18, color: '#667eea' }} />
-                  </ListItemIcon>
-                  <ListItemText primary={f} primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
-                </ListItem>
-              ))}
-            </List>
-
-            {error && (
-              <Typography color="error" fontSize={13} mt={1}>{error}</Typography>
-            )}
-
-            {isSubscribed ? (
-              <Button
-                fullWidth variant="contained" disabled
-                sx={{ mt: 3, borderRadius: 2, py: 1.2, bgcolor: '#22c55e' }}
-              >
-                ✓ Already Subscribed
-              </Button>
-            ) : (
-              <Button
-                fullWidth variant="contained" onClick={handleUpgrade} disabled={loading}
-                sx={{ mt: 3, borderRadius: 2, py: 1.4, fontSize: 15, fontWeight: 700,
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  '&:hover': { opacity: 0.92 } }}
-              >
-                {loading ? <CircularProgress size={20} color="inherit" /> : 'Upgrade Now — $10/mo'}
-              </Button>
-            )}
-            <Typography textAlign="center" fontSize={11} color="text.secondary" mt={1.5}>
-              Secure payment via PayPal · Cancel anytime
-            </Typography>
-          </Paper>
-        </Box>
+        {/* Support / donation card */}
+        <Paper sx={{ p: 4, borderRadius: 4, border: '2px solid #fde68a', bgcolor: '#fffbeb', textAlign: 'center' }}>
+          <Coffee sx={{ fontSize: 40, color: '#d97706', mb: 1 }} />
+          <Typography fontWeight={800} fontSize={18} mb={0.5}>Like the tool? Buy us a coffee ☕</Typography>
+          <Typography color="text.secondary" fontSize={14} mb={3}>
+            MultiPDFToExcel is free, but servers cost money. If this tool saves you hours of manual work,
+            a small donation helps keep it running and improving.
+          </Typography>
+          <Button
+            fullWidth variant="contained" size="large"
+            startIcon={<Favorite />}
+            onClick={() => window.open(SUPPORT_LINK, '_blank')}
+            sx={{
+              borderRadius: 2, py: 1.4, fontSize: 15, fontWeight: 700,
+              bgcolor: '#f59e0b', color: 'white',
+              '&:hover': { bgcolor: '#d97706' },
+            }}
+          >
+            Support on Ko-fi — any amount
+          </Button>
+          <Typography fontSize={11} color="text.secondary" mt={1.5}>
+            Completely optional · No account required
+          </Typography>
+        </Paper>
 
         {/* FAQ */}
-        <Box mt={8}>
-          <Typography variant="h5" fontWeight={700} textAlign="center" mb={4}>Questions</Typography>
+        <Box mt={6}>
+          <Typography variant="h5" fontWeight={700} textAlign="center" mb={3}>Questions</Typography>
           {[
-            { q: 'Can I cancel anytime?', a: 'Yes. Cancel from your Settings page. You keep access until the end of the billing period.' },
-            { q: 'What counts as one extraction job?', a: 'One job = one batch of PDFs you process together. You can include many PDFs in a single job.' },
-            { q: 'Is payment secure?', a: 'Yes. Payments are handled by PayPal — we never see your card details. You can pay with your PayPal balance or any card.' },
-            { q: 'What happens after my free job?', a: 'You can still view your previous results. To run more jobs, upgrade to Pro.' },
+            { q: 'Is it really free?', a: 'Yes, 100% free. All features including unlimited extractions are free to use.' },
+            { q: 'Why is it free?', a: 'We\'re just getting started and want people to use it. Donations from supporters help cover server costs.' },
+            { q: 'Will it stay free?', a: 'We plan to keep a generous free tier always. If we ever add a paid plan, existing users will get notice in advance.' },
+            { q: 'How do I support the project?', a: 'Click the Ko-fi button above to make a one-time donation of any amount. It goes directly to keeping the servers running.' },
           ].map(f => (
             <Box key={f.q} sx={{ mb: 2.5, p: 3, bgcolor: 'white', borderRadius: 3, borderLeft: '3px solid #667eea' }}>
               <Typography fontWeight={700} mb={0.5}>{f.q}</Typography>
