@@ -18,6 +18,8 @@ import JobDetailPage from './pages/JobDetailPage';
 import SettingsPage from './pages/SettingsPage';
 import JobsPage from './pages/JobsPage';
 import LandingPage from './pages/LandingPage';
+import PricingPage from './pages/PricingPage';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
 
 const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -119,6 +121,8 @@ export default function App() {
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/auth/callback" element={<AuthCallbackPage />} />
+                <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/payment/success" element={<PaymentSuccessPage />} />
 
                 {/* Protected routes */}
                 <Route path="/" element={<RequireAuth><AppLayout /></RequireAuth>}>

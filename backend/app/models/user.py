@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, DateTime, Text, Enum as SAEnum
+from sqlalchemy import Column, String, Boolean, DateTime, Text, Integer, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -43,6 +43,13 @@ class User(Base):
     # Encrypted API keys
     anthropic_api_key_enc = Column(Text, nullable=True)
     openai_api_key_enc = Column(Text, nullable=True)
+
+    # Subscription / billing
+    jobs_used = Column(Integer, default=0, nullable=False, server_default="0")
+    is_subscribed = Column(Boolean, default=False, nullable=False, server_default="false")
+    stripe_customer_id = Column(String(255), nullable=True)
+    stripe_subscription_id = Column(String(255), nullable=True)
+    subscription_end_date = Column(DateTime, nullable=True)
 
     extraction_jobs = relationship("ExtractionJob", back_populates="user", cascade="all, delete-orphan")
     column_templates = relationship("ColumnTemplate", back_populates="user", cascade="all, delete-orphan")

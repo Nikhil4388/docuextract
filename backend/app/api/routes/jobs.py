@@ -9,6 +9,7 @@ import io
 
 from app.core.database import get_db
 from app.core.security import encrypt_secret
+from app.core.config import settings
 from app.models.user import User
 from app.models.extraction import ExtractionJob, ExtractionResult, JobStatus, StorageProvider, LLMProvider
 from app.api.deps import get_current_user
@@ -76,6 +77,20 @@ async def create_job(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    # ── Subscription / free-tier check ────────────────────────────────────────
+    if not current_user.is_subscribed:
+        jobs_used = current_user.jobs_used or 0
+        if jobs_used >= settings.FREE_JOB_LIMIT:
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "code": "FREE_LIMIT_REACHED",
+                    "message": f"You have used your {settings.FREE_JOB_LIMIT} free extraction(s). Upgrade to Pro for unlimited extractions.",
+                    "jobs_used": jobs_used,
+                    "free_limit": settings.FREE_JOB_LIMIT,
+                }
+            )
+
     creds_enc = None
     if payload.storage_credentials:
         import json
@@ -94,6 +109,8 @@ async def create_job(
         status=JobStatus.PENDING,
     )
     db.add(job)
+    # Increment usage counter (even for subscribers, so we track total)
+    current_user.jobs_used = (current_user.jobs_used or 0) + 1
     await db.commit()  # Commit BEFORE dispatching so worker can find the job
 
     # Dispatch Celery task explicitly to the extraction queue

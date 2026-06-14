@@ -53,6 +53,13 @@ class Settings(BaseSettings):
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: Optional[str] = None  # not used; keep for env var compat
 
+    # PayPal
+    PAYPAL_CLIENT_ID: Optional[str] = None
+    PAYPAL_CLIENT_SECRET: Optional[str] = None
+    PAYPAL_PLAN_ID: Optional[str] = None           # Billing plan ID from PayPal dashboard
+    PAYPAL_MODE: str = "sandbox"                    # "sandbox" for testing, "live" for production
+    FREE_JOB_LIMIT: int = 1                         # Free jobs before paywall
+
     # Encryption (for API keys at rest)
     ENCRYPTION_KEY: str = secrets.token_urlsafe(32)
 

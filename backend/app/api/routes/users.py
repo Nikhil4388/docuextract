@@ -5,6 +5,7 @@ from typing import Optional
 
 from app.core.database import get_db
 from app.core.security import encrypt_secret
+from app.core.config import settings
 from app.models.user import User
 from app.api.deps import get_current_user
 
@@ -20,6 +21,10 @@ class UserProfile(BaseModel):
     role: str
     is_verified: bool
     auth_provider: Optional[str]
+    # Subscription
+    is_subscribed: bool = False
+    jobs_used: int = 0
+    free_limit: int = 1
 
     class Config:
         from_attributes = True
@@ -47,6 +52,9 @@ async def get_profile(current_user: User = Depends(get_current_user)):
         role=current_user.role,
         is_verified=current_user.is_verified,
         auth_provider=current_user.auth_provider,
+        is_subscribed=current_user.is_subscribed or False,
+        jobs_used=current_user.jobs_used or 0,
+        free_limit=settings.FREE_JOB_LIMIT,
     )
 
 

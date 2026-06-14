@@ -3,12 +3,12 @@ import {
   Box, Drawer, AppBar, Toolbar, Typography, IconButton,
   List, ListItemButton, ListItemIcon, ListItemText, Avatar,
   Tooltip, Divider, useTheme, useMediaQuery,
-  Popover, Button, Chip,
+  Popover, Button, Chip, LinearProgress,
 } from '@mui/material';
 import {
   Menu as MenuIcon, Dashboard, Description, Work,
   Settings, Logout, ChevronLeft, Person,
-  VerifiedUser, Email, LocationOn,
+  VerifiedUser, Email, LocationOn, Star,
 } from '@mui/icons-material';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
@@ -41,6 +41,11 @@ export default function AppLayout() {
     ? user.full_name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
     : user?.email?.[0]?.toUpperCase() ?? '?';
 
+  const freeLimit = user?.free_limit ?? 1;
+  const jobsUsed  = user?.jobs_used ?? 0;
+  const isSubscribed = user?.is_subscribed ?? false;
+  const hitFreeLimit = !isSubscribed && jobsUsed >= freeLimit;
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       {/* ── AppBar ── */}
@@ -53,8 +58,26 @@ export default function AppLayout() {
             MultiPDFToExcel
           </Typography>
 
+          {/* Pro badge or upgrade button */}
+          {isSubscribed ? (
+            <Chip
+              icon={<Star sx={{ fontSize: 14 }} />}
+              label="Pro"
+              size="small"
+              sx={{ mr: 1.5, bgcolor: '#fef3c7', color: '#92400e', fontWeight: 700, fontSize: 11 }}
+            />
+          ) : (
+            <Button
+              size="small" variant="outlined"
+              onClick={() => navigate('/pricing')}
+              sx={{ mr: 1.5, borderRadius: 2, fontSize: 11, py: 0.5, borderColor: '#667eea', color: '#667eea' }}
+            >
+              Upgrade $10/mo
+            </Button>
+          )}
+
           <Tooltip title="Your profile">
-            <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} sx={{ p: 0, ml: 1 }}>
+            <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} sx={{ p: 0, ml: 0.5 }}>
               <Avatar
                 src={user?.avatar_url}
                 sx={{ bgcolor: '#667eea', width: 36, height: 36, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
@@ -72,6 +95,27 @@ export default function AppLayout() {
         </Toolbar>
       </AppBar>
 
+      {/* ── Upgrade nudge banner (shown when free limit hit) ── */}
+      {hitFreeLimit && (
+        <Box sx={{
+          position: 'fixed', top: 64, left: 0, right: 0, zIndex: theme.zIndex.drawer,
+          bgcolor: '#fef9c3', borderBottom: '1px solid #fde68a',
+          py: 1, px: 3, display: 'flex', alignItems: 'center', gap: 2,
+        }}>
+          <Typography fontSize={13} fontWeight={600} sx={{ flex: 1, color: '#92400e' }}>
+            ⚡ You've used your 1 free extraction. Upgrade to Pro for unlimited jobs.
+          </Typography>
+          <Button
+            size="small" variant="contained"
+            onClick={() => navigate('/pricing')}
+            sx={{ borderRadius: 2, fontSize: 12, py: 0.5, fontWeight: 700,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
+          >
+            Upgrade Now
+          </Button>
+        </Box>
+      )}
+
       {/* ── Profile popover ── */}
       <Popover
         open={profileOpen}
@@ -79,7 +123,7 @@ export default function AppLayout() {
         onClose={() => setAnchorEl(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        PaperProps={{ sx: { borderRadius: 3, width: 300, mt: 0.5, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.14)' } }}
+        PaperProps={{ sx: { borderRadius: 3, width: 310, mt: 0.5, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.14)' } }}
       >
         {/* Header */}
         <Box sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', px: 3, py: 2.5, display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -89,8 +133,14 @@ export default function AppLayout() {
           >
             {initials}
           </Avatar>
-          <Box sx={{ color: 'white', minWidth: 0 }}>
-            <Typography fontWeight={700} fontSize={15} noWrap>{user?.full_name || 'No name set'}</Typography>
+          <Box sx={{ color: 'white', minWidth: 0, flex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography fontWeight={700} fontSize={15} noWrap>{user?.full_name || 'No name set'}</Typography>
+              {isSubscribed && (
+                <Chip label="Pro" size="small" icon={<Star sx={{ fontSize: 10 }} />}
+                  sx={{ height: 18, fontSize: 10, bgcolor: '#fef3c7', color: '#92400e', fontWeight: 700 }} />
+              )}
+            </Box>
             <Typography fontSize={12} sx={{ opacity: 0.85 }} noWrap>{user?.email}</Typography>
           </Box>
         </Box>
@@ -102,9 +152,6 @@ export default function AppLayout() {
           {user?.location && (
             <InfoRow icon={<LocationOn sx={{ fontSize: 16 }} />} label="Location" value={user.location} />
           )}
-          <InfoRow icon={<VerifiedUser sx={{ fontSize: 16 }} />} label="Role" value={
-            <Chip label={user?.role ?? '—'} size="small" sx={{ height: 20, fontSize: 11, textTransform: 'capitalize' }} />
-          } />
           <InfoRow icon={<VerifiedUser sx={{ fontSize: 16 }} />} label="Account" value={
             <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
               {user?.auth_provider === 'google' && (
@@ -116,6 +163,43 @@ export default function AppLayout() {
               }
             </Box>
           } />
+
+          {/* Subscription / usage */}
+          <Divider sx={{ my: 0.5 }} />
+          {isSubscribed ? (
+            <Box sx={{ bgcolor: '#f0fdf4', borderRadius: 2, p: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Star sx={{ fontSize: 18, color: '#16a34a' }} />
+              <Box>
+                <Typography fontSize={12} fontWeight={700} color="#15803d">Pro Plan Active</Typography>
+                <Typography fontSize={11} color="text.secondary">Unlimited extractions</Typography>
+              </Box>
+            </Box>
+          ) : (
+            <Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                <Typography fontSize={12} color="text.secondary">Free usage</Typography>
+                <Typography fontSize={12} fontWeight={700} color={hitFreeLimit ? '#ef4444' : 'text.primary'}>
+                  {jobsUsed}/{freeLimit} jobs
+                </Typography>
+              </Box>
+              <LinearProgress
+                variant="determinate"
+                value={Math.min(100, (jobsUsed / freeLimit) * 100)}
+                sx={{ height: 5, borderRadius: 3,
+                  '& .MuiLinearProgress-bar': { bgcolor: hitFreeLimit ? '#ef4444' : '#667eea' } }}
+              />
+              {hitFreeLimit && (
+                <Button
+                  fullWidth size="small" variant="contained"
+                  onClick={() => { setAnchorEl(null); navigate('/pricing'); }}
+                  sx={{ mt: 1.5, borderRadius: 2, fontSize: 11, fontWeight: 700,
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
+                >
+                  Upgrade to Pro — $10/mo
+                </Button>
+              )}
+            </Box>
+          )}
         </Box>
 
         <Divider />
@@ -139,7 +223,11 @@ export default function AppLayout() {
         sx={{
           width: open ? DRAWER_WIDTH : 0,
           flexShrink: 0,
-          '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box', top: 64, height: 'calc(100% - 64px)' },
+          '& .MuiDrawer-paper': {
+            width: DRAWER_WIDTH, boxSizing: 'border-box',
+            top: hitFreeLimit ? 100 : 64,
+            height: hitFreeLimit ? 'calc(100% - 100px)' : 'calc(100% - 64px)',
+          },
         }}
       >
         <List sx={{ pt: 1 }}>
@@ -156,7 +244,22 @@ export default function AppLayout() {
           ))}
         </List>
         <Divider />
-        <Box sx={{ p: 2, mt: 'auto' }}>
+        {/* Upgrade CTA in sidebar for free users */}
+        {!isSubscribed && (
+          <Box sx={{ p: 2, mx: 1, mb: 1, mt: 'auto', bgcolor: '#f5f4ff', borderRadius: 3 }}>
+            <Typography fontSize={12} fontWeight={700} mb={0.5}>⭐ Go Pro</Typography>
+            <Typography fontSize={11} color="text.secondary" mb={1.5}>Unlimited extractions for $10/mo</Typography>
+            <Button
+              fullWidth size="small" variant="contained"
+              onClick={() => navigate('/pricing')}
+              sx={{ borderRadius: 2, fontSize: 11, fontWeight: 700,
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
+            >
+              Upgrade Now
+            </Button>
+          </Box>
+        )}
+        <Box sx={{ p: 2, mt: isSubscribed ? 'auto' : 0 }}>
           <Typography variant="caption" color="text.secondary">{user?.full_name ?? user?.email}</Typography>
           <br />
           <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>{user?.role}</Typography>
@@ -164,7 +267,14 @@ export default function AppLayout() {
       </Drawer>
 
       {/* ── Main content ── */}
-      <Box component="main" sx={{ flexGrow: 1, mt: '64px', transition: 'margin 0.2s', p: 3, bgcolor: '#f8f9fa', minHeight: 'calc(100vh - 64px)', overflow: 'auto' }}>
+      <Box component="main" sx={{
+        flexGrow: 1,
+        mt: hitFreeLimit ? '100px' : '64px',
+        transition: 'margin 0.2s',
+        p: 3, bgcolor: '#f8f9fa',
+        minHeight: hitFreeLimit ? 'calc(100vh - 100px)' : 'calc(100vh - 64px)',
+        overflow: 'auto',
+      }}>
         <Outlet />
       </Box>
     </Box>

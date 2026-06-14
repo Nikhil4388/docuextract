@@ -6,7 +6,7 @@ import structlog
 import time
 
 from app.core.config import settings
-from app.api.routes import auth, users, templates, jobs
+from app.api.routes import auth, users, templates, jobs, payments
 
 logger = structlog.get_logger()
 
@@ -52,6 +52,7 @@ def create_app() -> FastAPI:
     app.include_router(users.router, prefix=prefix)
     app.include_router(templates.router, prefix=prefix)
     app.include_router(jobs.router, prefix=prefix)
+    app.include_router(payments.router, prefix=prefix)
 
     # ── Startup: apply any missing DB columns + reset stuck jobs ─────────────
     @app.on_event("startup")
@@ -63,6 +64,11 @@ def create_app() -> FastAPI:
             # Safely add any missing columns (idempotent — IF NOT EXISTS)
             migrations = [
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(255)",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS jobs_used INTEGER NOT NULL DEFAULT 0",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_subscribed BOOLEAN NOT NULL DEFAULT false",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(255)",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR(255)",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_end_date TIMESTAMP",
             ]
             for sql in migrations:
                 try:

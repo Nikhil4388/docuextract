@@ -8,6 +8,10 @@ export interface User {
   role: 'admin' | 'user' | 'viewer';
   is_verified: boolean;
   auth_provider?: string;
+  // Subscription
+  is_subscribed?: boolean;
+  jobs_used?: number;
+  free_limit?: number;
 }
 
 export interface AuthTokens {
