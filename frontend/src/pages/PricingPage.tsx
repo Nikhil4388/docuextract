@@ -7,7 +7,7 @@ import { CheckCircle, Star, ArrowBack, Favorite, Coffee } from '@mui/icons-mater
 import { useNavigate } from 'react-router-dom';
 
 // ── Replace this with your actual Ko-fi or Buy Me a Coffee link ──────────────
-const SUPPORT_LINK = 'https://ko-fi.com/multipdftoexcel'; // change to your link
+const SUPPORT_LINK = 'https://ko-fi.com/MultiPDFToExcel';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ALL_FEATURES = [
