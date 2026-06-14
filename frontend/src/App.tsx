@@ -16,6 +16,7 @@ import TemplatesPage from './pages/TemplatesPage';
 import NewJobPage from './pages/NewJobPage';
 import JobDetailPage from './pages/JobDetailPage';
 import SettingsPage from './pages/SettingsPage';
+import PdfEditorPage from './pages/PdfEditorPage';
 
 const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -119,6 +120,7 @@ export default function App() {
                   <Route path="jobs" element={<DashboardPage />} />
                   <Route path="jobs/new" element={<NewJobPage />} />
                   <Route path="jobs/:jobId" element={<JobDetailPage />} />
+                  <Route path="pdf-editor" element={<PdfEditorPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
 

@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon, Dashboard, Description, Work,
-  Settings, Logout, ChevronLeft,
+  Settings, Logout, ChevronLeft, EditNote,
 } from '@mui/icons-material';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
@@ -14,10 +14,11 @@ import { useAuthStore } from '../../store/authStore';
 const DRAWER_WIDTH = 240;
 
 const navItems = [
-  { label: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
-  { label: 'Templates', icon: <Description />, path: '/templates' },
-  { label: 'Jobs', icon: <Work />, path: '/jobs' },
-  { label: 'Settings', icon: <Settings />, path: '/settings' },
+  { label: 'Dashboard',   icon: <Dashboard />,  path: '/dashboard' },
+  { label: 'Templates',   icon: <Description />, path: '/templates' },
+  { label: 'Jobs',        icon: <Work />,        path: '/jobs' },
+  { label: 'PDF Editor',  icon: <EditNote />,    path: '/pdf-editor' },
+  { label: 'Settings',    icon: <Settings />,    path: '/settings' },
 ];
 
 export default function AppLayout() {
