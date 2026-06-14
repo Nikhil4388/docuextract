@@ -16,6 +16,7 @@ import TemplatesPage from './pages/TemplatesPage';
 import NewJobPage from './pages/NewJobPage';
 import JobDetailPage from './pages/JobDetailPage';
 import SettingsPage from './pages/SettingsPage';
+import JobsPage from './pages/JobsPage';
 
 const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -116,7 +117,7 @@ export default function App() {
                   <Route index element={<Navigate to="/dashboard" replace />} />
                   <Route path="dashboard" element={<DashboardPage />} />
                   <Route path="templates" element={<TemplatesPage />} />
-                  <Route path="jobs" element={<DashboardPage />} />
+                  <Route path="jobs" element={<JobsPage />} />
                   <Route path="jobs/new" element={<NewJobPage />} />
                   <Route path="jobs/:jobId" element={<JobDetailPage />} />
                   <Route path="settings" element={<SettingsPage />} />
