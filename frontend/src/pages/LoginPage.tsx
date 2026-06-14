@@ -12,7 +12,7 @@ export default function LoginPage() {
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     }}>
       <Paper elevation={8} sx={{ p: 5, width: 380, borderRadius: 3, textAlign: 'center' }}>
-        <Typography variant="h4" fontWeight={700} gutterBottom>DocuExtract</Typography>
+        <Typography variant="h4" fontWeight={700} gutterBottom>MultiPDFToExcel</Typography>
         <Typography variant="body2" color="text.secondary" mb={4}>
           AI-Powered PDF Data Extraction
         </Typography>

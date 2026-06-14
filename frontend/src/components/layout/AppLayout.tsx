@@ -50,7 +50,7 @@ export default function AppLayout() {
             {open ? <ChevronLeft /> : <MenuIcon />}
           </IconButton>
           <Typography variant="h6" fontWeight={700} sx={{ flexGrow: 1, color: '#667eea' }}>
-            DocuExtract
+            MultiPDFToExcel
           </Typography>
 
           <Tooltip title="Your profile">
