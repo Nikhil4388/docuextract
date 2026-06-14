@@ -19,12 +19,12 @@ const ALL_FEATURES = [
   'Priority support',
 ];
 
-const AMOUNTS = [3, 5, 10, 20];
+const AMOUNTS = [10, 15, 20];
 
 export default function PricingPage() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState(5);
+  const [selected, setSelected] = useState(10);
   const [iframeLoading, setIframeLoading] = useState(true);
 
   const handleDonate = () => {
