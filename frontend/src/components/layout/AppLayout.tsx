@@ -9,7 +9,7 @@ import {
 import {
   Menu as MenuIcon, Dashboard, Description, Work,
   Settings, Logout, ChevronLeft, Edit, Person,
-  VerifiedUser, Email,
+  VerifiedUser, Email, LocationOn,
 } from '@mui/icons-material';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
@@ -37,11 +37,12 @@ export default function AppLayout() {
   const profileOpen             = Boolean(anchorEl);
 
   // Edit dialog
-  const [editOpen,    setEditOpen]    = useState(false);
-  const [editName,    setEditName]    = useState('');
-  const [editAvatar,  setEditAvatar]  = useState('');
-  const [saving,      setSaving]      = useState(false);
-  const [saveError,   setSaveError]   = useState('');
+  const [editOpen,     setEditOpen]     = useState(false);
+  const [editName,     setEditName]     = useState('');
+  const [editAvatar,   setEditAvatar]   = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [saving,       setSaving]       = useState(false);
+  const [saveError,    setSaveError]    = useState('');
 
   React.useEffect(() => {
     if (isMobile) setOpen(false);
@@ -50,6 +51,7 @@ export default function AppLayout() {
   const openEdit = () => {
     setEditName(user?.full_name ?? '');
     setEditAvatar(user?.avatar_url ?? '');
+    setEditLocation(user?.location ?? '');
     setSaveError('');
     setAnchorEl(null);
     setEditOpen(true);
@@ -59,8 +61,9 @@ export default function AppLayout() {
     setSaving(true); setSaveError('');
     try {
       await api.patch('/users/me', {
-        full_name:  editName.trim() || undefined,
-        avatar_url: editAvatar.trim() || undefined,
+        full_name:  editName.trim()     || undefined,
+        avatar_url: editAvatar.trim()   || undefined,
+        location:   editLocation.trim() || undefined,
       });
       await fetchMe();
       setEditOpen(false);
@@ -134,15 +137,24 @@ export default function AppLayout() {
 
         {/* Info rows */}
         <Box sx={{ px: 2.5, py: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          <InfoRow icon={<Person sx={{ fontSize: 16 }} />} label="Name"   value={user?.full_name || '—'} />
-          <InfoRow icon={<Email    sx={{ fontSize: 16 }} />} label="Email"  value={user?.email ?? '—'} />
+          <InfoRow icon={<Person sx={{ fontSize: 16 }} />} label="Name" value={user?.full_name || '—'} />
+          <InfoRow icon={<Email  sx={{ fontSize: 16 }} />} label="Email" value={user?.email ?? '—'} />
+          {user?.location && (
+            <InfoRow icon={<LocationOn sx={{ fontSize: 16 }} />} label="Location" value={user.location} />
+          )}
           <InfoRow icon={<VerifiedUser sx={{ fontSize: 16 }} />} label="Role" value={
             <Chip label={user?.role ?? '—'} size="small" sx={{ height: 20, fontSize: 11, textTransform: 'capitalize' }} />
           } />
-          <InfoRow icon={<VerifiedUser sx={{ fontSize: 16 }} />} label="Verified" value={
-            user?.is_verified
-              ? <Chip label="Verified" size="small" color="success" sx={{ height: 20, fontSize: 11 }} />
-              : <Chip label="Unverified" size="small" color="warning" sx={{ height: 20, fontSize: 11 }} />
+          <InfoRow icon={<VerifiedUser sx={{ fontSize: 16 }} />} label="Account" value={
+            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+              {user?.auth_provider === 'google' && (
+                <Chip label="Google" size="small" sx={{ height: 20, fontSize: 11, bgcolor: '#fff3e0', color: '#e65100' }} />
+              )}
+              {user?.is_verified
+                ? <Chip label="Verified" size="small" color="success" sx={{ height: 20, fontSize: 11 }} />
+                : <Chip label="Unverified" size="small" color="warning" sx={{ height: 20, fontSize: 11 }} />
+              }
+            </Box>
           } />
         </Box>
 
@@ -191,7 +203,15 @@ export default function AppLayout() {
             label="Full Name" size="small" fullWidth
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
-            placeholder="Your full name"
+            placeholder="e.g. Nikhil Shelke"
+          />
+
+          <TextField
+            label="Location" size="small" fullWidth
+            value={editLocation}
+            onChange={(e) => setEditLocation(e.target.value)}
+            placeholder="e.g. Mumbai, India"
+            InputProps={{ startAdornment: <LocationOn sx={{ fontSize: 16, color: '#9ca3af', mr: 0.5 }} /> }}
           />
 
           <TextField

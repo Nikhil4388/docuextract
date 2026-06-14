@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 from typing import Optional
 
 from app.core.database import get_db
-from app.core.security import encrypt_secret, decrypt_secret
+from app.core.security import encrypt_secret
 from app.models.user import User
 from app.api.deps import get_current_user
 
@@ -16,8 +16,10 @@ class UserProfile(BaseModel):
     email: str
     full_name: Optional[str]
     avatar_url: Optional[str]
+    location: Optional[str]
     role: str
     is_verified: bool
+    auth_provider: Optional[str]
 
     class Config:
         from_attributes = True
@@ -26,6 +28,7 @@ class UserProfile(BaseModel):
 class UpdateProfileRequest(BaseModel):
     full_name: Optional[str] = None
     avatar_url: Optional[str] = None
+    location: Optional[str] = None
 
 
 class UpdateApiKeysRequest(BaseModel):
@@ -40,8 +43,10 @@ async def get_profile(current_user: User = Depends(get_current_user)):
         email=current_user.email,
         full_name=current_user.full_name,
         avatar_url=current_user.avatar_url,
+        location=current_user.location,
         role=current_user.role,
         is_verified=current_user.is_verified,
+        auth_provider=current_user.auth_provider,
     )
 
 
@@ -55,6 +60,8 @@ async def update_profile(
         current_user.full_name = payload.full_name
     if payload.avatar_url is not None:
         current_user.avatar_url = payload.avatar_url
+    if payload.location is not None:
+        current_user.location = payload.location
     await db.commit()
     return {"message": "Profile updated"}
 
@@ -75,7 +82,6 @@ async def update_api_keys(
 
 @router.get("/me/api-keys")
 async def get_api_keys_status(current_user: User = Depends(get_current_user)):
-    """Return whether keys are set, not the actual values."""
     return {
         "anthropic": current_user.anthropic_api_key_enc is not None,
         "openai": current_user.openai_api_key_enc is not None,

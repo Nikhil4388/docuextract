@@ -285,6 +285,23 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
             )
             db.add(user)
             await db.flush()
+        else:
+            # Existing email-based account — link to Google and sync info
+            user.auth_provider = AuthProvider.GOOGLE
+            user.oauth_id = userinfo["sub"]
+            user.is_verified = True
+            if userinfo.get("name"):
+                user.full_name = userinfo["name"]
+            if userinfo.get("picture"):
+                user.avatar_url = userinfo["picture"]
+            await db.flush()
+    else:
+        # Always sync latest name + avatar from Google on each login
+        if userinfo.get("name"):
+            user.full_name = userinfo["name"]
+        if userinfo.get("picture"):
+            user.avatar_url = userinfo["picture"]
+        await db.flush()
 
     access_token = create_access_token(str(user.id))
     refresh_token = create_refresh_token(str(user.id))

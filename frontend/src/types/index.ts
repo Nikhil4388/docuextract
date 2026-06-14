@@ -4,8 +4,10 @@ export interface User {
   email: string;
   full_name?: string;
   avatar_url?: string;
+  location?: string;
   role: 'admin' | 'user' | 'viewer';
   is_verified: boolean;
+  auth_provider?: string;
 }
 
 export interface AuthTokens {

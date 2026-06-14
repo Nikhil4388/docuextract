@@ -53,6 +53,24 @@ def create_app() -> FastAPI:
     app.include_router(templates.router, prefix=prefix)
     app.include_router(jobs.router, prefix=prefix)
 
+    # ── Startup: reset stuck jobs from previous restarts ──────────────────────
+    @app.on_event("startup")
+    async def reset_stuck_jobs():
+        from app.core.database import AsyncSessionLocal
+        from app.models.extraction import ExtractionJob, JobStatus
+        from sqlalchemy import select, update
+        async with AsyncSessionLocal() as db:
+            await db.execute(
+                update(ExtractionJob)
+                .where(ExtractionJob.status == JobStatus.PROCESSING)
+                .values(
+                    status=JobStatus.FAILED,
+                    error_message="Server restarted while job was running. Please resubmit.",
+                    status_message=None,
+                )
+            )
+            await db.commit()
+
     # ── Health ────────────────────────────────────────────────────────────────
     @app.get("/health")
     async def health():

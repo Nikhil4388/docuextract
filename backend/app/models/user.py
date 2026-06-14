@@ -28,6 +28,7 @@ class User(Base):
     hashed_password = Column(String(255), nullable=True)
     full_name = Column(String(255), nullable=True)
     avatar_url = Column(Text, nullable=True)
+    location = Column(String(255), nullable=True)
     role = Column(SAEnum(UserRole, values_callable=lambda x: [e.value for e in x]), default=UserRole.USER, nullable=False)
     auth_provider = Column(SAEnum(AuthProvider, values_callable=lambda x: [e.value for e in x]), default=AuthProvider.EMAIL)
     oauth_id = Column(String(255), nullable=True, index=True)
