@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /jobs
+Disallow: /templates
+Disallow: /settings
+
+Sitemap: https://docuextract-ashen.vercel.app/sitemap.xml
