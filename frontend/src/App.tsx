@@ -17,6 +17,7 @@ import NewJobPage from './pages/NewJobPage';
 import JobDetailPage from './pages/JobDetailPage';
 import SettingsPage from './pages/SettingsPage';
 import JobsPage from './pages/JobsPage';
+import LandingPage from './pages/LandingPage';
 
 const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -89,6 +90,12 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
+// ── Redirect logged-in users away from landing page ───────────────────────────
+function PublicHome() {
+  const { isAuthenticated } = useAuthStore();
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />;
+}
+
 export default function App() {
   const { fetchMe, isAuthenticated } = useAuthStore();
 
@@ -105,6 +112,7 @@ export default function App() {
             <InactivityGuard>
               <Routes>
                 {/* Public routes */}
+                <Route path="/" element={<PublicHome />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/verify-otp" element={<VerifyOTPPage />} />
@@ -114,7 +122,6 @@ export default function App() {
 
                 {/* Protected routes */}
                 <Route path="/" element={<RequireAuth><AppLayout /></RequireAuth>}>
-                  <Route index element={<Navigate to="/dashboard" replace />} />
                   <Route path="dashboard" element={<DashboardPage />} />
                   <Route path="templates" element={<TemplatesPage />} />
                   <Route path="jobs" element={<JobsPage />} />
@@ -123,7 +130,7 @@ export default function App() {
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
 
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </InactivityGuard>
           </BrowserRouter>
