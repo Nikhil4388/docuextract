@@ -12,6 +12,7 @@ export interface User {
   is_subscribed?: boolean;
   jobs_used?: number;
   free_limit?: number;
+  paid_limit?: number;
 }
 
 export interface AuthTokens {

@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 const KOFI_USERNAME = 'multipdfstoexcel';
 
 const ALL_FEATURES = [
-  'Unlimited extraction jobs',
+  '2 free extraction jobs to try',
   'Upload multiple PDFs at once',
   'Custom extraction templates',
   'Excel / CSV export',
@@ -98,7 +98,7 @@ export default function PricingPage() {
           <Coffee sx={{ fontSize: 40, color: '#d97706', mb: 1 }} />
           <Typography fontWeight={800} fontSize={18} mb={0.5}>Like the tool? Buy us a coffee ☕</Typography>
           <Typography color="text.secondary" fontSize={14} mb={3}>
-            Servers cost money. If this saves you hours of manual work, any donation helps keep it running.
+            Donate $10 to unlock 20 extraction jobs. Servers aren't free — your support keeps this running!
           </Typography>
 
           {/* Amount selector */}

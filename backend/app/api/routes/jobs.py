@@ -77,17 +77,29 @@ async def create_job(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    # ── Free tier gate: 2 free jobs, then must donate $10 via Ko-fi ─────────
+    # ── Job limit gate ─────────────────────────────────────────────────────
+    jobs_used = current_user.jobs_used or 0
     if not current_user.is_subscribed:
-        jobs_used = current_user.jobs_used or 0
         if jobs_used >= settings.FREE_JOB_LIMIT:
             raise HTTPException(
                 status_code=402,
                 detail={
                     "code": "FREE_LIMIT_REACHED",
-                    "message": f"You've used your {settings.FREE_JOB_LIMIT} free extractions. Please support the project with a $10 donation to unlock unlimited access.",
+                    "message": f"You've used your {settings.FREE_JOB_LIMIT} free extractions. Donate $10 to unlock {settings.PAID_JOB_LIMIT} jobs.",
                     "jobs_used": jobs_used,
                     "free_limit": settings.FREE_JOB_LIMIT,
+                    "paid_limit": settings.PAID_JOB_LIMIT,
+                }
+            )
+    else:
+        if jobs_used >= settings.PAID_JOB_LIMIT:
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "code": "PAID_LIMIT_REACHED",
+                    "message": f"You've used all {settings.PAID_JOB_LIMIT} jobs from your donation. Please donate again to top up.",
+                    "jobs_used": jobs_used,
+                    "paid_limit": settings.PAID_JOB_LIMIT,
                 }
             )
 

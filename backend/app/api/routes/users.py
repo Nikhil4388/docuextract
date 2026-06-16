@@ -24,7 +24,8 @@ class UserProfile(BaseModel):
     # Subscription
     is_subscribed: bool = False
     jobs_used: int = 0
-    free_limit: int = 1
+    free_limit: int = 2
+    paid_limit: int = 20
 
     class Config:
         from_attributes = True
@@ -55,6 +56,7 @@ async def get_profile(current_user: User = Depends(get_current_user)):
         is_subscribed=current_user.is_subscribed or False,
         jobs_used=current_user.jobs_used or 0,
         free_limit=settings.FREE_JOB_LIMIT,
+        paid_limit=settings.PAID_JOB_LIMIT,
     )
 
 

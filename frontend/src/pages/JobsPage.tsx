@@ -4,11 +4,12 @@ import {
   InputAdornment, MenuItem, Select, FormControl,
   Skeleton, Avatar, IconButton, Tooltip,
 } from '@mui/material';
-import { Add, Search, Refresh, ArrowForward } from '@mui/icons-material';
+import { Add, Search, Refresh, ArrowForward, Lock } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { ExtractionJob } from '../types';
+import { useAuthStore } from '../store/authStore';
 
 const STATUS_OPTIONS = ['all', 'pending', 'processing', 'completed', 'failed', 'cancelled'];
 
@@ -19,8 +20,17 @@ function statusColor(s: string): 'default' | 'info' | 'success' | 'error' | 'war
 
 export default function JobsPage() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [search,     setSearch]     = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  const freeLimit    = user?.free_limit ?? 2;
+  const paidLimit    = user?.paid_limit ?? 20;
+  const jobsUsed     = user?.jobs_used ?? 0;
+  const isSubscribed = user?.is_subscribed ?? false;
+  const hitFreeLimit = !isSubscribed && jobsUsed >= freeLimit;
+  const hitPaidLimit = isSubscribed && jobsUsed >= paidLimit;
+  const hitLimit     = hitFreeLimit || hitPaidLimit;
 
   const { data: jobs, isLoading, refetch } = useQuery<ExtractionJob[]>({
     queryKey: ['jobs'],
@@ -47,15 +57,53 @@ export default function JobsPage() {
 
   return (
     <Box>
+      {/* ── Paywall banner ── */}
+      {hitLimit && (
+        <Paper sx={{ p: 2.5, mb: 3, borderRadius: 3, border: '1.5px solid #fde68a', bgcolor: '#fffbeb', display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+          <Lock sx={{ color: '#d97706', fontSize: 28, flexShrink: 0 }} />
+          <Box sx={{ flex: 1 }}>
+            <Typography fontWeight={700} color="#92400e" mb={0.3}>
+              {hitFreeLimit
+                ? `You've used both free extractions`
+                : `You've used all ${paidLimit} jobs from your donation`}
+            </Typography>
+            <Typography fontSize={13} color="text.secondary">
+              {hitFreeLimit
+                ? `Donate $10 to unlock 20 extraction jobs. Use the same email you signed up with.`
+                : `Donate again to top up your job balance.`}
+            </Typography>
+          </Box>
+          <Button variant="contained" onClick={() => navigate('/pricing')}
+            sx={{ borderRadius: 2, fontWeight: 700, bgcolor: '#f59e0b', flexShrink: 0,
+              '&:hover': { bgcolor: '#d97706' } }}>
+            Donate $10 → Get 20 Jobs
+          </Button>
+        </Paper>
+      )}
+
       {/* ── Header ── */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 2 }}>
         <Typography variant="h5" fontWeight={700} sx={{ flex: 1 }}>Jobs</Typography>
         <Tooltip title="Refresh">
           <IconButton onClick={() => refetch()} size="small"><Refresh /></IconButton>
         </Tooltip>
-        <Button variant="contained" startIcon={<Add />} onClick={() => navigate('/jobs/new')} sx={{ borderRadius: 2 }}>
-          New Job
-        </Button>
+        <Tooltip title={hitLimit ? (hitFreeLimit ? 'Donate $10 to unlock 20 jobs' : 'Donate again to top up') : ''}>
+          <span>
+            <Button
+              variant="contained"
+              startIcon={hitLimit ? <Lock /> : <Add />}
+              onClick={() => hitLimit ? navigate('/pricing') : navigate('/jobs/new')}
+              sx={{
+                borderRadius: 2,
+                background: hitLimit
+                  ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              }}
+            >
+              {hitLimit ? 'Unlock More Jobs' : 'New Job'}
+            </Button>
+          </span>
+        </Tooltip>
       </Box>
 
       {/* ── Filters ── */}
@@ -106,8 +154,13 @@ export default function JobsPage() {
                 {jobs?.length === 0 ? 'Create your first extraction job to get started.' : 'Try adjusting your search or filters.'}
               </Typography>
               {jobs?.length === 0 && (
-                <Button variant="outlined" onClick={() => navigate('/jobs/new')} startIcon={<Add />}>
-                  New Extraction Job
+                <Button
+                  variant="outlined"
+                  onClick={() => hitLimit ? navigate('/pricing') : navigate('/jobs/new')}
+                  startIcon={hitLimit ? <Lock /> : <Add />}
+                  sx={hitLimit ? { borderColor: '#f59e0b', color: '#d97706' } : {}}
+                >
+                  {hitLimit ? 'Donate $10 → Unlock 20 Jobs' : 'New Extraction Job'}
                 </Button>
               )}
             </Box>

@@ -5,11 +5,12 @@ import {
   FormControlLabel, Switch, Alert, CircularProgress, Grid,
   Accordion, AccordionSummary, AccordionDetails, LinearProgress,
 } from '@mui/material';
-import { ExpandMore, CloudUpload, SmartToy, PlayArrow } from '@mui/icons-material';
+import { ExpandMore, CloudUpload, SmartToy, PlayArrow, Lock, Favorite } from '@mui/icons-material';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { ColumnTemplate, LLMProvider, StorageProvider, JobCreatePayload } from '../types';
+import { useAuthStore } from '../store/authStore';
 
 const STEPS = ['Select Template', 'Configure Source', 'Select LLM', 'Review & Submit'];
 
@@ -27,6 +28,56 @@ const STORAGE_OPTIONS = [
 
 export default function NewJobPage() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+
+  const freeLimit    = user?.free_limit ?? 2;
+  const paidLimit    = user?.paid_limit ?? 20;
+  const jobsUsed     = user?.jobs_used ?? 0;
+  const isSubscribed = user?.is_subscribed ?? false;
+  const hitFreeLimit = !isSubscribed && jobsUsed >= freeLimit;
+  const hitPaidLimit = isSubscribed && jobsUsed >= paidLimit;
+
+  // ── Paywall gate — show before any form renders ──
+  if (hitFreeLimit || hitPaidLimit) {
+    return (
+      <Box sx={{ maxWidth: 520, mx: 'auto', mt: 8, textAlign: 'center', px: 2 }}>
+        <Paper sx={{ p: 5, borderRadius: 4, border: '2px solid #fde68a', bgcolor: '#fffbeb' }}>
+          <Lock sx={{ fontSize: 56, color: '#d97706', mb: 2 }} />
+          <Typography variant="h5" fontWeight={800} mb={1}>
+            {hitFreeLimit ? 'Free limit reached' : 'Job limit reached'}
+          </Typography>
+          <Typography color="text.secondary" mb={1}>
+            {hitFreeLimit
+              ? `You've used both free extractions.`
+              : `You've used all ${paidLimit} jobs from your donation.`}
+          </Typography>
+          <Typography fontWeight={700} fontSize={18} color="#92400e" mb={3}>
+            Donate $10 → Unlock 20 jobs
+          </Typography>
+          <Button
+            fullWidth variant="contained" size="large"
+            startIcon={<Favorite />}
+            onClick={() => navigate('/pricing')}
+            sx={{ borderRadius: 3, fontWeight: 700, py: 1.5,
+              bgcolor: '#f59e0b', '&:hover': { bgcolor: '#d97706' },
+              boxShadow: '0 4px 14px rgba(245,158,11,0.4)', mb: 2 }}
+          >
+            Donate $10 on Ko-fi
+          </Button>
+          <Button fullWidth variant="text" onClick={() => navigate('/jobs')}
+            sx={{ color: 'text.secondary', fontSize: 13 }}>
+            ← Back to Jobs
+          </Button>
+          <Box sx={{ mt: 3, p: 2, bgcolor: '#f0fdf4', borderRadius: 2, border: '1px solid #bbf7d0' }}>
+            <Typography fontSize={12} color="#15803d">
+              ✅ Already donated? Use the same email as your account on Ko-fi and your access will unlock automatically.
+            </Typography>
+          </Box>
+        </Paper>
+      </Box>
+    );
+  }
+
   const [step, setStep] = useState(0);
   const [jobName, setJobName] = useState('');
   const [templateId, setTemplateId] = useState('');

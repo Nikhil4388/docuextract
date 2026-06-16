@@ -1,8 +1,9 @@
-import React from 'react';
-import { Box, Button, Typography, Container, Grid, Paper, Avatar, Chip } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Button, Typography, Container, Grid, Paper, Avatar, Chip, Dialog, IconButton } from '@mui/material';
 import {
   AutoAwesome, TableChart, CheckCircle,
   Speed, Security, CloudUpload, ArrowForward, Google,
+  PlayCircle, Close,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
@@ -74,9 +75,16 @@ const stats = [
   { value: '0', label: 'Coding required' },
 ];
 
+// ── Paste your YouTube or Loom video URL here after recording ─────────────────
+// YouTube: https://www.youtube.com/embed/YOUR_VIDEO_ID
+// Loom:    https://www.loom.com/embed/YOUR_VIDEO_ID
+const DEMO_VIDEO_URL = ''; // leave empty to show placeholder
+// ─────────────────────────────────────────────────────────────────────────────
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [videoOpen, setVideoOpen] = useState(false);
 
   const handleLogin = () => {
     window.location.href = `${import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1'}/auth/google`;
@@ -173,6 +181,232 @@ export default function LandingPage() {
           </Grid>
         </Container>
       </Box>
+
+      {/* ── Demo Video Section ── */}
+      <Box sx={{ py: 10, bgcolor: 'white' }}>
+        <Container maxWidth="lg">
+          <Typography variant="h3" fontWeight={800} textAlign="center" mb={1.5}>
+            See It in Action
+          </Typography>
+          <Typography textAlign="center" color="text.secondary" fontSize={18} mb={7} maxWidth={540} mx="auto">
+            Watch how MultiPDFToExcel extracts data from 10 invoices into Excel in under 60 seconds
+          </Typography>
+
+          {/* Video player / placeholder */}
+          <Box sx={{ position: 'relative', mx: 'auto', maxWidth: 800 }}>
+            {DEMO_VIDEO_URL ? (
+              <Box sx={{ position: 'relative', paddingTop: '56.25%', borderRadius: 4, overflow: 'hidden', boxShadow: '0 24px 60px rgba(102,126,234,0.2)' }}>
+                <iframe
+                  src={DEMO_VIDEO_URL}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title="MultiPDFToExcel Demo"
+                />
+              </Box>
+            ) : (
+              /* Placeholder until video is recorded */
+              <Box
+                onClick={() => setVideoOpen(true)}
+                sx={{
+                  position: 'relative', borderRadius: 4, overflow: 'hidden', cursor: 'pointer',
+                  boxShadow: '0 24px 60px rgba(102,126,234,0.2)',
+                  background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%)',
+                  aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexDirection: 'column', gap: 2,
+                  '&:hover .play-icon': { transform: 'scale(1.1)' },
+                }}
+              >
+                {/* Fake UI preview inside the video placeholder */}
+                <Box sx={{ position: 'absolute', inset: 0, opacity: 0.15 }}>
+                  {/* Fake browser bar */}
+                  <Box sx={{ bgcolor: 'rgba(255,255,255,0.1)', height: 36, display: 'flex', alignItems: 'center', px: 2, gap: 1 }}>
+                    {['#ef4444','#f59e0b','#22c55e'].map(c => (
+                      <Box key={c} sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: c }} />
+                    ))}
+                    <Box sx={{ flex: 1, mx: 2, bgcolor: 'rgba(255,255,255,0.2)', borderRadius: 1, height: 20 }} />
+                  </Box>
+                  {/* Fake app content */}
+                  <Box sx={{ p: 2, display: 'flex', gap: 1.5 }}>
+                    <Box sx={{ width: 160, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 2, p: 1.5 }}>
+                      {['Dashboard','Templates','Jobs','Settings'].map(item => (
+                        <Box key={item} sx={{ py: 0.8, px: 1, mb: 0.5, borderRadius: 1, bgcolor: item === 'Jobs' ? 'rgba(255,255,255,0.2)' : 'transparent' }}>
+                          <Typography fontSize={10} color="white" sx={{ opacity: 0.7 }}>{item}</Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 2, p: 2 }}>
+                        <Typography fontSize={12} color="white" fontWeight={700} mb={1} sx={{ opacity: 0.9 }}>New Extraction Job</Typography>
+                        {[1,2,3].map(i => (
+                          <Box key={i} sx={{ bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 1, height: 28, mb: 1 }} />
+                        ))}
+                        <Box sx={{ bgcolor: '#667eea', borderRadius: 1, height: 32, mt: 1.5 }} />
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
+
+                {/* Play button overlay */}
+                <PlayCircle className="play-icon" sx={{ fontSize: 80, color: 'white', transition: 'transform 0.2s', zIndex: 1, filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.4))' }} />
+                <Typography fontSize={18} fontWeight={700} color="white" sx={{ zIndex: 1, opacity: 0.9 }}>
+                  Watch 60-second Demo
+                </Typography>
+                <Chip label="🎬 Coming Soon" size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', zIndex: 1 }} />
+              </Box>
+            )}
+          </Box>
+
+          {/* App screenshot mockups below video */}
+          <Box sx={{ mt: 8 }}>
+            <Typography textAlign="center" fontWeight={700} fontSize={16} color="text.secondary" mb={4}>
+              What you'll see inside the app
+            </Typography>
+            <Grid container spacing={3}>
+              {/* Screenshot 1 — Dashboard */}
+              <Grid item xs={12} md={4}>
+                <Paper sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+                  <Box sx={{ bgcolor: '#667eea', px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {['#ef4444','#f59e0b','#22c55e'].map(c => <Box key={c} sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: c }} />)}
+                    <Typography fontSize={11} color="white" sx={{ opacity: 0.8, ml: 1 }}>Dashboard</Typography>
+                  </Box>
+                  <Box sx={{ p: 2, bgcolor: '#f8f9fa' }}>
+                    <Box sx={{ bgcolor: 'white', borderRadius: 2, p: 1.5, mb: 1.5, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                      <Typography fontSize={11} fontWeight={700} mb={1}>Good morning, Nikhil 👋</Typography>
+                      <Grid container spacing={1}>
+                        {['Total Jobs','Completed','Processing','Failed'].map((label, i) => (
+                          <Grid item xs={6} key={label}>
+                            <Box sx={{ bgcolor: ['#667eea10','#22c55e10','#f59e0b10','#ef444410'][i], borderRadius: 1, p: 1 }}>
+                              <Typography fontSize={16} fontWeight={800} color={['#667eea','#22c55e','#f59e0b','#ef4444'][i]}>{[12,9,2,1][i]}</Typography>
+                              <Typography fontSize={9} color="text.secondary">{label}</Typography>
+                            </Box>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </Box>
+                    <Box sx={{ bgcolor: 'white', borderRadius: 2, p: 1.5, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                      <Typography fontSize={10} fontWeight={700} mb={1}>Recent Jobs</Typography>
+                      {['Invoice Batch Jan','Contract Extract','Resume Parser'].map(j => (
+                        <Box key={j} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5, borderBottom: '1px solid #f3f4f6' }}>
+                          <Typography fontSize={9}>{j}</Typography>
+                          <Chip label="✓" size="small" sx={{ height: 14, fontSize: 8, bgcolor: '#dcfce7', color: '#16a34a' }} />
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                  <Box sx={{ px: 2, py: 1.5, bgcolor: 'white', borderTop: '1px solid #f3f4f6', textAlign: 'center' }}>
+                    <Typography fontSize={11} fontWeight={600} color="#667eea">📊 Dashboard</Typography>
+                  </Box>
+                </Paper>
+              </Grid>
+
+              {/* Screenshot 2 — New Job */}
+              <Grid item xs={12} md={4}>
+                <Paper sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+                  <Box sx={{ bgcolor: '#764ba2', px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {['#ef4444','#f59e0b','#22c55e'].map(c => <Box key={c} sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: c }} />)}
+                    <Typography fontSize={11} color="white" sx={{ opacity: 0.8, ml: 1 }}>New Extraction Job</Typography>
+                  </Box>
+                  <Box sx={{ p: 2, bgcolor: '#f8f9fa' }}>
+                    <Box sx={{ bgcolor: 'white', borderRadius: 2, p: 1.5, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                      <Typography fontSize={10} fontWeight={700} mb={1.5}>Upload PDFs</Typography>
+                      <Box sx={{ border: '2px dashed #667eea', borderRadius: 2, p: 2, textAlign: 'center', mb: 1.5, bgcolor: '#667eea05' }}>
+                        <CloudUpload sx={{ fontSize: 22, color: '#667eea', mb: 0.5 }} />
+                        <Typography fontSize={9} color="text.secondary">Drop PDF files here</Typography>
+                      </Box>
+                      {['invoice_jan.pdf','invoice_feb.pdf','invoice_mar.pdf'].map(f => (
+                        <Box key={f} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5, borderBottom: '1px solid #f3f4f6' }}>
+                          <Box sx={{ width: 6, height: 6, borderRadius: 0.5, bgcolor: '#ef4444' }} />
+                          <Typography fontSize={9}>{f}</Typography>
+                          <CheckCircle sx={{ fontSize: 10, color: '#22c55e', ml: 'auto' }} />
+                        </Box>
+                      ))}
+                      <Box sx={{ mt: 1.5, bgcolor: '#667eea', borderRadius: 1, py: 0.8, textAlign: 'center' }}>
+                        <Typography fontSize={10} color="white" fontWeight={700}>Extract Data →</Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                  <Box sx={{ px: 2, py: 1.5, bgcolor: 'white', borderTop: '1px solid #f3f4f6', textAlign: 'center' }}>
+                    <Typography fontSize={11} fontWeight={600} color="#764ba2">📤 Upload & Extract</Typography>
+                  </Box>
+                </Paper>
+              </Grid>
+
+              {/* Screenshot 3 — Results Excel */}
+              <Grid item xs={12} md={4}>
+                <Paper sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+                  <Box sx={{ bgcolor: '#16a34a', px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {['#ef4444','#f59e0b','#22c55e'].map(c => <Box key={c} sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: c }} />)}
+                    <Typography fontSize={11} color="white" sx={{ opacity: 0.8, ml: 1 }}>results.xlsx</Typography>
+                  </Box>
+                  <Box sx={{ p: 2, bgcolor: '#f8f9fa' }}>
+                    <Box sx={{ bgcolor: 'white', borderRadius: 2, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                      {/* Excel header */}
+                      <Box sx={{ bgcolor: '#16a34a', px: 1.5, py: 0.8 }}>
+                        <Typography fontSize={9} color="white" fontWeight={700}>📊 Extracted Data — 3 invoices</Typography>
+                      </Box>
+                      {/* Table */}
+                      <Box sx={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9 }}>
+                          <thead>
+                            <tr style={{ background: '#f0fdf4' }}>
+                              {['Invoice#','Date','Vendor','Amount','Status'].map(h => (
+                                <th key={h} style={{ padding: '4px 6px', textAlign: 'left', borderBottom: '1px solid #dcfce7', color: '#15803d', fontWeight: 700 }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[
+                              ['INV-001','Jan 15','Acme Corp','$1,250','Paid'],
+                              ['INV-002','Jan 22','TechSupp','$890','Pending'],
+                              ['INV-003','Feb 01','CloudSvc','$2,100','Paid'],
+                            ].map((row, i) => (
+                              <tr key={i} style={{ background: i % 2 === 0 ? 'white' : '#f9fafb' }}>
+                                {row.map((cell, j) => (
+                                  <td key={j} style={{ padding: '4px 6px', borderBottom: '1px solid #f3f4f6', color: j === 4 ? (cell === 'Paid' ? '#16a34a' : '#d97706') : '#374151' }}>{cell}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </Box>
+                      <Box sx={{ p: 1.5, bgcolor: '#f0fdf4', display: 'flex', justifyContent: 'center' }}>
+                        <Box sx={{ bgcolor: '#16a34a', borderRadius: 1, px: 2, py: 0.6 }}>
+                          <Typography fontSize={9} color="white" fontWeight={700}>⬇ Download Excel</Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Box>
+                  <Box sx={{ px: 2, py: 1.5, bgcolor: 'white', borderTop: '1px solid #f3f4f6', textAlign: 'center' }}>
+                    <Typography fontSize={11} fontWeight={600} color="#16a34a">✅ Clean Excel Output</Typography>
+                  </Box>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Box>
+        </Container>
+      </Box>
+
+      {/* ── Video dialog (for placeholder click) ── */}
+      <Dialog open={videoOpen} onClose={() => setVideoOpen(false)} maxWidth="sm" fullWidth
+        PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden' } }}>
+        <Box sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', px: 3, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography fontWeight={700} color="white">Demo Video — Coming Soon</Typography>
+          <IconButton size="small" onClick={() => setVideoOpen(false)} sx={{ color: 'white' }}>
+            <Close fontSize="small" />
+          </IconButton>
+        </Box>
+        <Box sx={{ p: 4, textAlign: 'center' }}>
+          <PlayCircle sx={{ fontSize: 60, color: '#667eea', mb: 2 }} />
+          <Typography fontWeight={700} fontSize={18} mb={1}>We're recording the demo video!</Typography>
+          <Typography color="text.secondary" mb={3}>In the meantime, sign up free and try it yourself — takes 30 seconds.</Typography>
+          <Button variant="contained" startIcon={<Google />} size="large"
+            onClick={() => { setVideoOpen(false); window.location.href = `${import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1'}/auth/google`; }}
+            sx={{ borderRadius: 3, fontWeight: 700, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+            Try It Free Instead
+          </Button>
+        </Box>
+      </Dialog>
 
       {/* ── Use cases ── */}
       <Box sx={{ py: 6, bgcolor: 'white' }}>

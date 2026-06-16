@@ -94,7 +94,7 @@ export default function AppLayout() {
           py: 1, px: 3, display: 'flex', alignItems: 'center', gap: 2,
         }}>
           <Typography fontSize={13} fontWeight={600} sx={{ flex: 1, color: '#92400e' }}>
-            ⚡ You've used both free extractions. Support the project with $10 to unlock unlimited access.
+            ⚡ You've used both free extractions. Donate $10 to unlock 20 jobs.
           </Typography>
           <Button size="small" variant="contained" onClick={() => navigate('/pricing')}
             sx={{ borderRadius: 2, fontSize: 12, py: 0.5, fontWeight: 700,
@@ -208,7 +208,7 @@ export default function AppLayout() {
             {hitLimit ? (
               <>
                 <Typography fontSize={12} fontWeight={700} mb={0.5} color="#92400e">🔒 Free limit reached</Typography>
-                <Typography fontSize={11} color="text.secondary" mb={1.5}>Donate $10 to unlock unlimited extractions forever.</Typography>
+                <Typography fontSize={11} color="text.secondary" mb={1.5}>Donate $10 to unlock 20 extraction jobs.</Typography>
                 <Button fullWidth size="small" variant="contained" onClick={() => navigate('/pricing')}
                   sx={{ borderRadius: 2, fontSize: 11, fontWeight: 700, bgcolor: '#f59e0b', '&:hover': { bgcolor: '#d97706' } }}>
                   Donate $10 to Unlock
