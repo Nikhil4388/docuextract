@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import {
   Box, Button, Typography, Container, Paper, Chip,
   List, ListItem, ListItemIcon, ListItemText,
-  Dialog, DialogContent, IconButton, CircularProgress,
 } from '@mui/material';
-import { CheckCircle, Star, ArrowBack, Favorite, Coffee, Close } from '@mui/icons-material';
+import { CheckCircle, Star, ArrowBack, Favorite, Coffee, OpenInNew } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
 const KOFI_USERNAME = 'multipdfstoexcel';
@@ -23,14 +22,10 @@ const AMOUNTS = [10, 15, 20];
 
 export default function PricingPage() {
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(10);
-  const [iframeLoading, setIframeLoading] = useState(true);
 
   const handleDonate = () => {
-    // Open Ko-fi directly with the amount pre-filled
-    const url = `https://ko-fi.com/${KOFI_USERNAME}`;
-    window.open(url, '_blank', 'width=550,height=650,scrollbars=yes,resizable=yes');
+    window.open(`https://ko-fi.com/${KOFI_USERNAME}`, '_blank');
   };
 
   return (
@@ -125,7 +120,8 @@ export default function PricingPage() {
           <Button
             fullWidth variant="contained" size="large"
             startIcon={<Favorite />}
-            onClick={() => setOpen(true)}
+            endIcon={<OpenInNew fontSize="small" />}
+            onClick={handleDonate}
             sx={{
               borderRadius: 2, py: 1.5, fontSize: 16, fontWeight: 700,
               bgcolor: '#f59e0b', color: 'white',
@@ -133,10 +129,10 @@ export default function PricingPage() {
               boxShadow: '0 4px 14px rgba(245,158,11,0.4)',
             }}
           >
-            Support with ${selected} — One Click
+            Donate ${selected} on Ko-fi
           </Button>
           <Typography fontSize={11} color="text.secondary" mt={1.5}>
-            Secure via PayPal · One-time donation · Unlocks your account instantly
+            Opens Ko-fi · Pay via PayPal or card · No account needed · Unlocks 20 jobs
           </Typography>
 
           {/* Post-donation refresh */}
@@ -172,56 +168,6 @@ export default function PricingPage() {
         </Box>
       </Container>
 
-      {/* ── Donation popup ── */}
-      <Dialog
-        open={open}
-        onClose={() => { setOpen(false); setIframeLoading(true); }}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden', m: 2 } }}
-      >
-        <Box sx={{
-          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-          px: 3, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Coffee sx={{ color: 'white', fontSize: 22 }} />
-            <Typography fontWeight={800} color="white" fontSize={16}>Support MultiPDFToExcel</Typography>
-          </Box>
-          <IconButton size="small" onClick={() => { setOpen(false); setIframeLoading(true); }} sx={{ color: 'white' }}>
-            <Close fontSize="small" />
-          </IconButton>
-        </Box>
-
-        <DialogContent sx={{ p: 0, position: 'relative', minHeight: 500 }}>
-          {iframeLoading && (
-            <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, bgcolor: 'white' }}>
-              <CircularProgress sx={{ color: '#f59e0b' }} />
-              <Typography color="text.secondary" fontSize={13}>Loading payment form…</Typography>
-            </Box>
-          )}
-          <iframe
-            id="kofiframe"
-            src={`https://ko-fi.com/${KOFI_USERNAME}/?hidefeed=true&widget=true&embed=true&preview=true`}
-            style={{ border: 'none', width: '100%', height: '500px', display: 'block' }}
-            title="Support MultiPDFToExcel on Ko-fi"
-            onLoad={() => setIframeLoading(false)}
-          />
-        </DialogContent>
-
-        <Box sx={{ px: 3, py: 2, bgcolor: '#f9fafb', borderTop: '1px solid #f3f4f6', textAlign: 'center' }}>
-          <Typography fontSize={11} color="text.secondary">
-            🔒 Secure payment via PayPal · No Ko-fi account needed
-          </Typography>
-          <Button
-            size="small" variant="text"
-            onClick={handleDonate}
-            sx={{ mt: 0.5, fontSize: 11, color: '#f59e0b', textDecoration: 'underline' }}
-          >
-            Open in new window instead
-          </Button>
-        </Box>
-      </Dialog>
     </Box>
   );
 }
