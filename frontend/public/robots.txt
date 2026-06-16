@@ -4,5 +4,7 @@ Disallow: /dashboard
 Disallow: /jobs
 Disallow: /templates
 Disallow: /settings
+Disallow: /login
+Disallow: /payment
 
 Sitemap: https://docuextract-ashen.vercel.app/sitemap.xml
