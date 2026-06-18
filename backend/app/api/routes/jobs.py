@@ -80,7 +80,7 @@ async def create_job(
     # ── Job limit gate ─────────────────────────────────────────────────────
     jobs_used = current_user.jobs_used or 0
     # Admin/test accounts bypass all limits
-    if current_user.email in (settings.ADMIN_EMAILS or []):
+    if current_user.email in settings.admin_email_list:
         pass  # unlimited — no gate
     elif not current_user.is_subscribed:
         if jobs_used >= settings.FREE_JOB_LIMIT:
