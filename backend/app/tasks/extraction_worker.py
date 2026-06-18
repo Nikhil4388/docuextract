@@ -148,10 +148,18 @@ async def _process_single_pdf(
 
     # PDF text extraction is CPU-bound — run in thread pool
     pages = await asyncio.to_thread(extractor.extract_text, pdf_path)
-    full_text = "\n\n".join(p["text"] for p in pages)
+    full_text = "\n\n".join(p["text"] for p in pages if p["text"])
     ocr_used = any(p["ocr_used"] for p in pages)
 
-    result = await llm.extract_data(full_text, columns, model or "claude-haiku-4-5-20251001")
+    # For scanned pages, pass images directly to Claude Vision for max accuracy
+    page_images = [p["image_b64"] for p in pages if p.get("image_b64")]
+
+    result = await llm.extract_data(
+        full_text,
+        columns,
+        model or "claude-haiku-4-5-20251001",
+        page_images=page_images if page_images else None,
+    )
 
     elapsed_ms = int((time.time() - start) * 1000)
     return {**result, "processing_time_ms": elapsed_ms, "ocr_used": ocr_used}

@@ -1,54 +1,55 @@
 """
-PDF text extraction with OCR fallback.
-Uses PyMuPDF for native text and Tesseract for scanned pages.
+PDF text extraction.
+- Native text PDFs: PyMuPDF direct text extraction
+- Scanned/photo PDFs: page rendered as image and sent to Claude Vision
+  (much more accurate than Tesseract for blurry/rotated/handwritten docs)
 """
 import os
 import io
+import base64
 import asyncio
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 
 import fitz  # PyMuPDF
-from PIL import Image
-import pytesseract
 
 
 class PDFExtractor:
-    """Extract text from PDF pages, using OCR for scanned pages."""
+    """Extract text from PDF pages, using Claude Vision for scanned pages."""
 
-    OCR_THRESHOLD = 50  # chars per page; below this, assume scanned
+    OCR_THRESHOLD = 50  # chars per page; below this, treat as scanned image
 
     def extract_text(self, pdf_path: str) -> List[Dict[str, Any]]:
         """
         Returns a list of page dicts:
-          { page_num, text, ocr_used, width, height }
+          { page_num, text, ocr_used, image_b64 (only for scanned pages), width, height }
         """
         pages = []
         doc = fitz.open(pdf_path)
         for page_num, page in enumerate(doc, start=1):
             text = page.get_text("text").strip()
             ocr_used = False
-            if len(text) < self.OCR_THRESHOLD:
-                text = self._ocr_page(page)
-                ocr_used = True
+            image_b64 = None
             rect = page.rect
+
+            if len(text) < self.OCR_THRESHOLD:
+                # Scanned page — render to image for Claude Vision
+                mat = fitz.Matrix(2, 2)  # 2x zoom for clarity
+                pix = page.get_pixmap(matrix=mat)
+                img_bytes = pix.tobytes("png")
+                image_b64 = base64.b64encode(img_bytes).decode("utf-8")
+                ocr_used = True
+
             pages.append({
                 "page_num": page_num,
                 "text": text,
                 "ocr_used": ocr_used,
+                "image_b64": image_b64,  # None for native-text pages
                 "width": rect.width,
                 "height": rect.height,
             })
         doc.close()
         return pages
-
-    def _ocr_page(self, page: fitz.Page) -> str:
-        """Render a PDF page to image and run Tesseract OCR."""
-        mat = fitz.Matrix(2, 2)  # 2x zoom for better OCR
-        pix = page.get_pixmap(matrix=mat)
-        img_data = pix.tobytes("png")
-        img = Image.open(io.BytesIO(img_data))
-        return pytesseract.image_to_string(img, config="--oem 3 --psm 6")
 
     def get_page_count(self, pdf_path: str) -> int:
         doc = fitz.open(pdf_path)

@@ -69,20 +69,23 @@ export default function JobDetailPage() {
       {
         field: '_confidence',
         headerName: 'Confidence',
-        width: 130,
+        width: 120,
         valueGetter: (_, row) => overallConfidence(row),
         renderCell: ({ row }) => {
           const pct = overallConfidence(row);
           if (pct === null) return <Typography fontSize={12} color="text.secondary">—</Typography>;
           const color = pct >= 80 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626';
-          const bg = pct >= 80 ? '#dcfce7' : pct >= 50 ? '#fef3c7' : '#fee2e2';
+          const r = 16, cx = 20, cy = 20, stroke = 4;
+          const circumference = 2 * Math.PI * r;
+          const dash = (pct / 100) * circumference;
           return (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-              <Box sx={{ flex: 1, height: 6, bgcolor: '#e5e7eb', borderRadius: 3, overflow: 'hidden' }}>
-                <Box sx={{ width: `${pct}%`, height: '100%', bgcolor: color, borderRadius: 3 }} />
-              </Box>
-              <Chip label={`${pct}%`} size="small"
-                sx={{ height: 20, fontSize: 11, fontWeight: 700, bgcolor: bg, color, minWidth: 44 }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <svg width={40} height={40} style={{ transform: 'rotate(-90deg)' }}>
+                <circle cx={cx} cy={cy} r={r} fill="none" stroke="#e5e7eb" strokeWidth={stroke} />
+                <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={stroke}
+                  strokeDasharray={`${dash} ${circumference}`} strokeLinecap="round" />
+              </svg>
+              <Typography fontSize={13} fontWeight={700} color={color}>{pct}%</Typography>
             </Box>
           );
         },
