@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { CheckCircle, Star, ArrowBack, Favorite, Coffee, OpenInNew } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 
 const KOFI_USERNAME = 'multipdfstoexcel';
 
@@ -22,6 +23,7 @@ const AMOUNTS = [10, 15, 20];
 
 export default function PricingPage() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [selected, setSelected] = useState(10);
 
   const handleDonate = () => {
@@ -132,8 +134,25 @@ export default function PricingPage() {
             Donate ${selected} on Ko-fi
           </Button>
           <Typography fontSize={11} color="text.secondary" mt={1.5}>
-            Opens Ko-fi · Pay via PayPal or card · No account needed · Unlocks 20 jobs
+            Opens Ko-fi in a new tab · Pay via PayPal or card · No Ko-fi account needed
           </Typography>
+
+          {/* Step-by-step instructions */}
+          <Box sx={{ mt: 2.5, p: 2.5, bgcolor: '#f0f9ff', borderRadius: 2, border: '1px solid #bae6fd', textAlign: 'left' }}>
+            <Typography fontSize={13} fontWeight={700} color="#0369a1" mb={1}>⚡ How it works (3 steps)</Typography>
+            {[
+              `Click the button above — Ko-fi opens in a new tab`,
+              `Pay with PayPal or card. Use this email: ${user?.email ?? 'your account email'}`,
+              `Come back here and click "Refresh to Check Access" below — you'll be unlocked instantly`,
+            ].map((step, i) => (
+              <Box key={i} sx={{ display: 'flex', gap: 1.5, mb: 0.8 }}>
+                <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: '#0ea5e9', color: 'white', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, mt: 0.1 }}>
+                  {i + 1}
+                </Box>
+                <Typography fontSize={12} color="text.secondary">{step}</Typography>
+              </Box>
+            ))}
+          </Box>
 
           {/* Post-donation refresh */}
           <Box sx={{ mt: 2.5, p: 2, bgcolor: '#f0fdf4', borderRadius: 2, border: '1px solid #bbf7d0' }}>
