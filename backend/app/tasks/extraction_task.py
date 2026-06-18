@@ -140,7 +140,7 @@ def _process_single_pdf(extractor: PDFExtractor, llm, pdf_path: str, columns: li
     # Run async LLM call in a new event loop (thread context)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    result = loop.run_until_complete(llm.extract_data(full_text, columns, model or "claude-3-haiku-20240307"))
+    result = loop.run_until_complete(llm.extract_data(full_text, columns, model or "claude-haiku-4-5-20251001"))
     loop.close()
 
     elapsed_ms = int((time.time() - start) * 1000)
