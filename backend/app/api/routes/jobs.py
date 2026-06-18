@@ -79,7 +79,10 @@ async def create_job(
 ):
     # ── Job limit gate ─────────────────────────────────────────────────────
     jobs_used = current_user.jobs_used or 0
-    if not current_user.is_subscribed:
+    # Admin/test accounts bypass all limits
+    if current_user.email in (settings.ADMIN_EMAILS or []):
+        pass  # unlimited — no gate
+    elif not current_user.is_subscribed:
         if jobs_used >= settings.FREE_JOB_LIMIT:
             raise HTTPException(
                 status_code=402,
@@ -91,17 +94,16 @@ async def create_job(
                     "paid_limit": settings.PAID_JOB_LIMIT,
                 }
             )
-    else:
-        if jobs_used >= settings.PAID_JOB_LIMIT:
-            raise HTTPException(
-                status_code=402,
-                detail={
-                    "code": "PAID_LIMIT_REACHED",
-                    "message": f"You've used all {settings.PAID_JOB_LIMIT} jobs from your donation. Please donate again to top up.",
-                    "jobs_used": jobs_used,
-                    "paid_limit": settings.PAID_JOB_LIMIT,
-                }
-            )
+    elif jobs_used >= settings.PAID_JOB_LIMIT:
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "code": "PAID_LIMIT_REACHED",
+                "message": f"You've used all {settings.PAID_JOB_LIMIT} jobs from your donation. Please donate again to top up.",
+                "jobs_used": jobs_used,
+                "paid_limit": settings.PAID_JOB_LIMIT,
+            }
+        )
 
     creds_enc = None
     if payload.storage_credentials:

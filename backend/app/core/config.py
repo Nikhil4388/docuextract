@@ -61,6 +61,7 @@ class Settings(BaseSettings):
     FREE_JOB_LIMIT: int = 2                         # Free jobs before paywall
     PAID_JOB_LIMIT: int = 20                        # Jobs unlocked after $10 donation
     KOFI_WEBHOOK_TOKEN: Optional[str] = None        # From Ko-fi Settings → API
+    ADMIN_EMAILS: List[str] = []                    # Emails with unlimited jobs (testing)
 
     # Encryption (for API keys at rest)
     ENCRYPTION_KEY: str = secrets.token_urlsafe(32)
