@@ -206,6 +206,14 @@ async def export_excel(
         row = {"file_name": r.file_name}
         if r.extracted_data:
             row.update(r.extracted_data)
+        # Add overall confidence % column
+        if r.confidence_scores:
+            scores = [v for v in r.confidence_scores.values() if isinstance(v, (int, float))]
+            avg_confidence = round((sum(scores) / len(scores)) * 100) if scores else None
+            row["_confidence_%"] = f"{avg_confidence}%" if avg_confidence is not None else "—"
+            # Add per-field confidence if any field scored low (< 70%)
+            low_fields = [k for k, v in r.confidence_scores.items() if isinstance(v, (int, float)) and v < 0.7]
+            row["_low_confidence_fields"] = ", ".join(low_fields) if low_fields else ""
         records.append(row)
 
     df = pd.DataFrame(records)

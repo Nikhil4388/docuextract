@@ -43,6 +43,15 @@ export default function JobDetailPage() {
     URL.revokeObjectURL(url);
   };
 
+  // Helper: compute overall confidence % for a row
+  const overallConfidence = (r: ExtractionResult): number | null => {
+    const scores = r.confidence_scores;
+    if (!scores) return null;
+    const vals = Object.values(scores).filter((v) => typeof v === 'number') as number[];
+    if (!vals.length) return null;
+    return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 100);
+  };
+
   // Build dynamic columns from first result
   const dynamicColumns: GridColDef[] = React.useMemo(() => {
     if (!results?.length) return [];
@@ -57,6 +66,27 @@ export default function JobDetailPage() {
         minWidth: 140,
         valueGetter: (_, row) => row.extracted_data?.[key] ?? '—',
       })),
+      {
+        field: '_confidence',
+        headerName: 'Confidence',
+        width: 130,
+        valueGetter: (_, row) => overallConfidence(row),
+        renderCell: ({ row }) => {
+          const pct = overallConfidence(row);
+          if (pct === null) return <Typography fontSize={12} color="text.secondary">—</Typography>;
+          const color = pct >= 80 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626';
+          const bg = pct >= 80 ? '#dcfce7' : pct >= 50 ? '#fef3c7' : '#fee2e2';
+          return (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+              <Box sx={{ flex: 1, height: 6, bgcolor: '#e5e7eb', borderRadius: 3, overflow: 'hidden' }}>
+                <Box sx={{ width: `${pct}%`, height: '100%', bgcolor: color, borderRadius: 3 }} />
+              </Box>
+              <Chip label={`${pct}%`} size="small"
+                sx={{ height: 20, fontSize: 11, fontWeight: 700, bgcolor: bg, color, minWidth: 44 }} />
+            </Box>
+          );
+        },
+      },
       {
         field: 'processing_time_ms',
         headerName: 'Time (ms)',
