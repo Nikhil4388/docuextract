@@ -21,7 +21,7 @@ class ClaudeService:
         self,
         text: str,
         columns: List[Dict[str, Any]],
-        model: str = "claude-haiku-4-5-20251001",
+        model: str = "claude-sonnet-4-6",
         page_images: Optional[List[str]] = None,  # list of base64 PNG strings
     ) -> Dict[str, Any]:
         columns_desc = json.dumps(columns, indent=2)
@@ -74,7 +74,7 @@ Return JSON with two keys:
 
     async def suggest_columns(self, sample_text: str) -> List[Dict[str, Any]]:
         message = self.client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model="claude-sonnet-4-6",
             max_tokens=2000,
             system="You are a document analysis assistant. Return a JSON array of objects with fields: name, description, data_type (text|number|date|boolean), extraction_hint.",
             messages=[{"role": "user", "content": f"Suggest data extraction columns for this document. Return a JSON array only:\n\n{sample_text[:4000]}"}],

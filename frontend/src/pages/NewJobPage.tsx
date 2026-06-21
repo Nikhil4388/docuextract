@@ -89,7 +89,7 @@ export default function NewJobPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedStorageProvider, setUploadedStorageProvider] = useState<StorageProvider | null>(null);
   const [llmProvider, setLlmProvider] = useState<LLMProvider>('claude');
-  const [llmModel, setLlmModel] = useState('claude-haiku-4-5-20251001');
+  const [llmModel, setLlmModel] = useState('claude-sonnet-4-6');
   const [useUserApiKey, setUseUserApiKey] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
