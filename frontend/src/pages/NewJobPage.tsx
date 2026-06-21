@@ -15,7 +15,7 @@ import { useAuthStore } from '../store/authStore';
 const STEPS = ['Select Template', 'Configure Source', 'Select LLM', 'Review & Submit'];
 
 const LLM_OPTIONS = [
-  { value: 'claude', label: 'Claude (Anthropic)', models: ['claude-3-haiku-20240307', 'claude-3-sonnet-20240229', 'claude-opus-4-6'] },
+  { value: 'claude', label: 'Claude (Anthropic)', models: ['claude-haiku-4-5-20251001', 'claude-sonnet-4-6', 'claude-opus-4-6'] },
   { value: 'openai', label: 'OpenAI GPT', models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo'] },
 ];
 
@@ -89,7 +89,7 @@ export default function NewJobPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedStorageProvider, setUploadedStorageProvider] = useState<StorageProvider | null>(null);
   const [llmProvider, setLlmProvider] = useState<LLMProvider>('claude');
-  const [llmModel, setLlmModel] = useState('claude-3-haiku-20240307');
+  const [llmModel, setLlmModel] = useState('claude-haiku-4-5-20251001');
   const [useUserApiKey, setUseUserApiKey] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

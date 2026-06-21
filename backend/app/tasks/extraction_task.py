@@ -143,7 +143,9 @@ def _process_single_pdf(extractor: PDFExtractor, llm, pdf_path: str, columns: li
     from app.core.config import settings
     import json
 
-    target_model = model or "claude-3-5-haiku-20241022"
+    # Replace deprecated models with current equivalent
+    _DEPRECATED = {"claude-3-haiku-20240307", "claude-3-sonnet-20240229", "claude-3-opus-20240229"}
+    target_model = model if model and model not in _DEPRECATED else "claude-haiku-4-5-20251001"
     print(f"[LLM] Calling Claude model={target_model} text_len={len(full_text)}", flush=True)
 
     client = _anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
