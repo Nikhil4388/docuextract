@@ -1,5 +1,6 @@
 import ssl
 from celery import Celery
+from celery.signals import worker_ready
 from app.core.config import settings
 
 # Strip any ?ssl_cert_reqs=... query params — we configure SSL via broker_use_ssl
@@ -36,3 +37,13 @@ celery_app.conf.update(
     },
     broker_use_ssl=_ssl_opts or None,
 )
+
+
+@worker_ready.connect
+def on_worker_ready(**kwargs):
+    """Verify Anthropic API key on startup so failures are obvious in logs."""
+    key = settings.ANTHROPIC_API_KEY or ""
+    if not key:
+        print("[STARTUP] ⚠️  ANTHROPIC_API_KEY is NOT SET — all extractions will fail!", flush=True)
+    else:
+        print(f"[STARTUP] ✅ ANTHROPIC_API_KEY loaded (starts with {key[:8]}...)", flush=True)

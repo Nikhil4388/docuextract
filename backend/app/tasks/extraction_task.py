@@ -102,6 +102,7 @@ def run_extraction_job(self, job_id: str):
                     db.add(result)
                     job.processed_files += 1
                 except Exception as exc:
+                    print(f"[TASK] ❌ FAILED {os.path.basename(path)}: {type(exc).__name__}: {exc}", flush=True)
                     result = ExtractionResult(
                         job_id=job.id,
                         file_name=os.path.basename(path),
@@ -132,16 +133,43 @@ def run_extraction_job(self, job_id: str):
 
 def _process_single_pdf(extractor: PDFExtractor, llm, pdf_path: str, columns: list, model: str) -> dict:
     import time
+    import anthropic as _anthropic
     start = time.time()
     pages = extractor.extract_text(pdf_path)
     full_text = "\n\n".join(p["text"] for p in pages)
     ocr_used = any(p["ocr_used"] for p in pages)
 
-    # Run async LLM call in a new event loop (thread context)
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    result = loop.run_until_complete(llm.extract_data(full_text, columns, model or "claude-haiku-4-5-20251001"))
-    loop.close()
+    # Call Claude synchronously — avoids event-loop conflicts in forked workers
+    from app.core.config import settings
+    import json
+
+    target_model = model or "claude-3-5-haiku-20241022"
+    print(f"[LLM] Calling Claude model={target_model} text_len={len(full_text)}", flush=True)
+
+    client = _anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    columns_desc = json.dumps(columns, indent=2)
+    try:
+        message = client.messages.create(
+            model=target_model,
+            max_tokens=2000,
+            system="You are a precise data extraction assistant. Extract the requested fields from the document. Return ONLY valid JSON with two keys: 1. 'extracted_data': {column_name: value, ...} — use null if not found. 2. 'confidence_scores': {column_name: 0.0-1.0, ...}",
+            messages=[{
+                "role": "user",
+                "content": f"Extract data from this document.\n\nCOLUMNS TO EXTRACT:\n{columns_desc}\n\nDOCUMENT TEXT:\n{full_text[:8000]}\n\nReturn JSON only."
+            }],
+        )
+        raw = message.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        result = json.loads(raw.strip())
+    except _anthropic.APIError as e:
+        print(f"[LLM] Anthropic APIError status={e.status_code} message={e.message}", flush=True)
+        raise
+    except Exception as e:
+        print(f"[LLM] Unexpected error {type(e).__name__}: {e}", flush=True)
+        raise
 
     elapsed_ms = int((time.time() - start) * 1000)
     return {**result, "processing_time_ms": elapsed_ms, "ocr_used": ocr_used}
