@@ -142,7 +142,7 @@ export default function JobDetailPage() {
         </Paper>
       )}
 
-      {job.error_message && (
+      {job.error_message && job.status === 'failed' && (
         <Alert severity="error" sx={{ mb: 3 }}>{job.error_message}</Alert>
       )}
 
