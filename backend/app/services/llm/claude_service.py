@@ -72,19 +72,52 @@ Return JSON with two keys:
                 raw = raw[4:]
         return json.loads(raw.strip())
 
-    async def suggest_columns(self, sample_text: str) -> List[Dict[str, Any]]:
+    async def suggest_columns(
+        self,
+        sample_text: str,
+        page_images: Optional[List[str]] = None,
+    ) -> List[Dict[str, Any]]:
+        system = """You are a document analysis expert. Analyze the document and suggest 8-15 specific, useful data extraction columns.
+
+For each column return a JSON object with:
+- "name": snake_case column name (e.g. "full_name", "invoice_total")
+- "description": what this field represents
+- "data_type": one of "text", "number", "date", "boolean"
+- "extraction_hint": SPECIFIC instruction telling exactly where/how to find this value in the document (e.g. "Located at top of page after 'Employee Name:' label", "Sum of all line items in the TOTAL row at bottom of invoice")
+
+Be specific and comprehensive. Cover ALL important fields visible in the document. Return a JSON array only — no explanation."""
+
+        # Build content: images for scanned, text for native PDFs
+        content: List[Any] = []
+        if page_images:
+            content.append({
+                "type": "text",
+                "text": "Analyze this scanned document and suggest comprehensive extraction columns. Return a JSON array only."
+            })
+            for img_b64 in page_images[:3]:
+                content.append({
+                    "type": "image",
+                    "source": {"type": "base64", "media_type": "image/png", "data": img_b64}
+                })
+        else:
+            content.append({
+                "type": "text",
+                "text": f"Analyze this document and suggest comprehensive extraction columns. Return a JSON array only.\n\nDOCUMENT:\n{sample_text[:5000]}"
+            })
+
         message = self.client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=2000,
-            system="You are a document analysis assistant. Return a JSON array of objects with fields: name, description, data_type (text|number|date|boolean), extraction_hint.",
-            messages=[{"role": "user", "content": f"Suggest data extraction columns for this document. Return a JSON array only:\n\n{sample_text[:4000]}"}],
+            max_tokens=3000,
+            system=system,
+            messages=[{"role": "user", "content": content}],
         )
-        content = message.content[0].text.strip()
-        if content.startswith("```"):
-            content = content.split("```")[1]
-            if content.startswith("json"):
-                content = content[4:]
+        raw = message.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
         try:
-            return json.loads(content.strip())
+            result = json.loads(raw.strip())
+            return result if isinstance(result, list) else []
         except Exception:
             return []

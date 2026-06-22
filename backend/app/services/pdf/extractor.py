@@ -59,7 +59,8 @@ class PDFExtractor:
 
     async def suggest_columns(self, pdf_path: str) -> List[Dict[str, Any]]:
         """
-        Use LLM to suggest column names from first page of a sample PDF.
+        Use Claude to suggest column names from a sample PDF.
+        Sends images for scanned pages, text for native PDFs.
         Returns list of {name, description, data_type, extraction_hint}.
         """
         loop = asyncio.get_event_loop()
@@ -67,11 +68,12 @@ class PDFExtractor:
         if not pages:
             return []
 
-        sample_text = "\n".join(p["text"] for p in pages[:2])[:3000]
+        sample_text = "\n".join(p["text"] for p in pages[:3] if p["text"])[:5000]
+        page_images = [p["image_b64"] for p in pages[:3] if p.get("image_b64")]
 
         from app.services.llm.claude_service import ClaudeService
         llm = ClaudeService()
-        return await llm.suggest_columns(sample_text)
+        return await llm.suggest_columns(sample_text, page_images=page_images or None)
 
     def full_text(self, pdf_path: str) -> str:
         """Return all page text concatenated."""
