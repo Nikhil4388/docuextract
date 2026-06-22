@@ -6,9 +6,18 @@ from app.core.config import settings
 EXTRACTION_SYSTEM_PROMPT = """You are a precise data extraction assistant.
 Extract the requested fields from the document (text or image provided).
 Return ONLY valid JSON with two keys:
-1. "extracted_data": {column_name: value, ...} — use null if a field cannot be found
-2. "confidence_scores": {column_name: 0.0-1.0, ...} — your confidence for each field
-Be as accurate as possible. For scanned/photo documents, read carefully even if blurry."""
+1. "extracted_data": {column_name: value, ...} — use null ONLY if the field truly cannot be found anywhere in the document
+2. "confidence_scores": {column_name: 0.0-1.0, ...} — confidence for each field
+
+CONFIDENCE SCORING RULES (be accurate, not conservative):
+- 1.0 = field is explicitly present and unambiguous (e.g. a labeled field, clear header value)
+- 0.97-0.99 = field clearly found, minor formatting uncertainty
+- 0.95-0.96 = field found with high confidence, slight ambiguity in interpretation
+- 0.85-0.94 = field found but requires some inference
+- below 0.85 = genuinely uncertain or partially missing
+
+Most clearly labeled fields in structured documents (resumes, invoices, agreements) should score 0.95-1.0.
+Do NOT artificially lower scores — if you can clearly read the value, score it 0.97+."""
 
 
 class ClaudeService:
@@ -32,7 +41,7 @@ class ClaudeService:
         if page_images:
             content.append({
                 "type": "text",
-                "text": f"This is a scanned document. Extract data from the images below.\n\nCOLUMNS TO EXTRACT:\n{columns_desc}\n\nReturn JSON with 'extracted_data' and 'confidence_scores'."
+                "text": f"This is a scanned document. Extract data from the images below.\n\nCOLUMNS TO EXTRACT:\n{columns_desc}\n\nReturn JSON with 'extracted_data' and 'confidence_scores'. Score 0.97+ for any value you can clearly read."
             })
             for img_b64 in page_images[:5]:  # max 5 pages
                 content.append({

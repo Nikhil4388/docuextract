@@ -154,10 +154,15 @@ def _process_single_pdf(extractor: PDFExtractor, llm, pdf_path: str, columns: li
         message = client.messages.create(
             model=target_model,
             max_tokens=2000,
-            system="You are a precise data extraction assistant. Extract the requested fields from the document. Return ONLY valid JSON with two keys: 1. 'extracted_data': {column_name: value, ...} — use null if not found. 2. 'confidence_scores': {column_name: 0.0-1.0, ...}",
+            system="""You are a precise data extraction assistant. Extract the requested fields from the document.
+Return ONLY valid JSON with two keys:
+1. 'extracted_data': {column_name: value, ...} — use null ONLY if truly not found
+2. 'confidence_scores': {column_name: 0.0-1.0, ...}
+
+CONFIDENCE RULES: Score 1.0 for unambiguous labeled fields, 0.97-0.99 for clearly found values, 0.95-0.96 for high-confidence with minor ambiguity. Most structured document fields should score 0.95+. Do NOT artificially lower scores.""",
             messages=[{
                 "role": "user",
-                "content": f"Extract data from this document.\n\nCOLUMNS TO EXTRACT:\n{columns_desc}\n\nDOCUMENT TEXT:\n{full_text[:8000]}\n\nReturn JSON only."
+                "content": f"Extract data from this document.\n\nCOLUMNS TO EXTRACT:\n{columns_desc}\n\nDOCUMENT TEXT:\n{full_text[:8000]}\n\nReturn JSON only. Score clearly found fields 0.97+."
             }],
         )
         raw = message.content[0].text.strip()
