@@ -146,6 +146,7 @@ export default function JobDetailPage() {
           ['Total Files', job.total_files],
           ['Processed', job.processed_files],
           ['Failed', job.failed_files],
+          ['Date', new Date(job.created_at).toLocaleDateString()],
           ['Started', job.started_at ? new Date(job.started_at).toLocaleTimeString() : '—'],
           ['Completed', job.completed_at ? new Date(job.completed_at).toLocaleTimeString() : '—'],
         ].map(([label, value]) => (
