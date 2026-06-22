@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { Download, Refresh, Search, ArrowBack } from '@mui/icons-material';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { ExtractionJob, ExtractionResult } from '../types';
@@ -19,7 +19,13 @@ const statusColor = (s: string): 'default' | 'info' | 'success' | 'error' | 'war
 export default function JobDetailPage() {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [search, setSearch] = useState('');
+
+  const handleRefresh = () => {
+    qc.invalidateQueries({ queryKey: ['job', jobId] });
+    qc.invalidateQueries({ queryKey: ['job-results', jobId] });
+  };
 
   const { data: job, refetch: refetchJob } = useQuery<ExtractionJob>({
     queryKey: ['job', jobId],
@@ -110,7 +116,7 @@ export default function JobDetailPage() {
         <Typography variant="h5" fontWeight={700}>{job.name}</Typography>
         <Chip label={job.status} color={statusColor(job.status)} size="small" />
         <Tooltip title="Refresh">
-          <IconButton onClick={() => { refetchJob(); refetchResults(); }}><Refresh /></IconButton>
+          <IconButton onClick={handleRefresh}><Refresh /></IconButton>
         </Tooltip>
       </Box>
 
