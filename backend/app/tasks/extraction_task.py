@@ -30,6 +30,7 @@ from sqlalchemy.orm import sessionmaker, Session
 
 from app.core.config import settings
 from app.core.security import decrypt_secret
+from app.models.user import User  # noqa: F401 — must import before extraction models so SQLAlchemy mapper resolves 'User' relationships
 from app.models.extraction import ExtractionJob, ExtractionResult, JobStatus
 from app.services.pdf.extractor import PDFExtractor
 
