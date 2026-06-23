@@ -23,6 +23,7 @@ class UserProfile(BaseModel):
     auth_provider: Optional[str]
     # Subscription
     is_subscribed: bool = False
+    is_admin: bool = False
     jobs_used: int = 0
     free_limit: int = 2
     paid_limit: int = 20
@@ -54,6 +55,7 @@ async def get_profile(current_user: User = Depends(get_current_user)):
         is_verified=current_user.is_verified,
         auth_provider=current_user.auth_provider,
         is_subscribed=current_user.is_subscribed or False,
+        is_admin=current_user.email in settings.admin_email_list,
         jobs_used=current_user.jobs_used or 0,
         free_limit=settings.FREE_JOB_LIMIT,
         paid_limit=settings.PAID_JOB_LIMIT,

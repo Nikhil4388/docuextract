@@ -10,6 +10,7 @@ export interface User {
   auth_provider?: string;
   // Subscription
   is_subscribed?: boolean;
+  is_admin?: boolean;
   jobs_used?: number;
   free_limit?: number;
   paid_limit?: number;

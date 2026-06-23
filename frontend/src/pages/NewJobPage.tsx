@@ -34,8 +34,9 @@ export default function NewJobPage() {
   const paidLimit    = user?.paid_limit ?? 20;
   const jobsUsed     = user?.jobs_used ?? 0;
   const isSubscribed = user?.is_subscribed ?? false;
-  const hitFreeLimit = !isSubscribed && jobsUsed >= freeLimit;
-  const hitPaidLimit = isSubscribed && jobsUsed >= paidLimit;
+  const isAdmin      = user?.is_admin ?? false;
+  const hitFreeLimit = !isAdmin && !isSubscribed && jobsUsed >= freeLimit;
+  const hitPaidLimit = !isAdmin && isSubscribed && jobsUsed >= paidLimit;
 
   // ── Paywall gate — show before any form renders ──
   if (hitFreeLimit || hitPaidLimit) {
