@@ -44,7 +44,8 @@ export default function AppLayout() {
   const freeLimit    = user?.free_limit ?? 2;
   const jobsUsed     = user?.jobs_used ?? 0;
   const isSubscribed = user?.is_subscribed ?? false;
-  const hitLimit     = !isSubscribed && jobsUsed >= freeLimit;
+  const isAdmin      = user?.is_admin ?? false;
+  const hitLimit     = !isAdmin && !isSubscribed && jobsUsed >= freeLimit;
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
