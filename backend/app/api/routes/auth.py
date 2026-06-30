@@ -7,8 +7,8 @@ from typing import Optional
 from datetime import datetime, timedelta
 import secrets
 import random
-import time
 import httpx
+import redis as redis_lib
 
 from app.core.database import get_db
 from app.core.security import (
@@ -23,29 +23,45 @@ from app.services.email_service import send_otp_email, send_password_reset_email
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-# ── One-time OAuth exchange codes (in-memory, 60s TTL) ───────────────────────
-# Avoids needing to pass tokens in URLs or set cross-origin cookies on redirect.
-_oauth_codes: dict[str, tuple[str, float]] = {}
+# ── One-time OAuth exchange codes — Redis-backed, 60s TTL ────────────────────
+# Using Redis so codes work across multiple Railway containers/workers.
+# Falls back to an in-memory dict if Redis is unavailable (dev only).
+_fallback_codes: dict = {}
+
+def _get_redis() -> Optional[redis_lib.Redis]:
+    try:
+        r = redis_lib.from_url(settings.REDIS_URL, socket_connect_timeout=1)
+        r.ping()
+        return r
+    except Exception:
+        return None
 
 
 def _create_oauth_code(user_id: str) -> str:
-    now = time.time()
-    # Prune expired entries
-    expired = [k for k, (_, exp) in _oauth_codes.items() if exp < now]
-    for k in expired:
-        del _oauth_codes[k]
     code = secrets.token_urlsafe(32)
-    _oauth_codes[code] = (user_id, now + 60)
+    r = _get_redis()
+    if r:
+        r.setex(f"oauth_code:{code}", 60, user_id)
+    else:
+        import time
+        _fallback_codes[code] = (user_id, time.time() + 60)
     return code
 
 
 def _consume_oauth_code(code: str) -> Optional[str]:
-    """Returns user_id if valid, None if expired or not found."""
-    entry = _oauth_codes.pop(code, None)
-    if not entry:
-        return None
-    user_id, expires_at = entry
-    return user_id if time.time() <= expires_at else None
+    """Returns user_id if valid and unused. Deletes the code atomically."""
+    r = _get_redis()
+    if r:
+        key = f"oauth_code:{code}"
+        user_id = r.getdel(key)  # atomic get-and-delete
+        return user_id.decode() if user_id else None
+    else:
+        import time
+        entry = _fallback_codes.pop(code, None)
+        if not entry:
+            return None
+        user_id, expires_at = entry
+        return user_id if time.time() <= expires_at else None
 
 
 # ── Refresh cookie helpers ─────────────────────────────────────────────────────
