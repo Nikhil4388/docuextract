@@ -38,16 +38,51 @@ from app.services.pdf.extractor import PDFExtractor
 _sync_engine = None
 _SyncSession = None
 
-def _get_db() -> Session:
+def _get_engine():
     global _sync_engine, _SyncSession
     if _sync_engine is None:
         _sync_engine = create_engine(
             settings.DATABASE_URL.replace("+asyncpg", "+psycopg2"),
-            pool_size=20,
-            max_overflow=40,
+            pool_size=5,
+            max_overflow=10,
+            pool_pre_ping=True,      # check connection health before each use
+            pool_recycle=300,        # recycle connections every 5 min
+            connect_args={"connect_timeout": 10},
         )
         _SyncSession = sessionmaker(bind=_sync_engine)
-    return _SyncSession()
+    return _SyncSession
+
+def _get_db() -> Session:
+    return _get_engine()()
+
+def _run_db(fn, retries: int = 3):
+    """Execute a DB operation in a fresh session with automatic retry on connection errors."""
+    import psycopg2
+    from sqlalchemy.exc import OperationalError, PendingRollbackError
+    last_exc = None
+    for attempt in range(retries):
+        db = _get_db()
+        try:
+            result = fn(db)
+            db.commit()
+            return result
+        except (OperationalError, PendingRollbackError, psycopg2.OperationalError) as exc:
+            last_exc = exc
+            try:
+                db.rollback()
+            except Exception:
+                pass
+            db.close()
+            if attempt < retries - 1:
+                import time as _time
+                _time.sleep(2 ** attempt)  # 1s, 2s
+        except Exception:
+            db.rollback()
+            db.close()
+            raise
+        else:
+            db.close()
+    raise last_exc
 
 
 # ── Constants ────────────────────────────────────────────────────────────────
@@ -88,22 +123,21 @@ async def _async_pipeline(job_id: str):
     io_pool = ThreadPoolExecutor(max_workers=50, thread_name_prefix="io")
 
     # ── Step 1: Load job ─────────────────────────────────────────────────
-    db: Session = await loop.run_in_executor(io_pool, _get_db)
-    job: ExtractionJob = await loop.run_in_executor(
-        io_pool, lambda: db.query(ExtractionJob).filter_by(id=job_id).first()
-    )
+    # Each DB call uses a fresh session via _run_db — immune to connection drops
+    def _load_job(db):
+        job = db.query(ExtractionJob).filter_by(id=job_id).first()
+        if job:
+            # Eagerly load template while session is open
+            _ = job.template
+        return job
+
+    job: ExtractionJob = await loop.run_in_executor(io_pool, lambda: _run_db(_load_job))
     if not job:
         print(f"[TASK] job {job_id} not found in DB", flush=True)
         return
 
-    def _start():
-        job.status = JobStatus.PROCESSING
-        job.status_message = "Starting extraction…"
-        job.started_at = datetime.utcnow()
-        db.commit()
-    await loop.run_in_executor(io_pool, _start)
-
-    # Resolve template & model
+    job_uuid = job.id
+    # Snapshot immutable fields before closing the session
     template = job.template
     columns = template.columns if template else []
     model = (
@@ -112,36 +146,51 @@ async def _async_pipeline(job_id: str):
         else _DEFAULT_MODEL
     )
 
-    # ── Step 2: Download all PDFs in parallel ────────────────────────────
-    def _status(msg):
-        job.status_message = msg
-        db.commit()
-    await loop.run_in_executor(io_pool, _status, "Downloading files…")
+    def _update_job(**kwargs):
+        """Apply a dict of field updates to the job in a fresh session."""
+        def _fn(db):
+            j = db.query(ExtractionJob).filter_by(id=job_uuid).first()
+            if j:
+                for k, v in kwargs.items():
+                    setattr(j, k, v)
+        _run_db(_fn)
 
+    await loop.run_in_executor(io_pool, lambda: _update_job(
+        status=JobStatus.PROCESSING,
+        status_message="Starting extraction…",
+        started_at=datetime.utcnow(),
+    ))
+
+    # ── Step 2: Download all PDFs in parallel ────────────────────────────
+    await loop.run_in_executor(io_pool, lambda: _update_job(status_message="Downloading files…"))
+
+    # We need the job object for _collect_pdfs_sync — load a fresh copy
+    def _load_for_collect(db):
+        j = db.query(ExtractionJob).filter_by(id=job_uuid).first()
+        if j:
+            _ = j.template
+        return j
+    job_for_collect = await loop.run_in_executor(io_pool, lambda: _run_db(_load_for_collect))
     pdf_paths: List[str] = await loop.run_in_executor(
-        io_pool, _collect_pdfs_sync, job
+        io_pool, _collect_pdfs_sync, job_for_collect
     )
     n = len(pdf_paths)
     print(f"[TASK] job={job_id} files={n} model={model}", flush=True)
 
-    def _set_total():
-        job.total_files = n
-        job.status_message = f"Extracting {n} file{'s' if n != 1 else ''} in parallel…"
-        db.commit()
-    await loop.run_in_executor(io_pool, _set_total)
+    await loop.run_in_executor(io_pool, lambda: _update_job(
+        total_files=n,
+        status_message=f"Extracting {n} file{'s' if n != 1 else ''} in parallel…",
+    ))
 
     if n == 0:
-        def _empty():
-            job.status = JobStatus.COMPLETED
-            job.status_message = None
-            job.completed_at = datetime.utcnow()
-            db.commit()
-        await loop.run_in_executor(io_pool, _empty)
+        await loop.run_in_executor(io_pool, lambda: _update_job(
+            status=JobStatus.COMPLETED,
+            status_message=None,
+            completed_at=datetime.utcnow(),
+        ))
         return
 
     # ── Step 3: Fire ALL files to Claude concurrently ────────────────────
-    # CLAUDE_MAX_CONCURRENT controls how many simultaneous API calls.
-    # Default 50. Set higher on a paid Anthropic tier for more speed.
     max_concurrent = min(n, int(os.getenv("CLAUDE_MAX_CONCURRENT", "50")))
     print(f"[TASK] concurrency={max_concurrent}/{n}", flush=True)
 
@@ -155,7 +204,6 @@ async def _async_pipeline(job_id: str):
         async with semaphore:
             fname = os.path.basename(path)
             try:
-                # PDF text/image extraction — blocking, run in thread
                 pages = await loop.run_in_executor(
                     io_pool, extractor.extract_text, path
                 )
@@ -166,43 +214,25 @@ async def _async_pipeline(job_id: str):
                 columns_desc = json.dumps(columns, indent=2)
                 t0 = time.time()
 
-                # Build message: Vision for scanned, text for native PDFs
                 if page_images:
                     content = [
-                        {
-                            "type": "text",
-                            "text": (
-                                f"Extract data from this scanned document.\n\n"
-                                f"COLUMNS:\n{columns_desc}\n\n"
-                                f"Return JSON only. Score clearly found fields 0.97+."
-                            ),
-                        },
-                        *[
-                            {
-                                "type": "image",
-                                "source": {
-                                    "type": "base64",
-                                    "media_type": "image/png",
-                                    "data": img,
-                                },
-                            }
-                            for img in page_images[:5]
-                        ],
+                        {"type": "text", "text": (
+                            f"Extract data from this scanned document.\n\n"
+                            f"COLUMNS:\n{columns_desc}\n\n"
+                            f"Return JSON only. Score clearly found fields 0.97+."
+                        )},
+                        *[{"type": "image", "source": {
+                            "type": "base64", "media_type": "image/png", "data": img,
+                        }} for img in page_images[:5]],
                     ]
                 else:
-                    content = [
-                        {
-                            "type": "text",
-                            "text": (
-                                f"Extract data from this document.\n\n"
-                                f"COLUMNS:\n{columns_desc}\n\n"
-                                f"TEXT:\n{full_text[:8000]}\n\n"
-                                f"Return JSON only. Score clearly found fields 0.97+."
-                            ),
-                        }
-                    ]
+                    content = [{"type": "text", "text": (
+                        f"Extract data from this document.\n\n"
+                        f"COLUMNS:\n{columns_desc}\n\n"
+                        f"TEXT:\n{full_text[:8000]}\n\n"
+                        f"Return JSON only. Score clearly found fields 0.97+."
+                    )}]
 
-                # Async Claude call — does NOT block other concurrent extractions
                 msg = await client.messages.create(
                     model=model,
                     max_tokens=2000,
@@ -221,21 +251,16 @@ async def _async_pipeline(job_id: str):
                 async with lock:
                     progress["ok"] += 1
                     done = progress["ok"] + progress["fail"]
-                    # Update DB every 5 files so UI shows progress
                     if done % 5 == 0 or done == n:
-                        ok, fail = progress["ok"], progress["fail"]
-                        def _upd():
-                            job.processed_files = ok
-                            job.failed_files = fail
-                            job.status_message = f"Processed {done} of {n}…"
-                            db.commit()
-                        await loop.run_in_executor(io_pool, _upd)
+                        ok, fail, msg_txt = progress["ok"], progress["fail"], f"Processed {done} of {n}…"
+                        await loop.run_in_executor(io_pool, lambda: _update_job(
+                            processed_files=ok, failed_files=fail, status_message=msg_txt
+                        ))
 
                 print(f"[TASK] ✓ {fname} {elapsed_ms}ms", flush=True)
                 return path, {**data, "processing_time_ms": elapsed_ms, "ocr_used": ocr_used}
 
             except _anthropic.RateLimitError:
-                # Back off and retry this one file
                 print(f"[TASK] ⏳ rate limit hit for {fname}, retrying in 10s…", flush=True)
                 await asyncio.sleep(10)
                 async with lock:
@@ -248,7 +273,6 @@ async def _async_pipeline(job_id: str):
                     progress["fail"] += 1
                 return path, exc
 
-    # Launch ALL at once — semaphore keeps concurrency under control
     t_start = time.time()
     all_results: List[Tuple[str, Any]] = await asyncio.gather(
         *[extract_one(p) for p in pdf_paths]
@@ -262,19 +286,19 @@ async def _async_pipeline(job_id: str):
     )
 
     # ── Step 4: Bulk-save all results ────────────────────────────────────
-    def _save_all():
+    def _save_all(db):
         for path, outcome in all_results:
             fname = os.path.basename(path)
             if isinstance(outcome, Exception):
                 db.add(ExtractionResult(
-                    job_id=job.id,
+                    job_id=job_uuid,
                     file_name=fname,
                     file_path=path,
                     error_message=str(outcome),
                 ))
             else:
                 db.add(ExtractionResult(
-                    job_id=job.id,
+                    job_id=job_uuid,
                     file_name=fname,
                     file_path=path,
                     extracted_data=outcome.get("extracted_data"),
@@ -282,19 +306,18 @@ async def _async_pipeline(job_id: str):
                     processing_time_ms=outcome.get("processing_time_ms"),
                     ocr_used=outcome.get("ocr_used", False),
                 ))
-        job.processed_files = progress["ok"]
-        job.failed_files = progress["fail"]
-        job.status = JobStatus.COMPLETED
-        job.status_message = None
-        job.completed_at = datetime.utcnow()
-        db.commit()
+        j = db.query(ExtractionJob).filter_by(id=job_uuid).first()
+        if j:
+            j.processed_files = progress["ok"]
+            j.failed_files = progress["fail"]
+            j.status = JobStatus.COMPLETED
+            j.status_message = None
+            j.completed_at = datetime.utcnow()
 
-    await loop.run_in_executor(io_pool, _save_all)
+    await loop.run_in_executor(io_pool, lambda: _run_db(_save_all))
 
-    # Close async HTTP client before event loop shuts down (prevents RuntimeError: Event loop is closed)
     await client.aclose()
     io_pool.shutdown(wait=False)
-    db.close()
 
 
 # ── PDF collection (sync, runs in thread pool) ───────────────────────────────
