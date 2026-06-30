@@ -290,6 +290,9 @@ async def _async_pipeline(job_id: str):
         db.commit()
 
     await loop.run_in_executor(io_pool, _save_all)
+
+    # Close async HTTP client before event loop shuts down (prevents RuntimeError: Event loop is closed)
+    await client.aclose()
     io_pool.shutdown(wait=False)
     db.close()
 
