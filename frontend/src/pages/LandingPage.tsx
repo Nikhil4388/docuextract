@@ -39,11 +39,13 @@ const STATS = [
 ];
 
 const FAQS = [
-  { q: 'How many PDFs can I process at once?', a: 'Hundreds in a single job. The system runs parallel AI extraction — 100 PDFs typically finish in under 2 minutes.' },
-  { q: 'Does it work with scanned PDFs?', a: 'Yes. Claude AI reads both digital and scanned PDFs. No additional OCR setup needed.' },
-  { q: 'Can I define custom columns to extract?', a: 'Absolutely. Create a template with any column names you want — invoice number, vendor, total, date, status, anything. The AI maps each PDF to your schema.' },
-  { q: 'Is my data secure?', a: 'Files are transmitted over HTTPS and processed ephemerally. Nothing is stored permanently after extraction completes.' },
-  { q: 'What PDF types are supported?', a: 'Invoices, receipts, contracts, bank statements, medical records, resumes, reports, research papers — any PDF with readable content.' },
+  { q: 'How do I convert PDF to Excel automatically?', a: 'Upload your PDFs to MultiPDFToExcel, create a template with the column names you want (invoice number, vendor, date, amount — anything), and the AI reads every PDF and builds a clean Excel spreadsheet automatically.' },
+  { q: 'Can I convert multiple PDFs to Excel at once?', a: 'Yes — that\'s what we\'re built for. Upload hundreds of PDFs in one batch. They all run in parallel so 100 PDFs finish in under 2 minutes, all rows in one Excel file.' },
+  { q: 'Does the PDF to Excel converter work with scanned PDFs?', a: 'Yes. The AI reads both native digital PDFs and scanned image PDFs. Built-in OCR means no extra tools needed — just upload and extract.' },
+  { q: 'What types of PDFs can I convert to Excel?', a: 'Invoices, receipts, bank statements, resumes, contracts, purchase orders, medical records, research papers — any PDF with readable text or images.' },
+  { q: 'Is there a free PDF to Excel converter?', a: 'Yes. Sign up free with Google and start converting PDFs to Excel immediately. No credit card required.' },
+  { q: 'How accurate is the AI PDF to Excel extraction?', a: 'Consistently 95%+ accuracy on structured documents like invoices and forms. Confidence scores are shown for every extracted field so you always know the quality.' },
+  { q: 'Is my data secure when converting PDF to Excel?', a: 'Files are transmitted over HTTPS (encrypted). Processed ephemerally — nothing is stored permanently after extraction completes. Your data stays yours.' },
 ];
 
 const DOTS = Array.from({ length: 50 }, (_, i) => ({
@@ -185,8 +187,8 @@ export default function LandingPage() {
           </Typography>
         </Box>
 
-        {/* Headline */}
-        <Typography sx={{
+        {/* H1 — front-load "PDF to Excel" for SEO */}
+        <Typography component="h1" sx={{
           fontSize: { xs: 36, sm: 52, md: 68 }, fontWeight: 900, lineHeight: 1.05,
           letterSpacing: -1.5, mb: 3,
           animation: 'fadeUp 0.6s ease 0.1s both',
@@ -196,24 +198,25 @@ export default function LandingPage() {
             background: 'linear-gradient(135deg, #ffffff 0%, #c4b5fd 35%, #818cf8 65%, #06b6d4 100%)',
             backgroundSize: '200% 200%', animation: 'gradShift 6s ease infinite',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-          }}>Extract Data from</Box>
+          }}>PDF to Excel</Box>
           <br />
-          <Box component="span" sx={{ color: 'white' }}>Hundreds of PDFs</Box>
+          <Box component="span" sx={{ color: 'white' }}>Converter with AI —</Box>
           <br />
           <Box component="span" sx={{
             background: 'linear-gradient(135deg, #a5b4fc, #818cf8, #06b6d4)',
             backgroundSize: '200% 200%', animation: 'gradShift 5s ease 1s infinite',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-          }}>into Excel in Seconds.</Box>
+          }}>Batch. Fast. Accurate.</Box>
         </Typography>
 
-        <Typography sx={{
-          fontSize: { xs: 16, md: 20 }, color: 'rgba(255,255,255,0.5)', maxWidth: 600,
-          mx: 'auto', mb: 5, lineHeight: 1.7,
+        <Typography component="h2" sx={{
+          fontSize: { xs: 16, md: 20 }, color: 'rgba(255,255,255,0.5)', maxWidth: 640,
+          mx: 'auto', mb: 5, lineHeight: 1.7, fontWeight: 400,
           animation: 'fadeUp 0.6s ease 0.2s both',
         }}>
-          Stop manually copying data from PDFs. Upload your files, define what to extract,
-          and let AI do the work — you get a clean Excel file in seconds.
+          Convert hundreds of PDFs to Excel in one click. Upload your files, tell the AI
+          which fields to extract, and download a clean spreadsheet in seconds —
+          no manual copy-paste, no code.
         </Typography>
 
         {/* CTA Buttons */}
