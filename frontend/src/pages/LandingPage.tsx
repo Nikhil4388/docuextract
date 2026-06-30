@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Container } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import LogoIcon from '../components/LogoIcon';
 
 // ── Static data ───────────────────────────────────────────────────────────────
 const FEATURES = [
@@ -115,13 +116,9 @@ export default function LandingPage() {
       }}>
         {/* Logo */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1 }}>
-          <Box sx={{
-            width: 36, height: 36, borderRadius: '10px',
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4)',
-            backgroundSize: '200% 200%', animation: 'gradShift 4s ease infinite',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
-            boxShadow: '0 4px 16px rgba(99,102,241,0.5)',
-          }}>📄</Box>
+          <Box sx={{ boxShadow: '0 4px 16px rgba(99,102,241,0.5)', borderRadius: '10px' }}>
+            <LogoIcon size={36} borderRadius={10} />
+          </Box>
           <Typography sx={{ fontWeight: 900, fontSize: 17, color: 'white', letterSpacing: -0.3 }}>
             MultiPDFToExcel
           </Typography>
@@ -667,11 +664,9 @@ export default function LandingPage() {
         py: 5, px: 4, textAlign: 'center',
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: 'center', mb: 1.5 }}>
-          <Box sx={{
-            width: 28, height: 28, borderRadius: '8px',
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
-          }}>📄</Box>
+          <Box sx={{ boxShadow: '0 4px 12px rgba(99,102,241,0.4)', borderRadius: '8px' }}>
+            <LogoIcon size={28} borderRadius={8} />
+          </Box>
           <Typography sx={{ fontWeight: 900, fontSize: 15, color: 'white' }}>MultiPDFToExcel</Typography>
         </Box>
         <Typography sx={{ color: 'rgba(255,255,255,0.25)', fontSize: 13 }}>

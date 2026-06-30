@@ -1,32 +1,49 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Blue gradient background -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#5b8dee"/>
-      <stop offset="100%" style="stop-color:#3a6fd8"/>
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="55%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="10" fill="url(#bg)"/>
-
+  <!-- Background rounded square -->
+  <rect width="100" height="100" rx="22" fill="url(#bg)"/>
+  <!-- Subtle grid lines (Excel reference) -->
+  <line x1="0" y1="38" x2="100" y2="38" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+  <line x1="0" y1="62" x2="100" y2="62" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+  <line x1="38" y1="0" x2="38" y2="100" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+  <line x1="62" y1="0" x2="62" y2="100" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
   <!-- PDF document (left) -->
-  <rect x="4" y="10" width="22" height="27" rx="2" fill="white"/>
-  <polygon points="20,10 26,10 26,16" fill="#5b8dee"/>
-  <line x1="20" y1="10" x2="20" y2="16" stroke="#5b8dee" stroke-width="0.5"/>
-  <text x="15" y="29" font-family="Arial" font-weight="bold" font-size="7" fill="#3a6fd8" text-anchor="middle">PDF</text>
-
-  <!-- Arrow -->
-  <polygon points="28,28 34,24 34,27 38,27 38,29 34,29 34,32" fill="white"/>
-
-  <!-- Excel icon (right) -->
-  <rect x="38" y="10" width="22" height="27" rx="2" fill="white"/>
-  <rect x="38" y="10" width="14" height="14" rx="2" fill="#3a6fd8"/>
-  <text x="45" y="22" font-family="Arial" font-weight="bold" font-size="10" fill="white" text-anchor="middle">X</text>
-  <!-- Grid lines -->
-  <line x1="38" y1="28" x2="60" y2="28" stroke="#3a6fd8" stroke-width="1"/>
-  <line x1="38" y1="33" x2="60" y2="33" stroke="#3a6fd8" stroke-width="1"/>
-  <line x1="49" y1="24" x2="49" y2="37" stroke="#3a6fd8" stroke-width="1"/>
-
-  <!-- Bottom tagline bar -->
-  <rect x="4" y="44" width="56" height="14" rx="3" fill="rgba(255,255,255,0.2)"/>
-  <text x="32" y="54" font-family="Arial" font-weight="bold" font-size="7" fill="white" text-anchor="middle">DocuExtract</text>
+  <rect x="12" y="22" width="28" height="36" rx="4" fill="white" opacity="0.95"/>
+  <!-- Folded corner -->
+  <path d="M32 22 L40 30 L32 30 Z" fill="rgba(99,102,241,0.45)"/>
+  <path d="M32 22 L40 30" stroke="rgba(255,255,255,0.3)" stroke-width="1" fill="none"/>
+  <!-- PDF text lines -->
+  <rect x="16" y="36" width="18" height="3" rx="1.5" fill="#818cf8" opacity="0.9"/>
+  <rect x="16" y="42" width="15" height="2.5" rx="1.2" fill="#818cf8" opacity="0.6"/>
+  <rect x="16" y="47.5" width="18" height="2.5" rx="1.2" fill="#818cf8" opacity="0.4"/>
+  <!-- Arrow (center) -->
+  <path d="M43 50 L57 50" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M52 43 L60 50 L52 57" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Excel table (right) -->
+  <rect x="60" y="26" width="28" height="30" rx="4" fill="white" opacity="0.95"/>
+  <!-- Table header row -->
+  <rect x="60" y="26" width="28" height="9" rx="4" fill="#06b6d4" opacity="0.3"/>
+  <rect x="60" y="26" width="28" height="9" rx="0" fill="#06b6d4" opacity="0.25"/>
+  <rect x="60" y="26" width="28" height="9" rx="4" fill="none"/>
+  <!-- Horizontal lines -->
+  <line x1="60" y1="35" x2="88" y2="35" stroke="#06b6d4" stroke-width="1" opacity="0.5"/>
+  <line x1="60" y1="42" x2="88" y2="42" stroke="#06b6d4" stroke-width="1" opacity="0.4"/>
+  <line x1="60" y1="49" x2="88" y2="49" stroke="#06b6d4" stroke-width="1" opacity="0.3"/>
+  <!-- Vertical line -->
+  <line x1="74" y1="26" x2="74" y2="56" stroke="#06b6d4" stroke-width="1" opacity="0.45"/>
+  <!-- Table dots (data) -->
+  <rect x="63" y="37.5" width="8" height="2.5" rx="1" fill="#6366f1" opacity="0.5"/>
+  <rect x="77" y="37.5" width="8" height="2.5" rx="1" fill="#06b6d4" opacity="0.5"/>
+  <rect x="63" y="44.5" width="7" height="2.5" rx="1" fill="#6366f1" opacity="0.35"/>
+  <rect x="77" y="44.5" width="9" height="2.5" rx="1" fill="#06b6d4" opacity="0.35"/>
+  <!-- Bottom accent dots -->
+  <circle cx="38" cy="78" r="3.5" fill="white" opacity="0.45"/>
+  <circle cx="50" cy="78" r="3.5" fill="white" opacity="0.3"/>
+  <circle cx="62" cy="78" r="3.5" fill="white" opacity="0.2"/>
 </svg>

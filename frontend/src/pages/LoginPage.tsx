@@ -1,4 +1,5 @@
 import { Box, Button, Typography } from '@mui/material';
+import LogoIcon from '../components/LogoIcon';
 
 const DOTS = Array.from({ length: 40 }, (_, i) => ({
   id: i,
@@ -146,13 +147,11 @@ export default function LoginPage() {
         }}>
           {/* Logo */}
           <Box sx={{ textAlign: 'center', mb: 5 }}>
-            <Box sx={{
-              width: 64, height: 64, borderRadius: 3, mx: 'auto', mb: 2.5,
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%)',
-              backgroundSize: '200% 200%', animation: 'gradientShift 4s ease infinite',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 32, boxShadow: '0 12px 32px rgba(99,102,241,0.5)',
-            }}>📄</Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2.5 }}>
+              <Box sx={{ boxShadow: '0 12px 32px rgba(99,102,241,0.55)', borderRadius: '18px' }}>
+                <LogoIcon size={64} borderRadius={18} />
+              </Box>
+            </Box>
             <Typography sx={{ color: 'white', fontWeight: 900, fontSize: 24, letterSpacing: -0.5 }}>
               MultiPDFToExcel
             </Typography>

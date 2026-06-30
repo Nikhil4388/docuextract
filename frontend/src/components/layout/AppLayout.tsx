@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import LogoIcon from '../LogoIcon';
 
 const DRAWER_WIDTH = 260;
 
@@ -99,13 +100,9 @@ export default function AppLayout() {
       }}>
         {/* Logo area */}
         <Box sx={{ px: 3, pt: 3.5, pb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{
-            width: 40, height: 40, borderRadius: '12px',
-            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 60%, #06b6d4 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 20, flexShrink: 0,
-            boxShadow: '0 8px 24px rgba(99,102,241,0.5)',
-          }}>📄</Box>
+          <Box sx={{ boxShadow: '0 8px 24px rgba(99,102,241,0.5)', borderRadius: '12px', flexShrink: 0 }}>
+            <LogoIcon size={40} borderRadius={12} />
+          </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ color: 'white', fontWeight: 900, fontSize: 15, letterSpacing: -0.3, lineHeight: 1.1 }}>
               MultiPDF
