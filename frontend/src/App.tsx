@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { SnackbarProvider, useSnackbar } from 'notistack';
@@ -109,8 +109,9 @@ function InactivityGuard({ children }: { children: React.ReactNode }) {
     if (!isAuthenticated) return;
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
-      logout();
-      enqueueSnackbar('Logged out due to inactivity.', { variant: 'warning', autoHideDuration: 6000 });
+      logout().then(() =>
+        enqueueSnackbar('Logged out due to inactivity.', { variant: 'warning', autoHideDuration: 6000 })
+      );
     }, INACTIVITY_TIMEOUT_MS);
   }, [isAuthenticated, logout, enqueueSnackbar]);
 
@@ -135,9 +136,13 @@ function AuthCallbackPage() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    // Backend puts a one-time exchange code in the URL (not the token itself)
-    const code = params.get('code');
-    setTokensAndFetch(code)
+    const access_token = params.get('access_token');
+    const refresh_token = params.get('refresh_token');
+    if (!access_token || !refresh_token) {
+      navigate('/login', { replace: true });
+      return;
+    }
+    setTokensAndFetch({ access_token, refresh_token })
       .then(() => navigate('/dashboard', { replace: true }))
       .catch(() => { setError(true); navigate('/login', { replace: true }); });
   }, []);
@@ -174,13 +179,21 @@ function PublicHome() {
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />;
 }
 
-export default function App() {
-  const { fetchMe, isAuthenticated } = useAuthStore();
-
+// Restores session on mount — must be inside BrowserRouter to use useLocation
+function AuthInit() {
+  const { initAuth } = useAuthStore();
+  const location = useLocation();
   useEffect(() => {
-    // Always call fetchMe on load — verifies the httpOnly cookie session
-    fetchMe();
+    // Skip on /auth/callback — that page handles its own token exchange
+    if (!location.pathname.includes('/auth/callback')) {
+      initAuth();
+    }
   }, []);
+  return null;
+}
+
+export default function App() {
+  const { isAuthenticated } = useAuthStore();
 
   return (
     <QueryClientProvider client={qc}>
@@ -188,6 +201,7 @@ export default function App() {
         <CssBaseline />
         <SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
           <BrowserRouter>
+            <AuthInit />
             <InactivityGuard>
               <Routes>
                 <Route path="/" element={<PublicHome />} />

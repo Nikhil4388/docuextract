@@ -3,90 +3,111 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1';
 
 /**
- * Access token lives in JS memory only — not localStorage, not a cookie.
- * Invisible to DevTools. Lost on hard refresh, but restored automatically
- * via the /auth/refresh endpoint which uses an httpOnly refresh cookie.
+ * Token storage strategy:
+ *  - access_token  → JS module variable (memory only). Never in localStorage.
+ *                    Invisible in DevTools Application tab. Lost on hard refresh
+ *                    but auto-restored via /auth/refresh below.
+ *  - refresh_token → localStorage. Used only to silently restore the access
+ *                    token on page reload. If stolen, attacker can only get a
+ *                    new access token — still gated by the backend.
  */
 let _accessToken: string | null = null;
 
 export function setAccessToken(token: string | null) { _accessToken = token; }
 export function getAccessToken() { return _accessToken; }
-export function clearAccessToken() { _accessToken = null; }
 
-// Keep these no-ops so any remaining import sites don't break
+export function setRefreshToken(token: string) {
+  localStorage.setItem('refresh_token', token);
+}
+export function getRefreshToken() {
+  return localStorage.getItem('refresh_token');
+}
+export function clearAllTokens() {
+  _accessToken = null;
+  localStorage.removeItem('refresh_token');
+}
+
+// Legacy no-ops — keep so old import sites don't break
 export function setTokens(_: unknown) {}
 export function clearTokens() {}
 
-const api: AxiosInstance = axios.create({
-  baseURL: BASE_URL,
-  withCredentials: true,  // needed so the httpOnly refresh cookie is sent to /auth/refresh
-});
+const api: AxiosInstance = axios.create({ baseURL: BASE_URL });
 
-// Attach in-memory access token as Authorization header
+// Attach in-memory access token on every request
 api.interceptors.request.use((config) => {
-  if (_accessToken) {
-    config.headers.Authorization = `Bearer ${_accessToken}`;
-  }
+  if (_accessToken) config.headers.Authorization = `Bearer ${_accessToken}`;
   return config;
 });
 
-// On 401: silently refresh the access token via the httpOnly refresh cookie, then retry
+// On 401 — try to silently refresh, then replay the original request
 let isRefreshing = false;
-let failedQueue: Array<{ resolve: (token: string) => void; reject: (e: unknown) => void }> = [];
+let queue: Array<{ resolve: (t: string) => void; reject: (e: unknown) => void }> = [];
 
-function processQueue(error: unknown, token: string | null) {
-  failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve(token!)));
-  failedQueue = [];
+function flushQueue(err: unknown, token: string | null) {
+  queue.forEach((p) => (err ? p.reject(err) : p.resolve(token!)));
+  queue = [];
 }
 
 api.interceptors.response.use(
   (r) => r,
   async (error: AxiosError) => {
-    const original = error.config as typeof error.config & { _retry?: boolean };
+    const orig = error.config as typeof error.config & { _retry?: boolean };
+    const path = orig?.url ?? '';
 
-    // Don't retry refresh/login/exchange endpoints (avoids infinite loops)
-    const url = original?.url ?? '';
+    // Never retry the refresh or login endpoints — would loop forever
     if (
-      error.response?.status === 401 &&
-      !original?._retry &&
-      !url.includes('/auth/refresh') &&
-      !url.includes('/auth/login') &&
-      !url.includes('/auth/exchange')
+      error.response?.status !== 401 ||
+      orig?._retry ||
+      path.includes('/auth/refresh') ||
+      path.includes('/auth/login') ||
+      path.includes('/auth/exchange')
     ) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({
-            resolve: (token) => {
-              original!.headers!.Authorization = `Bearer ${token}`;
-              resolve(api(original!));
-            },
-            reject,
-          });
-        });
-      }
-
-      original._retry = true;
-      isRefreshing = true;
-
-      try {
-        // Refresh cookie is httpOnly — browser sends it automatically
-        const res = await api.post<{ access_token: string }>('/auth/refresh');
-        const newToken = res.data.access_token;
-        setAccessToken(newToken);
-        processQueue(null, newToken);
-        original!.headers!.Authorization = `Bearer ${newToken}`;
-        return api(original!);
-      } catch (err) {
-        processQueue(err, null);
-        clearAccessToken();
-        window.location.href = '/login';
-        return Promise.reject(err);
-      } finally {
-        isRefreshing = false;
-      }
+      return Promise.reject(error);
     }
 
-    return Promise.reject(error);
+    const storedRefresh = getRefreshToken();
+    if (!storedRefresh) {
+      // No refresh token — only redirect to login if NOT on the OAuth callback page
+      if (!window.location.pathname.includes('/auth/callback')) {
+        clearAllTokens();
+        window.location.href = '/login';
+      }
+      return Promise.reject(error);
+    }
+
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        queue.push({
+          resolve: (t) => { orig!.headers!.Authorization = `Bearer ${t}`; resolve(api(orig!)); },
+          reject,
+        });
+      });
+    }
+
+    orig._retry = true;
+    isRefreshing = true;
+
+    try {
+      const res = await api.post<{ access_token: string; refresh_token?: string }>(
+        '/auth/refresh',
+        { refresh_token: storedRefresh }
+      );
+      const { access_token, refresh_token } = res.data;
+      setAccessToken(access_token);
+      if (refresh_token) setRefreshToken(refresh_token);
+      flushQueue(null, access_token);
+      orig!.headers!.Authorization = `Bearer ${access_token}`;
+      return api(orig!);
+    } catch (err) {
+      flushQueue(err, null);
+      clearAllTokens();
+      if (!window.location.pathname.includes('/auth/callback')) {
+        window.location.href = '/login';
+      }
+      return Promise.reject(err);
+    } finally {
+      isRefreshing = false;
+    }
   }
 );
 

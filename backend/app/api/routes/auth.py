@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request, Response, Cookie
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Response, Cookie
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 import secrets
 import random
 import httpx
-import redis as redis_lib
 
 from app.core.database import get_db
 from app.core.security import (
@@ -16,81 +15,11 @@ from app.core.security import (
     create_access_token, create_refresh_token, decode_token
 )
 from app.core.config import settings
-from app.models.user import User, AuthProvider, UserRole
+from app.models.user import User, AuthProvider
 from app.api.deps import get_current_user
 from app.services.email_service import send_otp_email, send_password_reset_email
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
-
-
-# ── One-time OAuth exchange codes — Redis-backed, 60s TTL ────────────────────
-# Using Redis so codes work across multiple Railway containers/workers.
-# Falls back to an in-memory dict if Redis is unavailable (dev only).
-_fallback_codes: dict = {}
-
-def _get_redis() -> Optional[redis_lib.Redis]:
-    try:
-        r = redis_lib.from_url(settings.REDIS_URL, socket_connect_timeout=1)
-        r.ping()
-        return r
-    except Exception:
-        return None
-
-
-def _create_oauth_code(user_id: str) -> str:
-    code = secrets.token_urlsafe(32)
-    r = _get_redis()
-    if r:
-        r.setex(f"oauth_code:{code}", 60, user_id)
-    else:
-        import time
-        _fallback_codes[code] = (user_id, time.time() + 60)
-    return code
-
-
-def _consume_oauth_code(code: str) -> Optional[str]:
-    """Returns user_id if valid and unused. Deletes the code atomically."""
-    r = _get_redis()
-    if r:
-        key = f"oauth_code:{code}"
-        user_id = r.getdel(key)  # atomic get-and-delete
-        return user_id.decode() if user_id else None
-    else:
-        import time
-        entry = _fallback_codes.pop(code, None)
-        if not entry:
-            return None
-        user_id, expires_at = entry
-        return user_id if time.time() <= expires_at else None
-
-
-# ── Refresh cookie helpers ─────────────────────────────────────────────────────
-
-def _set_refresh_cookie(response: Response, user_id: str) -> None:
-    """Set the refresh token as an httpOnly cookie.
-    SameSite=None + Secure=True allows cross-origin use (Vercel → Railway).
-    The access token is returned in the JSON body and stored in JS memory only.
-    """
-    refresh_token = create_refresh_token(str(user_id))
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        httponly=True,
-        secure=True,
-        samesite="none",
-        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
-        path="/api/v1/auth/refresh",
-    )
-
-
-def _clear_refresh_cookie(response: Response) -> None:
-    response.delete_cookie(
-        "refresh_token",
-        path="/api/v1/auth/refresh",
-        secure=True,
-        samesite="none",
-        httponly=True,
-    )
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -108,9 +37,13 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
-class AccessTokenResponse(BaseModel):
+class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
 
 class PasswordResetRequest(BaseModel):
     email: EmailStr
@@ -123,14 +56,17 @@ class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
 
-class ExchangeRequest(BaseModel):
-    code: str
-
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _generate_otp() -> str:
     return str(random.randint(100000, 999999))
+
+
+def _make_tokens(user_id: str) -> dict:
+    return {
+        "access_token": create_access_token(str(user_id)),
+        "refresh_token": create_refresh_token(str(user_id)),
+        "token_type": "bearer",
+    }
 
 
 # ── Register ──────────────────────────────────────────────────────────────────
@@ -144,7 +80,6 @@ async def register(
     result = await db.execute(select(User).where(User.email == payload.email))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Email already registered")
-
     user = User(
         email=payload.email,
         hashed_password=get_password_hash(payload.password),
@@ -195,89 +130,42 @@ async def resend_otp(
 
 # ── Login ─────────────────────────────────────────────────────────────────────
 
-@router.post("/login", response_model=AccessTokenResponse)
-async def login(payload: LoginRequest, response: Response, db: AsyncSession = Depends(get_db)):
+@router.post("/login", response_model=TokenResponse)
+async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == payload.email))
     user = result.scalar_one_or_none()
-
     if not user or not user.hashed_password or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if not user.is_active:
-        raise HTTPException(status_code=403, detail="Account deactivated. Contact support.")
+        raise HTTPException(status_code=403, detail="Account deactivated.")
     if not user.is_verified:
         raise HTTPException(status_code=403, detail="Email not verified.")
-
-    # Access token → returned in body (stored in JS memory, not localStorage)
-    # Refresh token → httpOnly cookie (invisible to JS)
-    _set_refresh_cookie(response, str(user.id))
-    return AccessTokenResponse(access_token=create_access_token(str(user.id)))
+    return _make_tokens(str(user.id))
 
 
 # ── Logout ────────────────────────────────────────────────────────────────────
 
 @router.post("/logout")
-async def logout(response: Response):
-    _clear_refresh_cookie(response)
-    return {"message": "Logged out successfully"}
+async def logout():
+    return {"message": "Logged out"}
 
 
-# ── Refresh access token ──────────────────────────────────────────────────────
+# ── Refresh ───────────────────────────────────────────────────────────────────
 
-@router.post("/refresh", response_model=AccessTokenResponse)
-async def refresh_token(
-    response: Response,
-    refresh_token: Optional[str] = Cookie(None),
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Reads refresh_token from httpOnly cookie.
-    Returns a fresh access_token in the JSON body.
-    Frontend stores it in memory only.
-    """
-    if not refresh_token:
-        raise HTTPException(status_code=401, detail="No refresh token")
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_token(payload: RefreshRequest, db: AsyncSession = Depends(get_db)):
     try:
-        data = decode_token(refresh_token)
+        data = decode_token(payload.refresh_token)
         if data.get("type") != "refresh":
             raise ValueError()
         user_id = data["sub"]
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
-
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="User not found")
-
-    # Rotate refresh token cookie + return new access token
-    _set_refresh_cookie(response, str(user.id))
-    return AccessTokenResponse(access_token=create_access_token(str(user.id)))
-
-
-# ── OAuth one-time code exchange ──────────────────────────────────────────────
-
-@router.post("/exchange", response_model=AccessTokenResponse)
-async def exchange_oauth_code(
-    payload: ExchangeRequest,
-    response: Response,
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Exchange a one-time OAuth code for a session.
-    The code is created server-side after Google callback and put in the redirect URL.
-    It expires in 60 seconds and can only be used once.
-    """
-    user_id = _consume_oauth_code(payload.code)
-    if not user_id:
-        raise HTTPException(status_code=400, detail="Invalid or expired OAuth code")
-
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if not user or not user.is_active:
-        raise HTTPException(status_code=401, detail="User not found")
-
-    _set_refresh_cookie(response, str(user.id))
-    return AccessTokenResponse(access_token=create_access_token(str(user.id)))
+    return _make_tokens(str(user.id))
 
 
 # ── Password reset ────────────────────────────────────────────────────────────
@@ -296,7 +184,7 @@ async def forgot_password(
         user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
         await db.commit()
         background_tasks.add_task(send_password_reset_email, user.email, token)
-    return {"message": "If that email exists, a password reset link has been sent."}
+    return {"message": "If that email exists, a reset link was sent."}
 
 
 @router.post("/reset-password")
@@ -332,10 +220,9 @@ async def change_password(
 @router.get("/google")
 async def google_auth():
     from urllib.parse import urlencode
-    redirect_uri = f"{settings.BACKEND_URL}/api/v1/auth/google/callback"
     params = {
         "client_id": settings.GOOGLE_CLIENT_ID,
-        "redirect_uri": redirect_uri,
+        "redirect_uri": f"{settings.BACKEND_URL}/api/v1/auth/google/callback",
         "response_type": "code",
         "scope": "openid email profile",
     }
@@ -357,12 +244,16 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
             },
         )
         token_data = token_resp.json()
+        if "error" in token_data:
+            return RedirectResponse(f"{settings.FRONTEND_URL}/login?error=oauth_failed")
+
         userinfo_resp = await client.get(
             "https://www.googleapis.com/oauth2/v3/userinfo",
             headers={"Authorization": f"Bearer {token_data['access_token']}"},
         )
         userinfo = userinfo_resp.json()
 
+    # Find or create the user
     result = await db.execute(
         select(User).where(User.oauth_id == userinfo["sub"], User.auth_provider == AuthProvider.GOOGLE)
     )
@@ -393,8 +284,9 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
         if userinfo.get("picture"): user.avatar_url = userinfo["picture"]
         await db.flush()
 
-    # Create a one-time code and redirect — no tokens in URL, no cross-origin cookie issues
-    exchange_code = _create_oauth_code(str(user.id))
+    tokens = _make_tokens(str(user.id))
     return RedirectResponse(
-        url=f"{settings.FRONTEND_URL}/auth/callback?code={exchange_code}"
+        f"{settings.FRONTEND_URL}/auth/callback"
+        f"?access_token={tokens['access_token']}"
+        f"&refresh_token={tokens['refresh_token']}"
     )
