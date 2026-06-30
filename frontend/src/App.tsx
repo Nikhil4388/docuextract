@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { SnackbarProvider, useSnackbar } from 'notistack';
@@ -129,21 +129,15 @@ function InactivityGuard({ children }: { children: React.ReactNode }) {
 }
 
 function AuthCallbackPage() {
-  const [params] = useSearchParams();
   const { setTokensAndFetch } = useAuthStore();
   const navigate = useNavigate();
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    const access = params.get('access_token');
-    const refresh = params.get('refresh_token');
-    if (access && refresh) {
-      setTokensAndFetch({ access_token: access, refresh_token: refresh, token_type: 'bearer' })
-        .then(() => navigate('/dashboard', { replace: true }))
-        .catch(() => { setError(true); navigate('/login', { replace: true }); });
-    } else {
-      navigate('/login', { replace: true });
-    }
+    // Cookies were set by the backend redirect — just verify the session
+    setTokensAndFetch(null)
+      .then(() => navigate('/dashboard', { replace: true }))
+      .catch(() => { setError(true); navigate('/login', { replace: true }); });
   }, []);
 
   if (error) return <Navigate to="/login" replace />;
@@ -182,7 +176,8 @@ export default function App() {
   const { fetchMe, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
-    if (isAuthenticated) fetchMe();
+    // Always call fetchMe on load — verifies the httpOnly cookie session
+    fetchMe();
   }, []);
 
   return (

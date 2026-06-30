@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { User, AuthTokens } from '../types';
-import api, { setTokens, clearTokens } from '../services/api';
+import { User } from '../types';
+import api from '../services/api';
 
 interface AuthState {
   user: User | null;
@@ -8,21 +8,23 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, fullName?: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   fetchMe: () => Promise<void>;
-  setTokensAndFetch: (tokens: AuthTokens) => Promise<void>;
+  // kept for OAuth callback compatibility — now just calls fetchMe
+  setTokensAndFetch: (_tokens: unknown) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isLoading: false,
-  isAuthenticated: !!localStorage.getItem('access_token'),
+  // Start unauthenticated — fetchMe() in App.tsx confirms the session via cookie
+  isAuthenticated: false,
 
   login: async (email, password) => {
     set({ isLoading: true });
     try {
-      const res = await api.post<AuthTokens>('/auth/login', { email, password });
-      setTokens(res.data);
+      // Backend sets httpOnly cookies; no tokens returned in body
+      await api.post('/auth/login', { email, password });
       const me = await api.get<User>('/users/me');
       set({ user: me.data, isAuthenticated: true });
     } finally {
@@ -39,8 +41,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  logout: () => {
-    clearTokens();
+  logout: async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // Even if the request fails, clear local state
+    }
     set({ user: null, isAuthenticated: false });
   },
 
@@ -49,13 +55,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       const me = await api.get<User>('/users/me');
       set({ user: me.data, isAuthenticated: true });
     } catch {
-      clearTokens();
       set({ user: null, isAuthenticated: false });
     }
   },
 
-  setTokensAndFetch: async (tokens: AuthTokens) => {
-    setTokens(tokens);
+  // OAuth callback: cookies already set by backend redirect — just verify session
+  setTokensAndFetch: async (_tokens) => {
     const me = await api.get<User>('/users/me');
     set({ user: me.data, isAuthenticated: true });
   },

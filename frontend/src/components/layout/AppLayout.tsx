@@ -290,7 +290,7 @@ export default function AppLayout() {
               </Button>
             )}
             <Button size="small" variant="outlined" fullWidth
-              onClick={() => { setAnchorEl(null); logout(); navigate('/login'); }}
+              onClick={() => { setAnchorEl(null); logout().then(() => navigate('/login')); }}
               sx={{ borderRadius: 2, fontSize: 11, fontWeight: 700,
                 borderColor: '#fecaca', color: '#ef4444',
                 '&:hover': { bgcolor: '#fef2f2', borderColor: '#ef4444' } }}>

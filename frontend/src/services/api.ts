@@ -1,41 +1,22 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { AuthTokens } from '../types';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1';
 
-let accessToken: string | null = localStorage.getItem('access_token');
-let refreshToken: string | null = localStorage.getItem('refresh_token');
-
-export function setTokens(tokens: AuthTokens) {
-  accessToken = tokens.access_token;
-  refreshToken = tokens.refresh_token;
-  localStorage.setItem('access_token', tokens.access_token);
-  localStorage.setItem('refresh_token', tokens.refresh_token);
-}
-
-export function clearTokens() {
-  accessToken = null;
-  refreshToken = null;
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
-}
-
-const api: AxiosInstance = axios.create({ baseURL: BASE_URL });
-
-// Attach token
-api.interceptors.request.use((config) => {
-  if (accessToken) {
-    config.headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return config;
+/**
+ * All requests include credentials (httpOnly cookies).
+ * Tokens are NEVER stored in localStorage or accessible to JavaScript.
+ */
+const api: AxiosInstance = axios.create({
+  baseURL: BASE_URL,
+  withCredentials: true,   // send cookies on every request
 });
 
-// Refresh on 401
+// ── Auto-refresh on 401 ───────────────────────────────────────────────────────
 let isRefreshing = false;
-let failedQueue: Array<{ resolve: (v: string) => void; reject: (e: unknown) => void }> = [];
+let failedQueue: Array<{ resolve: () => void; reject: (e: unknown) => void }> = [];
 
-function processQueue(error: unknown, token: string | null) {
-  failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve(token!)));
+function processQueue(error: unknown) {
+  failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve()));
   failedQueue = [];
 }
 
@@ -43,35 +24,43 @@ api.interceptors.response.use(
   (r) => r,
   async (error: AxiosError) => {
     const original = error.config as typeof error.config & { _retry?: boolean };
-    if (error.response?.status === 401 && !original?._retry && refreshToken) {
+
+    if (error.response?.status === 401 && !original?._retry) {
+      // Don't retry the refresh endpoint itself — that would loop
+      if (original?.url?.includes('/auth/refresh') || original?.url?.includes('/auth/login')) {
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then((token) => {
-          original!.headers!.Authorization = `Bearer ${token}`;
-          return api(original!);
+          failedQueue.push({ resolve: () => resolve(api(original!)), reject });
         });
       }
+
       original._retry = true;
       isRefreshing = true;
+
       try {
-        const res = await axios.post(`${BASE_URL}/auth/refresh`, { refresh_token: refreshToken });
-        const tokens: AuthTokens = res.data;
-        setTokens(tokens);
-        processQueue(null, tokens.access_token);
-        original!.headers!.Authorization = `Bearer ${tokens.access_token}`;
+        // Backend reads refresh_token cookie automatically; sets new access_token cookie
+        await api.post('/auth/refresh');
+        processQueue(null);
         return api(original!);
       } catch (err) {
-        processQueue(err, null);
-        clearTokens();
+        processQueue(err);
+        // Refresh failed — session expired, go to login
         window.location.href = '/login';
         return Promise.reject(err);
       } finally {
         isRefreshing = false;
       }
     }
+
     return Promise.reject(error);
   }
 );
 
 export default api;
+
+// Keep these as no-ops so import sites don't break during migration
+export function setTokens(_: unknown) {}
+export function clearTokens() {}

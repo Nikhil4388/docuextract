@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request, Response, Cookie
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -22,6 +22,40 @@ from app.services.email_service import send_otp_email, send_password_reset_email
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
+# ── Cookie helpers ─────────────────────────────────────────────────────────────
+
+def _set_auth_cookies(response: Response, user_id: str) -> None:
+    """Set httpOnly auth cookies. Tokens never touch client-side JS."""
+    secure = not settings.DEBUG  # http ok in dev, https required in prod
+    access_token  = create_access_token(str(user_id))
+    refresh_token = create_refresh_token(str(user_id))
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=secure,
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/",
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=secure,
+        samesite="lax",
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+        path="/api/v1/auth/refresh",  # only sent to the refresh endpoint
+    )
+
+
+def _clear_auth_cookies(response: Response) -> None:
+    """Clear both auth cookies (logout)."""
+    response.delete_cookie("access_token",  path="/")
+    response.delete_cookie("refresh_token", path="/api/v1/auth/refresh")
+
+
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
 class RegisterRequest(BaseModel):
@@ -29,35 +63,20 @@ class RegisterRequest(BaseModel):
     password: str
     full_name: Optional[str] = None
 
-
 class VerifyOTPRequest(BaseModel):
     email: EmailStr
     otp: str
-
 
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
-
-class TokenResponse(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str = "bearer"
-
-
-class RefreshRequest(BaseModel):
-    refresh_token: str
-
-
 class PasswordResetRequest(BaseModel):
     email: EmailStr
-
 
 class PasswordResetConfirm(BaseModel):
     token: str
     new_password: str
-
 
 class ChangePasswordRequest(BaseModel):
     current_password: str
@@ -67,11 +86,10 @@ class ChangePasswordRequest(BaseModel):
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _generate_otp() -> str:
-    """Generate a 6-digit OTP."""
     return str(random.randint(100000, 999999))
 
 
-# ── Email/Password Auth ───────────────────────────────────────────────────────
+# ── Register ──────────────────────────────────────────────────────────────────
 
 @router.post("/register", status_code=201)
 async def register(
@@ -79,40 +97,28 @@ async def register(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
-    # Check duplicate
     result = await db.execute(select(User).where(User.email == payload.email))
-    existing = result.scalar_one_or_none()
-    if existing:
+    if result.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Email already registered")
-
-    # Generate OTP
-    otp = _generate_otp()
-    otp_expires = datetime.utcnow() + timedelta(minutes=10)
 
     user = User(
         email=payload.email,
         hashed_password=get_password_hash(payload.password),
         full_name=payload.full_name,
         auth_provider=AuthProvider.EMAIL,
-        is_verified=True,  # Auto-verify — no OTP required
+        is_verified=True,
     )
     db.add(user)
     await db.flush()
+    return {"message": "Registration successful. You can now log in.", "email": payload.email}
 
-    return {
-        "message": "Registration successful. You can now log in.",
-        "email": payload.email,
-    }
 
+# ── OTP ───────────────────────────────────────────────────────────────────────
 
 @router.post("/verify-otp")
-async def verify_otp(
-    payload: VerifyOTPRequest,
-    db: AsyncSession = Depends(get_db),
-):
+async def verify_otp(payload: VerifyOTPRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == payload.email))
     user = result.scalar_one_or_none()
-
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
     if user.is_verified:
@@ -121,7 +127,6 @@ async def verify_otp(
         raise HTTPException(status_code=400, detail="Invalid OTP code")
     if user.reset_token_expires and user.reset_token_expires < datetime.utcnow():
         raise HTTPException(status_code=400, detail="OTP expired. Please register again.")
-
     user.is_verified = True
     user.verification_token = None
     user.reset_token_expires = None
@@ -130,7 +135,7 @@ async def verify_otp(
 
 @router.post("/resend-otp")
 async def resend_otp(
-    payload: PasswordResetRequest,  # just needs email
+    payload: PasswordResetRequest,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
@@ -144,8 +149,10 @@ async def resend_otp(
     return {"message": "If that email exists and is unverified, a new OTP was sent."}
 
 
-@router.post("/login", response_model=TokenResponse)
-async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
+# ── Login / Logout ────────────────────────────────────────────────────────────
+
+@router.post("/login")
+async def login(payload: LoginRequest, response: Response, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == payload.email))
     user = result.scalar_one_or_none()
 
@@ -154,21 +161,30 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account deactivated. Contact support.")
     if not user.is_verified:
-        raise HTTPException(
-            status_code=403,
-            detail="Email not verified. Please check your email for the OTP code."
-        )
+        raise HTTPException(status_code=403, detail="Email not verified.")
 
-    return TokenResponse(
-        access_token=create_access_token(str(user.id)),
-        refresh_token=create_refresh_token(str(user.id)),
-    )
+    _set_auth_cookies(response, str(user.id))
+    return {"message": "Login successful"}
 
 
-@router.post("/refresh", response_model=TokenResponse)
-async def refresh_token(payload: RefreshRequest, db: AsyncSession = Depends(get_db)):
+@router.post("/logout")
+async def logout(response: Response):
+    _clear_auth_cookies(response)
+    return {"message": "Logged out successfully"}
+
+
+# ── Token refresh ─────────────────────────────────────────────────────────────
+
+@router.post("/refresh")
+async def refresh_token(
+    response: Response,
+    refresh_token: Optional[str] = Cookie(None),
+    db: AsyncSession = Depends(get_db),
+):
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="No refresh token")
     try:
-        data = decode_token(payload.refresh_token)
+        data = decode_token(refresh_token)
         if data.get("type") != "refresh":
             raise ValueError()
         user_id = data["sub"]
@@ -180,11 +196,11 @@ async def refresh_token(payload: RefreshRequest, db: AsyncSession = Depends(get_
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="User not found")
 
-    return TokenResponse(
-        access_token=create_access_token(str(user.id)),
-        refresh_token=create_refresh_token(str(user.id)),
-    )
+    _set_auth_cookies(response, str(user.id))
+    return {"message": "Token refreshed"}
 
+
+# ── Password reset ────────────────────────────────────────────────────────────
 
 @router.post("/forgot-password")
 async def forgot_password(
@@ -286,25 +302,24 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
             db.add(user)
             await db.flush()
         else:
-            # Existing email-based account — link to Google and sync info
             user.auth_provider = AuthProvider.GOOGLE
             user.oauth_id = userinfo["sub"]
             user.is_verified = True
-            if userinfo.get("name"):
-                user.full_name = userinfo["name"]
-            if userinfo.get("picture"):
-                user.avatar_url = userinfo["picture"]
+            if userinfo.get("name"):   user.full_name = userinfo["name"]
+            if userinfo.get("picture"): user.avatar_url = userinfo["picture"]
             await db.flush()
     else:
-        # Always sync latest name + avatar from Google on each login
-        if userinfo.get("name"):
-            user.full_name = userinfo["name"]
-        if userinfo.get("picture"):
-            user.avatar_url = userinfo["picture"]
+        if userinfo.get("name"):    user.full_name = userinfo["name"]
+        if userinfo.get("picture"): user.avatar_url = userinfo["picture"]
         await db.flush()
 
-    access_token = create_access_token(str(user.id))
-    refresh_token = create_refresh_token(str(user.id))
-    return RedirectResponse(
-        f"{settings.FRONTEND_URL}/auth/callback?access_token={access_token}&refresh_token={refresh_token}"
-    )
+    # Set cookies server-side — NO tokens in the redirect URL
+    redirect = RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/callback")
+    secure = not settings.DEBUG
+    redirect.set_cookie("access_token",  create_access_token(str(user.id)),
+        httponly=True, secure=secure, samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60, path="/")
+    redirect.set_cookie("refresh_token", create_refresh_token(str(user.id)),
+        httponly=True, secure=secure, samesite="lax",
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400, path="/api/v1/auth/refresh")
+    return redirect
