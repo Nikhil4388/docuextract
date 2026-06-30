@@ -1,23 +1,48 @@
 import React from 'react';
-import { Box, Grid, Paper, Typography, Button, Chip, LinearProgress, Skeleton, Avatar } from '@mui/material';
-import { Add, ArrowForward, CheckCircle, HourglassEmpty, Error, TrendingUp, FolderOpen, Bolt } from '@mui/icons-material';
+import { Box, Typography, Button, Skeleton, Avatar } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { ExtractionJob } from '../types';
 import { useAuthStore } from '../store/authStore';
 
-function statusColor(s: string): 'default' | 'info' | 'success' | 'error' | 'warning' {
-  return ({ pending: 'default', processing: 'info', completed: 'success', failed: 'error', cancelled: 'warning' } as any)[s] ?? 'default';
+function statusDot(s: string) {
+  const map: Record<string, string> = {
+    completed:  '#10b981',
+    processing: '#3b82f6',
+    pending:    '#f59e0b',
+    failed:     '#ef4444',
+    cancelled:  '#94a3b8',
+  };
+  return map[s] ?? '#cbd5e1';
 }
+
+function statusLabel(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function timeAgo(d: string) {
+  const diff = Date.now() - new Date(d).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1)  return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
 function getGreeting() {
   const h = new Date().getHours();
-  return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+  if (h < 5)  return 'Good night';
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
 }
 
 export default function DashboardPage() {
-  const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const navigate     = useNavigate();
+  const { user }     = useAuthStore();
+  const firstName    = user?.full_name?.split(' ')[0] ?? user?.email?.split('@')[0] ?? 'there';
 
   const { data: jobs, isLoading } = useQuery<ExtractionJob[]>({
     queryKey: ['jobs'],
@@ -26,255 +51,351 @@ export default function DashboardPage() {
   });
 
   const stats = React.useMemo(() => {
-    if (!jobs) return { total: 0, completed: 0, processing: 0, failed: 0, pending: 0, successRate: 0, totalFiles: 0 };
+    if (!jobs) return { total: 0, completed: 0, running: 0, failed: 0, totalFiles: 0, successRate: 0 };
     const completed = jobs.filter((j) => j.status === 'completed').length;
-    const done = jobs.filter((j) => ['completed', 'failed'].includes(j.status)).length;
+    const done      = jobs.filter((j) => ['completed', 'failed'].includes(j.status)).length;
     return {
-      total: jobs.length,
+      total:       jobs.length,
       completed,
-      processing: jobs.filter((j) => j.status === 'processing').length,
-      failed: jobs.filter((j) => j.status === 'failed').length,
-      pending: jobs.filter((j) => j.status === 'pending').length,
+      running:     jobs.filter((j) => ['processing', 'pending'].includes(j.status)).length,
+      failed:      jobs.filter((j) => j.status === 'failed').length,
+      totalFiles:  jobs.reduce((a, j) => a + (j.processed_files || 0), 0),
       successRate: done > 0 ? Math.round((completed / done) * 100) : 0,
-      totalFiles: jobs.reduce((a, j) => a + (j.processed_files || 0), 0),
     };
   }, [jobs]);
 
-  const recentJobs = jobs?.slice(0, 6) ?? [];
-  const firstName = user?.full_name?.split(' ')[0] ?? user?.email?.split('@')[0] ?? 'there';
-
-  const statCards = [
-    { label: 'Total Jobs', value: stats.total, gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)', icon: '📁', sub: 'all time' },
-    { label: 'Completed', value: stats.completed, gradient: 'linear-gradient(135deg, #10b981, #059669)', icon: '✅', sub: 'successfully' },
-    { label: 'In Progress', value: stats.processing + stats.pending, gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', icon: '⚡', sub: 'running now' },
-    { label: 'PDFs Processed', value: stats.totalFiles, gradient: 'linear-gradient(135deg, #f59e0b, #d97706)', icon: '📄', sub: 'total files' },
-  ];
+  const recentJobs = jobs?.slice(0, 5) ?? [];
 
   return (
     <Box>
-      {/* ── Hero banner ── */}
+      <style>{`
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes countUp {
+          from { opacity: 0; transform: scale(0.8); }
+          to   { opacity: 1; transform: scale(1); }
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        .dash-card { animation: fadeSlideUp 0.4s ease both; }
+        .dash-card:hover { transform: translateY(-3px); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+      `}</style>
+
+      {/* ── HERO ── */}
       <Box sx={{
-        borderRadius: 4, mb: 3, p: 4, position: 'relative', overflow: 'hidden',
-        background: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
-        boxShadow: '0 20px 60px rgba(15,12,41,0.35)',
+        mb: 4, borderRadius: '24px', overflow: 'hidden', position: 'relative',
+        background: 'linear-gradient(135deg, #0a0720 0%, #1a1042 45%, #0f0c29 100%)',
+        p: { xs: 3.5, md: 5 },
+        boxShadow: '0 24px 64px rgba(10,7,32,0.4), 0 4px 16px rgba(99,102,241,0.2)',
       }}>
         {/* Orbs */}
-        <Box sx={{ position: 'absolute', width: 300, height: 300, borderRadius: '50%', top: -100, right: 50,
-          background: 'radial-gradient(circle, rgba(99,102,241,0.4) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        <Box sx={{ position: 'absolute', width: 200, height: 200, borderRadius: '50%', bottom: -80, right: -50,
-          background: 'radial-gradient(circle, rgba(139,92,246,0.35) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <Box sx={{
+          position: 'absolute', width: 500, height: 500, borderRadius: '50%',
+          top: -200, right: -50,
+          background: 'radial-gradient(circle, rgba(99,102,241,0.35) 0%, transparent 60%)',
+          pointerEvents: 'none',
+        }} />
+        <Box sx={{
+          position: 'absolute', width: 300, height: 300, borderRadius: '50%',
+          bottom: -100, left: 200,
+          background: 'radial-gradient(circle, rgba(6,182,212,0.2) 0%, transparent 65%)',
+          pointerEvents: 'none',
+        }} />
+        {/* Grid */}
+        <Box sx={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          backgroundImage: `
+            linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)
+          `,
+          backgroundSize: '48px 48px',
+        }} />
 
         <Box sx={{ position: 'relative', zIndex: 1 }}>
-          <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, mb: 0.5, fontWeight: 500 }}>
-            Good {getGreeting()} ☀️
-          </Typography>
-          <Typography sx={{
-            fontSize: { xs: 24, md: 32 }, fontWeight: 900, color: 'white', mb: 1, lineHeight: 1.2,
+          <Box sx={{
+            display: 'inline-flex', alignItems: 'center', gap: 1, mb: 2.5,
+            bgcolor: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)',
+            borderRadius: 6, px: 1.5, py: 0.6,
           }}>
-            Welcome back, {firstName}!
+            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#10b981', boxShadow: '0 0 8px #10b981' }} />
+            <Typography sx={{ color: '#a5b4fc', fontSize: 11, fontWeight: 600, letterSpacing: 1 }}>
+              AI ENGINE READY
+            </Typography>
+          </Box>
+
+          <Typography sx={{
+            fontSize: { xs: 24, md: 36 }, fontWeight: 900, color: 'white',
+            lineHeight: 1.15, mb: 1.5, letterSpacing: -0.5,
+          }}>
+            {getGreeting()},{' '}
+            <span style={{
+              background: 'linear-gradient(135deg, #a5b4fc, #818cf8, #06b6d4)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+            }}>{firstName}</span>
           </Typography>
-          <Typography sx={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, mb: 3 }}>
-            {stats.processing + stats.pending > 0
-              ? `You have ${stats.processing + stats.pending} job${stats.processing + stats.pending > 1 ? 's' : ''} in progress`
-              : stats.completed > 0 ? `${stats.completed} job${stats.completed > 1 ? 's' : ''} completed • ${stats.totalFiles} files processed`
-              : 'Ready to extract data from your PDFs?'}
+
+          <Typography sx={{ color: 'rgba(255,255,255,0.45)', fontSize: 15, mb: 4, maxWidth: 500 }}>
+            {stats.running > 0
+              ? `${stats.running} job${stats.running > 1 ? 's' : ''} running right now — sit back and relax.`
+              : stats.completed > 0
+              ? `${stats.totalFiles.toLocaleString()} PDF${stats.totalFiles !== 1 ? 's' : ''} processed across ${stats.completed} completed job${stats.completed !== 1 ? 's' : ''}.`
+              : 'Drop in your PDFs and let AI do the heavy lifting.'}
           </Typography>
-          <Button
-            onClick={() => navigate('/jobs/new')}
-            startIcon={<Add />}
+
+          {/* Hero stats */}
+          <Box sx={{ display: 'flex', gap: { xs: 3, md: 6 }, flexWrap: 'wrap', mb: 4 }}>
+            {[
+              { value: stats.total, label: 'Total Jobs', color: '#a5b4fc' },
+              { value: stats.completed, label: 'Completed', color: '#6ee7b7' },
+              { value: stats.totalFiles, label: 'PDFs Processed', color: '#67e8f9' },
+            ].map((s) => (
+              <Box key={s.label}>
+                <Typography sx={{
+                  fontSize: { xs: 28, md: 36 }, fontWeight: 900, lineHeight: 1, color: s.color,
+                  animation: 'countUp 0.5s ease both',
+                }}>
+                  {isLoading ? '—' : s.value.toLocaleString()}
+                </Typography>
+                <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, fontWeight: 500, mt: 0.3 }}>
+                  {s.label}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+
+          <Button onClick={() => navigate('/jobs/new')} size="large"
             sx={{
-              bgcolor: 'white', color: '#302b63', fontWeight: 800, borderRadius: 2.5,
-              px: 3, py: 1.2, fontSize: 14,
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.92)', transform: 'translateY(-1px)', boxShadow: '0 8px 20px rgba(0,0,0,0.2)' },
-              transition: 'all 0.2s ease', boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-            }}
-          >
-            New Extraction Job
+              px: 3.5, py: 1.4, borderRadius: 3, fontWeight: 800, fontSize: 14,
+              bgcolor: 'white', color: '#1a1042',
+              '&:hover': { bgcolor: 'rgba(255,255,255,0.92)', transform: 'translateY(-2px)', boxShadow: '0 12px 32px rgba(0,0,0,0.3)' },
+              boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+              transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            }}>
+            + New Extraction Job
           </Button>
         </Box>
       </Box>
 
-      {/* ── Stat cards ── */}
-      <Grid container spacing={2.5} mb={3}>
-        {statCards.map((s) => (
-          <Grid item xs={6} md={3} key={s.label}>
-            <Paper sx={{
-              p: 2.5, borderRadius: 3, position: 'relative', overflow: 'hidden',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
-              border: '1px solid rgba(0,0,0,0.04)',
-              transition: 'transform 0.2s, box-shadow 0.2s',
-              '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 8px 30px rgba(0,0,0,0.1)' },
-            }}>
-              <Box sx={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-                background: s.gradient, borderRadius: '3px 3px 0 0',
-              }} />
-              <Box sx={{ fontSize: 28, mb: 1 }}>{s.icon}</Box>
-              <Typography variant="caption" color="text.secondary" display="block" fontWeight={600} sx={{ letterSpacing: 0.3 }}>
-                {s.label.toUpperCase()}
-              </Typography>
-              <Typography sx={{ fontSize: 36, fontWeight: 900, lineHeight: 1.1, mb: 0.5 }}>
-                {isLoading ? <Skeleton width={50} /> : s.value.toLocaleString()}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">{s.sub}</Typography>
-            </Paper>
-          </Grid>
-        ))}
-      </Grid>
-
-      <Grid container spacing={2.5}>
-        {/* ── Recent Jobs ── */}
-        <Grid item xs={12} md={7}>
-          <Paper sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.04)' }}>
+      {/* ── STAT CARDS ── */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 2.5, mb: 4 }}>
+        {[
+          { label: 'Total Jobs',   value: stats.total,      icon: '📁', from: '#6366f1', to: '#818cf8', delay: '0s' },
+          { label: 'Completed',    value: stats.completed,   icon: '✅', from: '#10b981', to: '#34d399', delay: '0.05s' },
+          { label: 'Running',      value: stats.running,     icon: '⚡', from: '#3b82f6', to: '#60a5fa', delay: '0.1s' },
+          { label: 'Success Rate', value: `${stats.successRate}%`, icon: '🎯', from: '#f59e0b', to: '#fbbf24', delay: '0.15s' },
+        ].map((c) => (
+          <Box key={c.label} className="dash-card" sx={{
+            bgcolor: 'white', borderRadius: '20px', p: 3,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 8px 32px rgba(99,102,241,0.08)',
+            border: '1px solid rgba(255,255,255,0.8)',
+            animationDelay: c.delay,
+            position: 'relative', overflow: 'hidden',
+            cursor: 'default',
+            transition: 'box-shadow 0.2s ease',
+            '&:hover': { boxShadow: '0 4px 16px rgba(0,0,0,0.06), 0 16px 48px rgba(99,102,241,0.14)' },
+          }}>
+            {/* Color bar */}
             <Box sx={{
-              px: 3, py: 2.5,
-              borderBottom: '1px solid #f1f5f9',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              background: 'linear-gradient(135deg, #fafbff, #f8f9ff)',
-            }}>
-              <Box>
-                <Typography fontWeight={800} fontSize={15}>Recent Jobs</Typography>
-                <Typography variant="caption" color="text.secondary">Your latest extraction runs</Typography>
-              </Box>
-              <Button size="small" endIcon={<ArrowForward sx={{ fontSize: 13 }} />}
-                onClick={() => navigate('/jobs')}
-                sx={{ fontSize: 12, color: '#6366f1', fontWeight: 700, borderRadius: 2,
-                  '&:hover': { bgcolor: '#6366f108' } }}>
-                View All
-              </Button>
-            </Box>
+              position: 'absolute', top: 0, left: 0, right: 0, height: 3, borderRadius: '20px 20px 0 0',
+              background: `linear-gradient(90deg, ${c.from}, ${c.to})`,
+            }} />
+            {/* Background glow */}
+            <Box sx={{
+              position: 'absolute', right: -20, top: -20, width: 100, height: 100, borderRadius: '50%',
+              background: `radial-gradient(circle, ${c.from}18 0%, transparent 70%)`,
+            }} />
+            <Typography sx={{ fontSize: 28, mb: 1.5 }}>{c.icon}</Typography>
+            <Typography sx={{ fontSize: 32, fontWeight: 900, color: '#0f172a', lineHeight: 1, mb: 0.5 }}>
+              {isLoading ? <Skeleton width={60} /> : c.value}
+            </Typography>
+            <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              {c.label}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
 
-            {isLoading
-              ? Array.from({ length: 4 }).map((_, i) => (
-                  <Box key={i} sx={{ px: 3, py: 2, borderBottom: '1px solid #f8fafc' }}>
-                    <Skeleton width="50%" height={16} />
-                    <Skeleton width="25%" height={12} sx={{ mt: 0.5 }} />
+      {/* ── BOTTOM ROW ── */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 340px' }, gap: 3 }}>
+
+        {/* Recent Jobs */}
+        <Box sx={{
+          bgcolor: 'white', borderRadius: '20px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 8px 32px rgba(99,102,241,0.07)',
+          border: '1px solid rgba(255,255,255,0.8)',
+          overflow: 'hidden',
+        }}>
+          <Box sx={{
+            px: 3, py: 2.5,
+            borderBottom: '1px solid #f1f5f9',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <Box>
+              <Typography sx={{ fontWeight: 800, fontSize: 16, color: '#0f172a' }}>Recent Jobs</Typography>
+              <Typography sx={{ fontSize: 12, color: '#94a3b8', mt: 0.2 }}>Your latest extraction runs</Typography>
+            </Box>
+            <Box onClick={() => navigate('/jobs')} sx={{
+              display: 'flex', alignItems: 'center', gap: 0.5,
+              color: '#6366f1', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              '&:hover': { color: '#4f46e5' },
+            }}>
+              View all
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </Box>
+          </Box>
+
+          {isLoading
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <Box key={i} sx={{ px: 3, py: 2.5, borderBottom: '1px solid #f8fafc', display: 'flex', gap: 2, alignItems: 'center' }}>
+                  <Skeleton variant="circular" width={44} height={44} />
+                  <Box sx={{ flex: 1 }}>
+                    <Skeleton width="45%" height={16} />
+                    <Skeleton width="28%" height={12} sx={{ mt: 0.5 }} />
                   </Box>
-                ))
-              : recentJobs.length === 0
-              ? (
-                <Box sx={{ py: 8, textAlign: 'center' }}>
-                  <FolderOpen sx={{ fontSize: 52, color: '#cbd5e1', mb: 1.5 }} />
-                  <Typography color="text.secondary" fontSize={14} mb={1}>No jobs yet</Typography>
-                  <Button size="small" onClick={() => navigate('/jobs/new')}
-                    sx={{ color: '#6366f1', fontWeight: 700 }}>
-                    Create your first job →
-                  </Button>
-                </Box>
-              )
-              : recentJobs.map((job, idx) => (
-                <Box
-                  key={job.id}
-                  onClick={() => navigate(`/jobs/${job.id}`)}
-                  sx={{
-                    px: 3, py: 2, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2,
-                    borderBottom: idx < recentJobs.length - 1 ? '1px solid #f8fafc' : 'none',
-                    '&:hover': { bgcolor: '#fafbff' }, transition: 'background 0.15s',
-                  }}
-                >
-                  <Avatar sx={{
-                    width: 38, height: 38, fontSize: 14, fontWeight: 800, flexShrink: 0,
-                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                  }}>
-                    {job.name?.[0]?.toUpperCase()}
-                  </Avatar>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography fontWeight={700} noWrap fontSize={14}>{job.name}</Typography>
-                    {job.status === 'processing' && job.total_files > 0 && (
-                      <LinearProgress variant="determinate" value={(job.processed_files / job.total_files) * 100}
-                        sx={{ height: 3, borderRadius: 2, my: 0.5,
-                          '& .MuiLinearProgress-bar': { background: 'linear-gradient(90deg, #6366f1, #8b5cf6)' } }} />
-                    )}
-                    <Typography variant="caption" color="text.secondary">
-                      {new Date(job.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      {job.total_files > 0 && ` · ${job.processed_files}/${job.total_files} files`}
-                    </Typography>
-                  </Box>
-                  <Chip label={job.status} color={statusColor(job.status)} size="small"
-                    sx={{ fontSize: 11, fontWeight: 700, borderRadius: 1.5 }} />
+                  <Skeleton width={70} height={24} sx={{ borderRadius: 3 }} />
                 </Box>
               ))
-            }
-          </Paper>
-        </Grid>
-
-        {/* ── Right column ── */}
-        <Grid item xs={12} md={5}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-
-            {/* Success rate */}
-            <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.04)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <TrendingUp sx={{ color: '#10b981', fontSize: 20 }} />
-                <Typography fontWeight={800} fontSize={14}>Success Rate</Typography>
-              </Box>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                <Box sx={{
-                  width: 72, height: 72, borderRadius: '50%', flexShrink: 0,
-                  background: `conic-gradient(#10b981 ${stats.successRate * 3.6}deg, #f1f5f9 0deg)`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: 'inset 0 0 0 10px white',
+            : recentJobs.length === 0
+            ? (
+              <Box sx={{ py: 10, textAlign: 'center' }}>
+                <Typography sx={{ fontSize: 48, mb: 2 }}>📭</Typography>
+                <Typography sx={{ fontWeight: 700, color: '#334155', mb: 0.5 }}>No jobs yet</Typography>
+                <Typography sx={{ color: '#94a3b8', fontSize: 13, mb: 3 }}>Create your first extraction to get started</Typography>
+                <Box onClick={() => navigate('/jobs/new')} sx={{
+                  display: 'inline-flex', alignItems: 'center', gap: 1,
+                  px: 3, py: 1.2, borderRadius: 3, cursor: 'pointer',
+                  background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                  '&:hover': { opacity: 0.9 },
                 }}>
-                  <Typography fontWeight={900} fontSize={16} color="#10b981">
-                    {isLoading ? '—' : `${stats.successRate}%`}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography fontSize={28} fontWeight={900} color="#10b981" lineHeight={1}>
-                    {isLoading ? <Skeleton width={64} /> : `${stats.successRate}%`}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">of finished jobs succeeded</Typography>
+                  <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 13 }}>+ New Job</Typography>
                 </Box>
               </Box>
-
-              <LinearProgress variant="determinate" value={stats.successRate}
-                sx={{ height: 6, borderRadius: 3, bgcolor: '#f1f5f9',
-                  '& .MuiLinearProgress-bar': { background: 'linear-gradient(90deg, #10b981, #059669)', borderRadius: 3 } }} />
-            </Paper>
-
-            {/* Quick actions */}
-            <Paper sx={{ p: 3, borderRadius: 3, flex: 1, boxShadow: '0 4px 20px rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.04)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <Bolt sx={{ color: '#f59e0b', fontSize: 20 }} />
-                <Typography fontWeight={800} fontSize={14}>Quick Actions</Typography>
-              </Box>
-
-              {[
-                { label: 'New Extraction Job', sub: 'Upload PDFs and extract data', path: '/jobs/new',   gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)', icon: '🚀' },
-                { label: 'Manage Templates',   sub: 'Create or edit column templates', path: '/templates', gradient: 'linear-gradient(135deg, #8b5cf6, #a855f7)', icon: '📋' },
-                { label: 'View All Jobs',      sub: 'Browse and search your history', path: '/jobs',       gradient: 'linear-gradient(135deg, #3b82f6, #6366f1)', icon: '📁' },
-              ].map((a) => (
-                <Box
-                  key={a.path}
-                  onClick={() => navigate(a.path)}
-                  sx={{
-                    p: 1.8, mb: 1, borderRadius: 2.5, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: 1.5,
-                    border: '1px solid #f1f5f9',
-                    '&:hover': { bgcolor: '#f8faff', borderColor: '#e0e7ff', transform: 'translateX(3px)' },
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <Box sx={{
-                    width: 36, height: 36, borderRadius: 2, flexShrink: 0,
-                    background: a.gradient, display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', fontSize: 18,
-                    boxShadow: '0 4px 10px rgba(99,102,241,0.25)',
-                  }}>
-                    {a.icon}
+            )
+            : recentJobs.map((job, idx) => (
+              <Box key={job.id} onClick={() => navigate(`/jobs/${job.id}`)}
+                sx={{
+                  px: 3, py: 2.5, cursor: 'pointer',
+                  borderBottom: idx < recentJobs.length - 1 ? '1px solid #f8fafc' : 'none',
+                  display: 'flex', alignItems: 'center', gap: 2.5,
+                  '&:hover': { bgcolor: '#fafbff' },
+                  transition: 'background 0.12s',
+                }}>
+                <Avatar sx={{
+                  width: 44, height: 44, fontSize: 15, fontWeight: 800, flexShrink: 0,
+                  background: `linear-gradient(135deg, ${['#6366f1','#10b981','#3b82f6','#f59e0b','#8b5cf6'][idx % 5]}, ${['#8b5cf6','#34d399','#60a5fa','#fbbf24','#a78bfa'][idx % 5]})`,
+                }}>
+                  {job.name?.[0]?.toUpperCase()}
+                </Avatar>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }} noWrap>{job.name}</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.3 }}>
+                    {job.total_files > 0 && (
+                      <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>
+                        {job.processed_files}/{job.total_files} files
+                      </Typography>
+                    )}
+                    {job.total_files > 0 && <Box sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: '#cbd5e1' }} />}
+                    <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>{timeAgo(job.created_at)}</Typography>
                   </Box>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography fontSize={13} fontWeight={700}>{a.label}</Typography>
-                    <Typography fontSize={11} color="text.secondary">{a.sub}</Typography>
-                  </Box>
-                  <ArrowForward sx={{ fontSize: 14, color: '#cbd5e1' }} />
+                  {job.status === 'processing' && job.total_files > 0 && (
+                    <Box sx={{ mt: 0.8, height: 3, bgcolor: '#f1f5f9', borderRadius: 2, overflow: 'hidden' }}>
+                      <Box sx={{
+                        height: '100%', borderRadius: 2,
+                        width: `${(job.processed_files / job.total_files) * 100}%`,
+                        background: 'linear-gradient(90deg, #6366f1, #06b6d4)',
+                        transition: 'width 0.5s ease',
+                      }} />
+                    </Box>
+                  )}
                 </Box>
-              ))}
-            </Paper>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: statusDot(job.status) }} />
+                  <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>
+                    {statusLabel(job.status)}
+                  </Typography>
+                </Box>
+              </Box>
+            ))
+          }
+        </Box>
+
+        {/* Right column */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {/* Success donut */}
+          <Box sx={{
+            bgcolor: 'white', borderRadius: '20px', p: 3,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 8px 32px rgba(99,102,241,0.07)',
+            border: '1px solid rgba(255,255,255,0.8)',
+          }}>
+            <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#0f172a', mb: 0.5 }}>Success Rate</Typography>
+            <Typography sx={{ fontSize: 12, color: '#94a3b8', mb: 3 }}>Across all completed jobs</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              <Box sx={{
+                width: 88, height: 88, borderRadius: '50%', flexShrink: 0,
+                background: `conic-gradient(
+                  #10b981 0deg ${stats.successRate * 3.6}deg,
+                  #f0fdf4 ${stats.successRate * 3.6}deg 360deg
+                )`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: 'inset 0 0 0 12px white',
+              }}>
+                <Typography sx={{ fontSize: 16, fontWeight: 900, color: '#10b981' }}>
+                  {isLoading ? '—' : `${stats.successRate}%`}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography sx={{ fontSize: 32, fontWeight: 900, color: '#10b981', lineHeight: 1 }}>
+                  {isLoading ? '—' : `${stats.successRate}%`}
+                </Typography>
+                <Typography sx={{ fontSize: 12, color: '#94a3b8', mt: 0.5 }}>
+                  {stats.completed} of {stats.completed + stats.failed} done
+                </Typography>
+              </Box>
+            </Box>
           </Box>
-        </Grid>
-      </Grid>
+
+          {/* Quick actions */}
+          <Box sx={{
+            bgcolor: 'white', borderRadius: '20px', p: 3, flex: 1,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 8px 32px rgba(99,102,241,0.07)',
+            border: '1px solid rgba(255,255,255,0.8)',
+          }}>
+            <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#0f172a', mb: 2 }}>Quick Actions</Typography>
+            {[
+              { label: 'New Extraction Job', sub: 'Upload PDFs and extract data', path: '/jobs/new',   icon: '🚀', color: '#6366f1' },
+              { label: 'Manage Templates',   sub: 'Create or edit column templates', path: '/templates', icon: '📋', color: '#8b5cf6' },
+              { label: 'Browse All Jobs',    sub: 'Search and filter your history', path: '/jobs',       icon: '📁', color: '#06b6d4' },
+            ].map((a) => (
+              <Box key={a.path} onClick={() => navigate(a.path)} sx={{
+                display: 'flex', alignItems: 'center', gap: 2,
+                p: 1.5, mb: 1, borderRadius: 2.5, cursor: 'pointer',
+                '&:hover': { bgcolor: '#f8faff', '& .arrow': { opacity: 1, transform: 'translateX(2px)' } },
+                transition: 'all 0.15s ease',
+              }}>
+                <Box sx={{
+                  width: 40, height: 40, borderRadius: 2.5, fontSize: 18,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  bgcolor: `${a.color}12`, flexShrink: 0,
+                }}>{a.icon}</Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{a.label}</Typography>
+                  <Typography sx={{ fontSize: 11, color: '#94a3b8' }}>{a.sub}</Typography>
+                </Box>
+                <Box className="arrow" sx={{
+                  opacity: 0.3, transition: 'all 0.15s ease',
+                  color: '#94a3b8', fontSize: 16,
+                }}>›</Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      </Box>
     </Box>
   );
 }

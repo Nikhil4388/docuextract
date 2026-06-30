@@ -1,28 +1,45 @@
 import React, { useState, useMemo } from 'react';
-import {
-  Box, Paper, Typography, Button, Chip, TextField,
-  InputAdornment, MenuItem, Select, FormControl,
-  Skeleton, Avatar, IconButton, Tooltip,
-} from '@mui/material';
-import { Add, Search, Refresh, ArrowForward, Lock } from '@mui/icons-material';
+import { Box, Typography, Skeleton, Avatar, TextField, InputAdornment } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { ExtractionJob } from '../types';
 import { useAuthStore } from '../store/authStore';
 
-const STATUS_OPTIONS = ['all', 'pending', 'processing', 'completed', 'failed', 'cancelled'];
+const STATUS_TABS = ['all', 'pending', 'processing', 'completed', 'failed'] as const;
 
-function statusColor(s: string): 'default' | 'info' | 'success' | 'error' | 'warning' {
-  const map: Record<string, any> = { pending: 'default', processing: 'info', completed: 'success', failed: 'error', cancelled: 'warning' };
-  return map[s] ?? 'default';
+const STATUS_STYLE: Record<string, { dot: string; bg: string; text: string; label: string }> = {
+  all:        { dot: '#6366f1', bg: '#ede9fe', text: '#5b21b6', label: 'All' },
+  pending:    { dot: '#f59e0b', bg: '#fef3c7', text: '#92400e', label: 'Pending' },
+  processing: { dot: '#3b82f6', bg: '#dbeafe', text: '#1e40af', label: 'Processing' },
+  completed:  { dot: '#10b981', bg: '#d1fae5', text: '#065f46', label: 'Completed' },
+  failed:     { dot: '#ef4444', bg: '#fee2e2', text: '#991b1b', label: 'Failed' },
+  cancelled:  { dot: '#94a3b8', bg: '#f1f5f9', text: '#475569', label: 'Cancelled' },
+};
+
+function timeAgo(d: string) {
+  const diff = Date.now() - new Date(d).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1)  return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
+
+const AVATAR_GRADIENTS = [
+  'linear-gradient(135deg, #6366f1, #8b5cf6)',
+  'linear-gradient(135deg, #10b981, #06b6d4)',
+  'linear-gradient(135deg, #f59e0b, #ef4444)',
+  'linear-gradient(135deg, #3b82f6, #6366f1)',
+  'linear-gradient(135deg, #8b5cf6, #ec4899)',
+];
 
 export default function JobsPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [search,     setSearch]     = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<string>('all');
 
   const freeLimit    = user?.free_limit ?? 2;
   const paidLimit    = user?.paid_limit ?? 20;
@@ -35,178 +52,307 @@ export default function JobsPage() {
 
   const { data: jobs, isLoading, refetch } = useQuery<ExtractionJob[]>({
     queryKey: ['jobs'],
-    queryFn:  () => api.get('/jobs/').then((r) => r.data),
+    queryFn: () => api.get('/jobs/').then((r) => r.data),
     refetchInterval: 5000,
   });
 
-  const filtered = useMemo(() => {
-    if (!jobs) return [];
-    return jobs.filter((j) => {
-      const matchStatus = statusFilter === 'all' || j.status === statusFilter;
-      const matchSearch = !search || j.name.toLowerCase().includes(search.toLowerCase());
-      return matchStatus && matchSearch;
-    });
-  }, [jobs, search, statusFilter]);
-
   const counts = useMemo(() => {
-    if (!jobs) return {};
-    return STATUS_OPTIONS.reduce((acc, s) => {
+    if (!jobs) return {} as Record<string, number>;
+    return STATUS_TABS.reduce((acc, s) => {
       acc[s] = s === 'all' ? jobs.length : jobs.filter((j) => j.status === s).length;
       return acc;
     }, {} as Record<string, number>);
   }, [jobs]);
 
+  const filtered = useMemo(() => {
+    if (!jobs) return [];
+    return jobs.filter((j) => {
+      const matchTab    = activeTab === 'all' || j.status === activeTab;
+      const matchSearch = !search || j.name.toLowerCase().includes(search.toLowerCase());
+      return matchTab && matchSearch;
+    });
+  }, [jobs, search, activeTab]);
+
   return (
     <Box>
-      {/* ── Paywall banner ── */}
+      <style>{`
+        @keyframes jobCardIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .job-card { animation: jobCardIn 0.22s ease both; }
+        @keyframes blink {
+          0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+        }
+      `}</style>
+
+      {/* PAYWALL BANNER */}
       {hitLimit && (
-        <Paper sx={{ p: 2.5, mb: 3, borderRadius: 3, border: '1.5px solid #fde68a', bgcolor: '#fffbeb', display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-          <Lock sx={{ color: '#d97706', fontSize: 28, flexShrink: 0 }} />
+        <Box sx={{
+          mb: 3, p: 3, borderRadius: '20px',
+          background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+          border: '1px solid #fcd34d',
+          display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap',
+          boxShadow: '0 4px 16px rgba(245,158,11,0.15)',
+        }}>
+          <Box sx={{ fontSize: 32, flexShrink: 0 }}>🔒</Box>
           <Box sx={{ flex: 1 }}>
-            <Typography fontWeight={700} color="#92400e" mb={0.3}>
-              {hitFreeLimit
-                ? `You've used both free extractions`
-                : `You've used all ${paidLimit} jobs from your donation`}
+            <Typography sx={{ fontWeight: 800, color: '#78350f', fontSize: 15, mb: 0.3 }}>
+              {hitFreeLimit ? 'Free plan limit reached' : 'Donation plan limit reached'}
             </Typography>
-            <Typography fontSize={13} color="text.secondary">
+            <Typography sx={{ color: '#92400e', fontSize: 13 }}>
               {hitFreeLimit
-                ? `Donate $10 to unlock 20 extraction jobs. Use the same email you signed up with.`
-                : `Donate again to top up your job balance.`}
+                ? 'Donate $10 to unlock 20 extraction jobs with the same email.'
+                : 'Donate again to top up your job balance.'}
             </Typography>
           </Box>
-          <Button variant="contained" onClick={() => navigate('/pricing')}
-            sx={{ borderRadius: 2, fontWeight: 700, bgcolor: '#f59e0b', flexShrink: 0,
-              '&:hover': { bgcolor: '#d97706' } }}>
-            Donate $10 → Get 20 Jobs
-          </Button>
-        </Paper>
+          <Box onClick={() => navigate('/pricing')} sx={{
+            px: 3, py: 1.2, borderRadius: 3, cursor: 'pointer', flexShrink: 0,
+            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+            boxShadow: '0 4px 12px rgba(245,158,11,0.35)',
+            '&:hover': { opacity: 0.9, transform: 'translateY(-1px)' },
+            transition: 'all 0.2s ease',
+          }}>
+            <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 13 }}>Donate $10 → Unlock</Typography>
+          </Box>
+        </Box>
       )}
 
-      {/* ── Header ── */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 2 }}>
-        <Typography variant="h5" fontWeight={700} sx={{ flex: 1 }}>Jobs</Typography>
-        <Tooltip title="Refresh">
-          <IconButton onClick={() => refetch()} size="small"><Refresh /></IconButton>
-        </Tooltip>
-        <Tooltip title={hitLimit ? (hitFreeLimit ? 'Donate $10 to unlock 20 jobs' : 'Donate again to top up') : ''}>
-          <span>
-            <Button
-              variant="contained"
-              startIcon={hitLimit ? <Lock /> : <Add />}
-              onClick={() => hitLimit ? navigate('/pricing') : navigate('/jobs/new')}
-              sx={{
-                borderRadius: 2,
-                background: hitLimit
-                  ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
-                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              }}
-            >
-              {hitLimit ? 'Unlock More Jobs' : 'New Job'}
-            </Button>
-          </span>
-        </Tooltip>
+      {/* HEADER */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+        <Box>
+          <Typography sx={{ fontSize: 22, fontWeight: 900, color: '#0f172a', letterSpacing: -0.3 }}>
+            Extraction Jobs
+          </Typography>
+          <Typography sx={{ fontSize: 13, color: '#94a3b8', mt: 0.2 }}>
+            {jobs ? `${jobs.length} job${jobs.length !== 1 ? 's' : ''} total` : 'Loading…'}
+          </Typography>
+        </Box>
+        <Box sx={{ flex: 1 }} />
+        <Box onClick={() => refetch()} sx={{
+          width: 40, height: 40, borderRadius: 2.5, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          bgcolor: 'white', border: '1px solid #e2e8f0', color: '#64748b',
+          '&:hover': { bgcolor: '#f8faff', borderColor: '#c7d2fe', color: '#6366f1' },
+          transition: 'all 0.15s ease',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <path d="M21 3v5h-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M21 12a9 9 0 01-9 9 9.75 9.75 0 01-6.74-2.74L3 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </Box>
+        <Box onClick={() => hitLimit ? navigate('/pricing') : navigate('/jobs/new')} sx={{
+          display: 'flex', alignItems: 'center', gap: 1,
+          px: 3, py: 1.2, borderRadius: 3, cursor: 'pointer',
+          background: hitLimit
+            ? 'linear-gradient(135deg, #f59e0b, #d97706)'
+            : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+          boxShadow: hitLimit
+            ? '0 4px 16px rgba(245,158,11,0.35)'
+            : '0 4px 16px rgba(99,102,241,0.35)',
+          '&:hover': { opacity: 0.92, transform: 'translateY(-1px)' },
+          transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        }}>
+          <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 14 }}>
+            {hitLimit ? '🔒 Unlock Jobs' : '+ New Job'}
+          </Typography>
+        </Box>
       </Box>
 
-      {/* ── Filters ── */}
-      <Paper sx={{ p: 2, mb: 2.5, borderRadius: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+      {/* SEARCH + TABS */}
+      <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
         <TextField
-          size="small"
-          placeholder="Search jobs…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          InputProps={{ startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment> }}
+          size="small" placeholder="Search jobs…"
+          value={search} onChange={(e) => setSearch(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                  <circle cx="11" cy="11" r="8" stroke="#94a3b8" strokeWidth="2"/>
+                  <path d="M21 21l-4.35-4.35" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </InputAdornment>
+            ),
+            sx: { bgcolor: 'white', borderRadius: 2.5, fontSize: 14, '& fieldset': { borderColor: '#e2e8f0' } },
+          }}
           sx={{ width: 240 }}
         />
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} displayEmpty>
-            {STATUS_OPTIONS.map((s) => (
-              <MenuItem key={s} value={s}>
-                {s === 'all' ? `All statuses (${counts['all'] ?? 0})` : `${s.charAt(0).toUpperCase() + s.slice(1)} (${counts[s] ?? 0})`}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        {(search || statusFilter !== 'all') && (
-          <Button size="small" onClick={() => { setSearch(''); setStatusFilter('all'); }} sx={{ color: '#6b7280', fontSize: 12 }}>
-            Clear filters
-          </Button>
-        )}
-        <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
-          {filtered.length} job{filtered.length !== 1 ? 's' : ''}
-        </Typography>
-      </Paper>
 
-      {/* ── Job list ── */}
-      <Paper sx={{ borderRadius: 3, overflow: 'hidden' }}>
-        {isLoading
-          ? Array.from({ length: 6 }).map((_, i) => (
-              <Box key={i} sx={{ px: 3, py: 2, borderBottom: '1px solid #f5f5f5', display: 'flex', gap: 2, alignItems: 'center' }}>
-                <Skeleton variant="circular" width={40} height={40} />
-                <Box sx={{ flex: 1 }}><Skeleton width="40%" /><Skeleton width="25%" /></Box>
-                <Skeleton width={72} height={24} />
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          {STATUS_TABS.map((tab) => {
+            const s = STATUS_STYLE[tab];
+            const isActive = activeTab === tab;
+            return (
+              <Box key={tab} onClick={() => setActiveTab(tab)} sx={{
+                display: 'flex', alignItems: 'center', gap: 0.8,
+                px: 2, py: 0.7, borderRadius: 6, cursor: 'pointer',
+                bgcolor: isActive ? s.bg : 'white',
+                border: `1px solid ${isActive ? s.dot + '50' : '#e2e8f0'}`,
+                boxShadow: isActive ? `0 2px 8px ${s.dot}25` : '0 1px 3px rgba(0,0,0,0.04)',
+                transition: 'all 0.15s ease',
+                '&:hover': { bgcolor: s.bg, borderColor: s.dot + '40' },
+              }}>
+                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: s.dot }} />
+                <Typography sx={{ fontSize: 12, fontWeight: 600, color: isActive ? s.text : '#64748b' }}>
+                  {s.label}
+                </Typography>
+                {counts[tab] !== undefined && (
+                  <Box sx={{
+                    px: 0.8, borderRadius: 4, bgcolor: isActive ? s.dot + '20' : '#f1f5f9',
+                    display: 'inline-flex', alignItems: 'center',
+                  }}>
+                    <Typography sx={{ fontSize: 11, fontWeight: 700, color: isActive ? s.text : '#94a3b8', lineHeight: '18px' }}>
+                      {counts[tab]}
+                    </Typography>
+                  </Box>
+                )}
               </Box>
-            ))
-          : filtered.length === 0
-          ? (
-            <Box sx={{ py: 8, textAlign: 'center' }}>
-              <Typography fontSize={40} mb={1}>🔍</Typography>
-              <Typography fontWeight={600} mb={0.5}>No jobs found</Typography>
-              <Typography color="text.secondary" fontSize={14} mb={2}>
-                {jobs?.length === 0 ? 'Create your first extraction job to get started.' : 'Try adjusting your search or filters.'}
-              </Typography>
-              {jobs?.length === 0 && (
-                <Button
-                  variant="outlined"
-                  onClick={() => hitLimit ? navigate('/pricing') : navigate('/jobs/new')}
-                  startIcon={hitLimit ? <Lock /> : <Add />}
-                  sx={hitLimit ? { borderColor: '#f59e0b', color: '#d97706' } : {}}
-                >
-                  {hitLimit ? 'Donate $10 → Unlock 20 Jobs' : 'New Extraction Job'}
-                </Button>
-              )}
+            );
+          })}
+        </Box>
+
+        {(search || activeTab !== 'all') && (
+          <Box onClick={() => { setSearch(''); setActiveTab('all'); }} sx={{
+            fontSize: 12, color: '#6366f1', cursor: 'pointer', fontWeight: 600,
+            '&:hover': { color: '#4f46e5' },
+          }}>
+            Clear ×
+          </Box>
+        )}
+      </Box>
+
+      {/* JOB CARDS */}
+      {isLoading ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Box key={i} sx={{
+              bgcolor: 'white', borderRadius: '16px', p: 2.5,
+              display: 'flex', gap: 2, alignItems: 'center',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+            }}>
+              <Skeleton variant="circular" width={48} height={48} />
+              <Box sx={{ flex: 1 }}>
+                <Skeleton width="40%" height={18} />
+                <Skeleton width="25%" height={13} sx={{ mt: 0.7 }} />
+              </Box>
+              <Skeleton width={80} height={28} sx={{ borderRadius: 3 }} />
             </Box>
-          )
-          : filtered.map((job, idx) => (
-              <Box
-                key={job.id}
+          ))}
+        </Box>
+      ) : filtered.length === 0 ? (
+        <Box sx={{
+          bgcolor: 'white', borderRadius: '20px', py: 12, textAlign: 'center',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)', border: '1px solid #f1f5f9',
+        }}>
+          <Typography sx={{ fontSize: 56, mb: 2 }}>{jobs?.length === 0 ? '🚀' : '🔍'}</Typography>
+          <Typography sx={{ fontWeight: 800, color: '#1e293b', fontSize: 18, mb: 1 }}>
+            {jobs?.length === 0 ? 'No jobs yet' : 'No matches found'}
+          </Typography>
+          <Typography sx={{ color: '#94a3b8', fontSize: 14, mb: 3 }}>
+            {jobs?.length === 0
+              ? 'Upload PDFs and let AI extract your data instantly'
+              : 'Try adjusting your search or filters'}
+          </Typography>
+          {jobs?.length === 0 && (
+            <Box onClick={() => hitLimit ? navigate('/pricing') : navigate('/jobs/new')} sx={{
+              display: 'inline-flex', alignItems: 'center', gap: 1.5,
+              px: 3.5, py: 1.4, borderRadius: 3, cursor: 'pointer',
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              '&:hover': { opacity: 0.9, transform: 'translateY(-2px)' },
+              transition: 'all 0.2s ease',
+              boxShadow: '0 8px 24px rgba(99,102,241,0.3)',
+            }}>
+              <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 14 }}>
+                {hitLimit ? '🔒 Unlock to Start' : '+ Create First Job'}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {filtered.map((job, idx) => {
+            const s = STATUS_STYLE[job.status] ?? STATUS_STYLE.cancelled;
+            const pct = job.total_files > 0 ? Math.round((job.processed_files / job.total_files) * 100) : 0;
+
+            return (
+              <Box key={job.id} className="job-card"
                 onClick={() => navigate(`/jobs/${job.id}`)}
                 sx={{
-                  px: 3, py: 2,
-                  borderBottom: idx < filtered.length - 1 ? '1px solid #f5f5f5' : 'none',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2,
-                  '&:hover': { bgcolor: '#fafafa' }, transition: 'background 0.12s',
+                  animationDelay: `${Math.min(idx * 0.04, 0.3)}s`,
+                  bgcolor: 'white', borderRadius: '16px',
+                  p: 2.5, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 2.5,
+                  border: '1px solid #f1f5f9',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                  '&:hover': {
+                    borderColor: '#c7d2fe',
+                    boxShadow: '0 8px 32px rgba(99,102,241,0.12)',
+                    transform: 'translateY(-2px)',
+                  },
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >
-                <Avatar sx={{ bgcolor: '#667eea18', color: '#667eea', fontWeight: 700, width: 42, height: 42 }}>
+                <Avatar sx={{
+                  width: 48, height: 48, fontSize: 16, fontWeight: 900, flexShrink: 0,
+                  background: AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length],
+                  boxShadow: '0 4px 12px rgba(99,102,241,0.2)',
+                }}>
                   {job.name?.[0]?.toUpperCase()}
                 </Avatar>
 
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography fontWeight={600} noWrap>{job.name}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Created {new Date(job.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    {job.total_files > 0 && ` · ${job.total_files} file${job.total_files > 1 ? 's' : ''}`}
-                    {job.status === 'completed' && job.processed_files > 0 && ` · ${job.processed_files} extracted`}
+                  <Typography sx={{ fontWeight: 700, fontSize: 15, color: '#0f172a', mb: 0.3 }} noWrap>
+                    {job.name}
                   </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>{timeAgo(job.created_at)}</Typography>
+                    {job.total_files > 0 && (
+                      <>
+                        <Box sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: '#cbd5e1', flexShrink: 0 }} />
+                        <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>
+                          {job.processed_files}/{job.total_files} files
+                        </Typography>
+                      </>
+                    )}
+                  </Box>
+                  {job.status === 'processing' && job.total_files > 0 && (
+                    <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Box sx={{ flex: 1, height: 4, bgcolor: '#f1f5f9', borderRadius: 2, overflow: 'hidden' }}>
+                        <Box sx={{
+                          height: '100%', borderRadius: 2,
+                          width: `${pct}%`,
+                          background: 'linear-gradient(90deg, #3b82f6, #06b6d4)',
+                          transition: 'width 0.5s ease',
+                        }} />
+                      </Box>
+                      <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#3b82f6', flexShrink: 0 }}>
+                        {pct}%
+                      </Typography>
+                    </Box>
+                  )}
                 </Box>
 
-                {job.status === 'processing' && job.total_files > 0 && (
-                  <Box sx={{ width: 100, mr: 1 }}>
-                    <Typography variant="caption" color="text.secondary" display="block" mb={0.3}>
-                      {job.processed_files}/{job.total_files}
-                    </Typography>
-                    <Box sx={{ height: 4, bgcolor: '#e5e7eb', borderRadius: 2, overflow: 'hidden' }}>
-                      <Box sx={{ height: '100%', width: `${(job.processed_files / job.total_files) * 100}%`, bgcolor: '#3b82f6', borderRadius: 2 }} />
-                    </Box>
+                <Box sx={{ flexShrink: 0 }}>
+                  <Box sx={{
+                    display: 'inline-flex', alignItems: 'center', gap: 0.8,
+                    px: 1.5, py: 0.6, borderRadius: 6, bgcolor: s.bg,
+                  }}>
+                    <Box sx={{
+                      width: 6, height: 6, borderRadius: '50%', bgcolor: s.dot,
+                      ...(job.status === 'processing' && { animation: 'blink 1.5s ease infinite' }),
+                    }} />
+                    <Typography sx={{ fontSize: 12, fontWeight: 700, color: s.text }}>{s.label}</Typography>
                   </Box>
-                )}
+                </Box>
 
-                <Chip label={job.status} color={statusColor(job.status)} size="small" sx={{ minWidth: 80, fontSize: 11 }} />
-                <ArrowForward sx={{ fontSize: 16, color: '#d1d5db', flexShrink: 0 }} />
+                <Box sx={{ color: '#cbd5e1', flexShrink: 0, fontSize: 20, lineHeight: 1 }}>›</Box>
               </Box>
-            ))
-        }
-      </Paper>
+            );
+          })}
+        </Box>
+      )}
     </Box>
   );
 }

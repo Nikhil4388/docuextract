@@ -21,7 +21,7 @@ import LandingPage from './pages/LandingPage';
 import PricingPage from './pages/PricingPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 
-const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes
+const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000;
 
 const qc = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
@@ -29,45 +29,77 @@ const qc = new QueryClient({
 
 const theme = createTheme({
   palette: {
-    primary: { main: '#6366f1' },
-    secondary: { main: '#8b5cf6' },
-    background: { default: '#f1f5f9', paper: '#ffffff' },
-    success: { main: '#10b981' },
-    error: { main: '#ef4444' },
-    info: { main: '#3b82f6' },
-    warning: { main: '#f59e0b' },
+    primary:    { main: '#6366f1' },
+    secondary:  { main: '#8b5cf6' },
+    background: { default: '#f4f5ff', paper: '#ffffff' },
+    success:    { main: '#10b981' },
+    error:      { main: '#ef4444' },
+    info:       { main: '#06b6d4' },
+    warning:    { main: '#f59e0b' },
   },
   typography: {
-    fontFamily: '"Inter", "Roboto", sans-serif',
-    h5: { fontWeight: 800 },
+    fontFamily: '"Inter", "SF Pro Display", "Roboto", sans-serif',
+    h4: { fontWeight: 900, letterSpacing: -0.5 },
+    h5: { fontWeight: 800, letterSpacing: -0.3 },
     h6: { fontWeight: 700 },
   },
-  shape: { borderRadius: 10 },
+  shape: { borderRadius: 12 },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: `
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        * { box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.25); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.5); }
+        ::selection { background: rgba(99,102,241,0.2); }
+      `,
+    },
     MuiButton: {
       styleOverrides: {
         root: {
-          textTransform: 'none', fontWeight: 700,
-          boxShadow: 'none', '&:hover': { boxShadow: 'none' },
+          textTransform: 'none',
+          fontWeight: 700,
+          letterSpacing: 0.1,
+          boxShadow: 'none',
+          '&:hover': { boxShadow: 'none' },
         },
         containedPrimary: {
-          background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-          '&:hover': { background: 'linear-gradient(135deg, #5254cc, #7c3aed)' },
+          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+          '&:hover': {
+            background: 'linear-gradient(135deg, #5254cc 0%, #7c3aed 100%)',
+            transform: 'translateY(-1px)',
+            boxShadow: '0 8px 20px rgba(99,102,241,0.35)',
+          },
+          transition: 'all 0.2s ease',
         },
       },
     },
     MuiPaper: {
       styleOverrides: {
-        root: { boxShadow: '0 4px 20px rgba(0,0,0,0.06)', backgroundImage: 'none' },
+        root: {
+          backgroundImage: 'none',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(99,102,241,0.06)',
+        },
       },
     },
     MuiChip: {
-      styleOverrides: { root: { fontWeight: 600 } },
+      styleOverrides: { root: { fontWeight: 600, fontSize: 11 } },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            '&:hover fieldset': { borderColor: '#a5b4fc' },
+            '&.Mui-focused fieldset': { borderColor: '#6366f1', borderWidth: 2 },
+          },
+        },
+      },
     },
   },
 });
 
-// ── Auto-logout after 5 min inactivity ───────────────────────────────────────
 function InactivityGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, logout } = useAuthStore();
   const { enqueueSnackbar } = useSnackbar();
@@ -78,9 +110,7 @@ function InactivityGuard({ children }: { children: React.ReactNode }) {
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       logout();
-      enqueueSnackbar('You were logged out due to 5 minutes of inactivity.', {
-        variant: 'warning', autoHideDuration: 6000,
-      });
+      enqueueSnackbar('Logged out due to inactivity.', { variant: 'warning', autoHideDuration: 6000 });
     }, INACTIVITY_TIMEOUT_MS);
   }, [isAuthenticated, logout, enqueueSnackbar]);
 
@@ -98,7 +128,6 @@ function InactivityGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// ── OAuth callback ────────────────────────────────────────────────────────────
 function AuthCallbackPage() {
   const [params] = useSearchParams();
   const { setTokensAndFetch } = useAuthStore();
@@ -118,25 +147,32 @@ function AuthCallbackPage() {
   }, []);
 
   if (error) return <Navigate to="/login" replace />;
-  // Show spinner while tokens are being saved and user is fetched
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+    <div style={{
+      display: 'flex', justifyContent: 'center', alignItems: 'center',
+      height: '100vh', background: '#07071a',
+    }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ width: 40, height: 40, border: '4px solid #667eea', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-        <p style={{ color: '#667eea', fontFamily: 'Inter, sans-serif' }}>Signing you in…</p>
+        <div style={{
+          width: 48, height: 48,
+          border: '3px solid rgba(99,102,241,0.2)',
+          borderTop: '3px solid #6366f1',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+          margin: '0 auto 16px',
+        }} />
+        <p style={{ color: '#a5b4fc', fontFamily: 'Inter, sans-serif', fontSize: 15 }}>Signing you in…</p>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
 
-// ── Route guard ───────────────────────────────────────────────────────────────
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
-// ── Redirect logged-in users away from landing page ───────────────────────────
 function PublicHome() {
   const { isAuthenticated } = useAuthStore();
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />;
@@ -157,7 +193,6 @@ export default function App() {
           <BrowserRouter>
             <InactivityGuard>
               <Routes>
-                {/* Public routes */}
                 <Route path="/" element={<PublicHome />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
@@ -168,7 +203,6 @@ export default function App() {
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/payment/success" element={<PaymentSuccessPage />} />
 
-                {/* Protected routes */}
                 <Route path="/" element={<RequireAuth><AppLayout /></RequireAuth>}>
                   <Route path="dashboard" element={<DashboardPage />} />
                   <Route path="templates" element={<TemplatesPage />} />
