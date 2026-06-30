@@ -1,5 +1,5 @@
-import React, { useEffect, useCallback, useRef } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { SnackbarProvider, useSnackbar } from 'notistack';
@@ -21,7 +21,7 @@ import LandingPage from './pages/LandingPage';
 import PricingPage from './pages/PricingPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 
-const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes
 
 const qc = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
@@ -76,14 +76,32 @@ function InactivityGuard({ children }: { children: React.ReactNode }) {
 function AuthCallbackPage() {
   const [params] = useSearchParams();
   const { setTokensAndFetch } = useAuthStore();
+  const navigate = useNavigate();
+  const [error, setError] = useState(false);
+
   useEffect(() => {
     const access = params.get('access_token');
     const refresh = params.get('refresh_token');
     if (access && refresh) {
-      setTokensAndFetch({ access_token: access, refresh_token: refresh, token_type: 'bearer' });
+      setTokensAndFetch({ access_token: access, refresh_token: refresh, token_type: 'bearer' })
+        .then(() => navigate('/dashboard', { replace: true }))
+        .catch(() => { setError(true); navigate('/login', { replace: true }); });
+    } else {
+      navigate('/login', { replace: true });
     }
   }, []);
-  return <Navigate to="/dashboard" replace />;
+
+  if (error) return <Navigate to="/login" replace />;
+  // Show spinner while tokens are being saved and user is fetched
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ width: 40, height: 40, border: '4px solid #667eea', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+        <p style={{ color: '#667eea', fontFamily: 'Inter, sans-serif' }}>Signing you in…</p>
+      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
 }
 
 // ── Route guard ───────────────────────────────────────────────────────────────
