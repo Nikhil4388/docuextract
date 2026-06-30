@@ -25,8 +25,13 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 # ── Cookie helpers ─────────────────────────────────────────────────────────────
 
 def _set_auth_cookies(response: Response, user_id: str) -> None:
-    """Set httpOnly auth cookies. Tokens never touch client-side JS."""
-    secure = not settings.DEBUG  # http ok in dev, https required in prod
+    """Set httpOnly auth cookies. Tokens never touch client-side JS.
+
+    SameSite=None + Secure=True is required because the frontend (Vercel) and
+    backend (Railway) are on different domains. SameSite=Lax would block the
+    cookies on cross-origin XHR requests (e.g. axios withCredentials calls).
+    CORS + httpOnly still protect against CSRF and XSS respectively.
+    """
     access_token  = create_access_token(str(user_id))
     refresh_token = create_refresh_token(str(user_id))
 
@@ -34,8 +39,8 @@ def _set_auth_cookies(response: Response, user_id: str) -> None:
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=secure,
-        samesite="lax",
+        secure=True,        # required for SameSite=None
+        samesite="none",    # allow cross-origin requests from Vercel → Railway
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path="/",
     )
@@ -43,17 +48,17 @@ def _set_auth_cookies(response: Response, user_id: str) -> None:
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=secure,
-        samesite="lax",
+        secure=True,
+        samesite="none",
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
         path="/api/v1/auth/refresh",  # only sent to the refresh endpoint
     )
 
 
 def _clear_auth_cookies(response: Response) -> None:
-    """Clear both auth cookies (logout)."""
-    response.delete_cookie("access_token",  path="/")
-    response.delete_cookie("refresh_token", path="/api/v1/auth/refresh")
+    """Clear both auth cookies (logout). Must match same attributes as set_cookie."""
+    response.delete_cookie("access_token",  path="/",                    secure=True, samesite="none", httponly=True)
+    response.delete_cookie("refresh_token", path="/api/v1/auth/refresh", secure=True, samesite="none", httponly=True)
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -315,11 +320,5 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
 
     # Set cookies server-side — NO tokens in the redirect URL
     redirect = RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/callback")
-    secure = not settings.DEBUG
-    redirect.set_cookie("access_token",  create_access_token(str(user.id)),
-        httponly=True, secure=secure, samesite="lax",
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60, path="/")
-    redirect.set_cookie("refresh_token", create_refresh_token(str(user.id)),
-        httponly=True, secure=secure, samesite="lax",
-        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400, path="/api/v1/auth/refresh")
+    _set_auth_cookies(redirect, str(user.id))
     return redirect
