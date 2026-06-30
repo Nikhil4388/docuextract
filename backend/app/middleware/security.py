@@ -58,7 +58,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         # Remove the server banner (don't leak tech stack)
         response.headers["Server"] = "MultiPDFToExcel"
-        response.headers.pop("X-Powered-By", None)
+        try:
+            del response.headers["X-Powered-By"]
+        except KeyError:
+            pass
 
         # Disable caching for API responses (tokens, user data, etc.)
         if request.url.path.startswith("/api/"):
