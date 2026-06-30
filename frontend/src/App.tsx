@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { SnackbarProvider, useSnackbar } from 'notistack';
@@ -130,14 +130,16 @@ function InactivityGuard({ children }: { children: React.ReactNode }) {
 }
 
 function AuthCallbackPage() {
-  const [params] = useSearchParams();
   const { setTokensAndFetch } = useAuthStore();
   const navigate = useNavigate();
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    const access_token = params.get('access_token');
-    const refresh_token = params.get('refresh_token');
+    // Use window.location.search directly — more reliable on a fresh page load
+    // than useSearchParams which depends on React Router fully settling first
+    const urlParams = new URLSearchParams(window.location.search);
+    const access_token = urlParams.get('access_token');
+    const refresh_token = urlParams.get('refresh_token');
     if (!access_token || !refresh_token) {
       navigate('/login', { replace: true });
       return;
@@ -170,22 +172,33 @@ function AuthCallbackPage() {
 }
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isInitializing } = useAuthStore();
+  if (isInitializing) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#07071a' }}>
+        <div style={{ width: 40, height: 40, border: '3px solid rgba(99,102,241,0.2)', borderTop: '3px solid #6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
 function PublicHome() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isInitializing } = useAuthStore();
+  if (isInitializing) return null;
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />;
 }
 
 // Restores session on mount — must be inside BrowserRouter to use useLocation
 function AuthInit() {
-  const { initAuth } = useAuthStore();
+  const { initAuth, setInitialized } = useAuthStore();
   const location = useLocation();
   useEffect(() => {
-    // Skip on /auth/callback — that page handles its own token exchange
-    if (!location.pathname.includes('/auth/callback')) {
+    if (location.pathname.includes('/auth/callback')) {
+      // AuthCallbackPage handles its own tokens; just mark init done
+      setInitialized();
+    } else {
       initAuth();
     }
   }, []);

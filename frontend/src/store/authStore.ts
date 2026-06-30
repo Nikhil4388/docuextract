@@ -6,12 +6,13 @@ interface AuthState {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isInitializing: boolean;   // true while we're checking for a stored session on load
   initAuth: () => Promise<void>;
+  setInitialized: () => void;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, fullName?: string) => Promise<void>;
   logout: () => Promise<void>;
   fetchMe: () => Promise<void>;
-  // OAuth callback: receives { access_token, refresh_token } from URL params
   setTokensAndFetch: (tokens: { access_token: string; refresh_token: string } | null) => Promise<void>;
 }
 
@@ -19,11 +20,18 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isLoading: false,
   isAuthenticated: false,
+  isInitializing: true,    // assume we may have a stored session until proven otherwise
 
-  /** Called once on app mount. Restores session from localStorage refresh token. */
+  /** Mark init as done (called by AuthInit on /auth/callback where we skip initAuth) */
+  setInitialized: () => set({ isInitializing: false }),
+
+  /** Called on app mount. Restores session from stored refresh token. */
   initAuth: async () => {
     const storedRefresh = getRefreshToken();
-    if (!storedRefresh) return; // nothing to restore
+    if (!storedRefresh) {
+      set({ isInitializing: false });
+      return;
+    }
     try {
       const res = await api.post<{ access_token: string; refresh_token?: string }>(
         '/auth/refresh',
@@ -32,10 +40,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       setAccessToken(res.data.access_token);
       if (res.data.refresh_token) setRefreshToken(res.data.refresh_token);
       const me = await api.get<User>('/users/me');
-      set({ user: me.data, isAuthenticated: true });
+      set({ user: me.data, isAuthenticated: true, isInitializing: false });
     } catch {
       clearAllTokens();
-      set({ user: null, isAuthenticated: false });
+      set({ user: null, isAuthenticated: false, isInitializing: false });
     }
   },
 
@@ -43,8 +51,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true });
     try {
       const res = await api.post<{ access_token: string; refresh_token: string }>(
-        '/auth/login',
-        { email, password }
+        '/auth/login', { email, password }
       );
       setAccessToken(res.data.access_token);
       setRefreshToken(res.data.refresh_token);
@@ -79,14 +86,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  /** OAuth callback: tokens arrive in URL params from the backend redirect. */
   setTokensAndFetch: async (tokens) => {
     if (!tokens?.access_token || !tokens?.refresh_token) {
-      throw new Error('Missing tokens in OAuth callback');
+      throw new Error('Missing tokens');
     }
     setAccessToken(tokens.access_token);
     setRefreshToken(tokens.refresh_token);
     const me = await api.get<User>('/users/me');
-    set({ user: me.data, isAuthenticated: true });
+    set({ user: me.data, isAuthenticated: true, isInitializing: false });
   },
 }));
