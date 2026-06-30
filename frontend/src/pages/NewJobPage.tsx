@@ -16,14 +16,10 @@ const STEPS = ['Select Template', 'Configure Source', 'Select LLM', 'Review & Su
 
 const LLM_OPTIONS = [
   { value: 'claude', label: 'Claude (Anthropic)', models: ['claude-haiku-4-5-20251001', 'claude-sonnet-4-6', 'claude-opus-4-6'] },
-  { value: 'openai', label: 'OpenAI GPT', models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo'] },
 ];
 
 const STORAGE_OPTIONS = [
   { value: 'local', label: 'Local / Uploaded Path' },
-  { value: 's3', label: 'AWS S3' },
-  { value: 'google_drive', label: 'Google Drive' },
-  { value: 'dropbox', label: 'Dropbox' },
 ];
 
 export default function NewJobPage() {
@@ -210,81 +206,38 @@ export default function NewJobPage() {
         {/* Step 1: Storage */}
         {step === 1 && (
           <Box>
-            <Typography variant="h6" mb={2}>PDF Source Configuration</Typography>
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Storage Provider</InputLabel>
-              <Select value={storageProvider} label="Storage Provider"
-                onChange={(e) => setStorageProvider(e.target.value as StorageProvider)}>
-                {STORAGE_OPTIONS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
-              </Select>
-            </FormControl>
-            {storageProvider === 'local' ? (
-              <Box sx={{ border: '2px dashed #667eea', borderRadius: 2, p: 3, textAlign: 'center', mb: 2 }}>
-                <CloudUpload sx={{ fontSize: 40, color: '#667eea', mb: 1 }} />
-                <Typography mb={1}>Drag & drop PDFs or click to select</Typography>
-                <input
-                  type="file" accept=".pdf" multiple
-                  style={{ display: 'none' }} id="pdf-upload"
-                  onChange={(e) => setUploadedFiles(Array.from(e.target.files || []))}
-                />
-                <label htmlFor="pdf-upload">
-                  <Button variant="outlined" component="span">Select PDF Files</Button>
-                </label>
-                {uploadedFiles.length > 0 && (
-                  <Box mt={2}>
-                    <Typography variant="body2" color="success.main" fontWeight={600}>
-                      ✅ {uploadedFiles.length} file{uploadedFiles.length > 1 ? 's' : ''} selected
-                    </Typography>
-                    {uploadedFiles.slice(0, 5).map((f) => (
-                      <Typography key={f.name} variant="body2" color="text.secondary">📄 {f.name}</Typography>
-                    ))}
-                    {uploadedFiles.length > 5 && (
-                      <Typography variant="body2" color="text.secondary">...and {uploadedFiles.length - 5} more</Typography>
-                    )}
-                  </Box>
-                )}
-                {uploading && (
-                  <Box mt={2}>
-                    <Typography variant="body2" mb={0.5}>Uploading... {uploadProgress}%</Typography>
-                    <LinearProgress variant="determinate" value={uploadProgress} />
-                  </Box>
-                )}
-              </Box>
-            ) : (
-              <TextField
-                label={storageProvider === 's3' ? 'S3 Bucket/Prefix (bucket/path)' : storageProvider === 'google_drive' ? 'Google Drive Folder ID' : 'Dropbox Folder Path'}
-                fullWidth value={storagePath}
-                onChange={(e) => setStoragePath(e.target.value)} sx={{ mb: 2 }}
+            <Typography variant="h6" mb={2}>Upload PDFs</Typography>
+            <Box sx={{ border: '2px dashed #667eea', borderRadius: 2, p: 3, textAlign: 'center', mb: 2 }}>
+              <CloudUpload sx={{ fontSize: 40, color: '#667eea', mb: 1 }} />
+              <Typography mb={1}>Drag & drop PDFs or click to select</Typography>
+              <input
+                type="file" accept=".pdf" multiple
+                style={{ display: 'none' }} id="pdf-upload"
+                onChange={(e) => setUploadedFiles(Array.from(e.target.files || []))}
               />
-            )}
-            {storageProvider !== 'local' && (
-              <Accordion sx={{ mt: 1 }}>
-                <AccordionSummary expandIcon={<ExpandMore />}>
-                  <Typography fontWeight={500}>Storage Credentials (optional)</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  {storageProvider === 's3' && (
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
-                        <TextField label="AWS Access Key" fullWidth size="small"
-                          onChange={(e) => setStorageCredentials((p) => ({ ...p, access_key: e.target.value }))} />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField label="AWS Secret Key" type="password" fullWidth size="small"
-                          onChange={(e) => setStorageCredentials((p) => ({ ...p, secret_key: e.target.value }))} />
-                      </Grid>
-                    </Grid>
+              <label htmlFor="pdf-upload">
+                <Button variant="outlined" component="span">Select PDF Files</Button>
+              </label>
+              {uploadedFiles.length > 0 && (
+                <Box mt={2}>
+                  <Typography variant="body2" color="success.main" fontWeight={600}>
+                    ✅ {uploadedFiles.length} file{uploadedFiles.length > 1 ? 's' : ''} selected
+                  </Typography>
+                  {uploadedFiles.slice(0, 5).map((f) => (
+                    <Typography key={f.name} variant="body2" color="text.secondary">📄 {f.name}</Typography>
+                  ))}
+                  {uploadedFiles.length > 5 && (
+                    <Typography variant="body2" color="text.secondary">...and {uploadedFiles.length - 5} more</Typography>
                   )}
-                  {storageProvider === 'dropbox' && (
-                    <TextField label="Dropbox Access Token" fullWidth size="small" type="password"
-                      onChange={(e) => setStorageCredentials((p) => ({ ...p, access_token: e.target.value }))} />
-                  )}
-                  {storageProvider === 'google_drive' && (
-                    <Alert severity="info">Upload your Google service account JSON in Settings → API Keys.</Alert>
-                  )}
-                </AccordionDetails>
-              </Accordion>
-            )}
+                </Box>
+              )}
+              {uploading && (
+                <Box mt={2}>
+                  <Typography variant="body2" mb={0.5}>Uploading... {uploadProgress}%</Typography>
+                  <LinearProgress variant="determinate" value={uploadProgress} />
+                </Box>
+              )}
+            </Box>
           </Box>
         )}
 
@@ -292,30 +245,16 @@ export default function NewJobPage() {
         {step === 2 && (
           <Box>
             <Typography variant="h6" mb={2}>LLM Configuration</Typography>
-            <Grid container spacing={2}>
-              {LLM_OPTIONS.map((opt) => (
-                <Grid item xs={12} sm={6} key={opt.value}>
-                  <Paper
-                    variant="outlined"
-                    onClick={() => { setLlmProvider(opt.value as LLMProvider); setLlmModel(opt.models[0]); }}
-                    sx={{
-                      p: 2, cursor: 'pointer', borderRadius: 2,
-                      borderColor: llmProvider === opt.value ? '#667eea' : '#ddd',
-                      borderWidth: llmProvider === opt.value ? 2 : 1,
-                      bgcolor: llmProvider === opt.value ? '#667eea08' : 'white',
-                    }}
-                  >
-                    <SmartToy sx={{ color: llmProvider === opt.value ? '#667eea' : '#999', mb: 0.5 }} />
-                    <Typography fontWeight={600}>{opt.label}</Typography>
-                  </Paper>
-                </Grid>
-              ))}
-            </Grid>
 
-            <FormControl fullWidth sx={{ mt: 2 }}>
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, borderColor: '#667eea', borderWidth: 2, bgcolor: '#667eea08', mb: 2 }}>
+              <SmartToy sx={{ color: '#667eea', mb: 0.5 }} />
+              <Typography fontWeight={600}>Claude (Anthropic)</Typography>
+            </Paper>
+
+            <FormControl fullWidth sx={{ mt: 1 }}>
               <InputLabel>Model</InputLabel>
               <Select value={llmModel} label="Model" onChange={(e) => setLlmModel(e.target.value)}>
-                {selectedLLM?.models.map((m) => <MenuItem key={m} value={m}>{m}</MenuItem>)}
+                {LLM_OPTIONS[0].models.map((m) => <MenuItem key={m} value={m}>{m}</MenuItem>)}
               </Select>
             </FormControl>
 
@@ -334,9 +273,7 @@ export default function NewJobPage() {
             {[
               ['Job Name', jobName],
               ['Template', templates?.find((t) => t.id === templateId)?.name ?? templateId],
-              ['Storage', STORAGE_OPTIONS.find((o) => o.value === storageProvider)?.label],
-              ['Path', storagePath || '(not specified)'],
-              ['LLM', selectedLLM?.label],
+              ['LLM', 'Claude (Anthropic)'],
               ['Model', llmModel],
               ['Use Own API Key', useUserApiKey ? 'Yes' : 'No (default)'],
             ].map(([label, value]) => (
