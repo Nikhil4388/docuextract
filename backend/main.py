@@ -1,37 +1,56 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 import structlog
 import time
 
 from app.core.config import settings
 from app.api.routes import auth, users, templates, jobs, payments
+from app.middleware.security import SecurityHeadersMiddleware, RateLimitMiddleware
 
 logger = structlog.get_logger()
 
 
 def create_app() -> FastAPI:
+    # Disable Swagger / ReDoc in production (they expose your entire API surface)
+    docs_url    = "/api/docs"    if settings.DEBUG else None
+    redoc_url   = "/api/redoc"   if settings.DEBUG else None
+    openapi_url = "/api/openapi.json" if settings.DEBUG else None
+
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.APP_VERSION,
-        docs_url="/api/docs",
-        redoc_url="/api/redoc",
-        openapi_url="/api/openapi.json",
-        # Allow large uploads (500MB)
+        docs_url=docs_url,
+        redoc_url=redoc_url,
+        openapi_url=openapi_url,
         max_upload_size=500 * 1024 * 1024,
     )
 
-    # ── Middleware ────────────────────────────────────────────────────────────
+    # ── Middleware (order matters — outermost first) ───────────────────────────
+
+    # 1. Security headers — add OWASP headers to every response
+    app.add_middleware(SecurityHeadersMiddleware)
+
+    # 2. Rate limiting — per-IP sliding window (auth routes are stricter)
+    app.add_middleware(RateLimitMiddleware)
+
+    # 3. CORS — explicit allowlist only; no wildcard methods/headers
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.ALLOWED_ORIGINS,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With"],
+        expose_headers=["X-RateLimit-Limit", "X-RateLimit-Remaining", "Retry-After"],
+        max_age=600,
     )
+
+    # 4. GZip compression
     app.add_middleware(GZipMiddleware, minimum_size=1000)
 
+    # 5. Request logging
     @app.middleware("http")
     async def log_requests(request: Request, call_next):
         start = time.time()
@@ -40,7 +59,7 @@ def create_app() -> FastAPI:
         logger.info(
             "request",
             method=request.method,
-            url=str(request.url),
+            path=request.url.path,   # log path only, not full URL (avoids logging tokens in QS)
             status=response.status_code,
             duration_ms=elapsed,
         )
@@ -48,20 +67,19 @@ def create_app() -> FastAPI:
 
     # ── Routers ───────────────────────────────────────────────────────────────
     prefix = settings.API_V1_PREFIX
-    app.include_router(auth.router, prefix=prefix)
-    app.include_router(users.router, prefix=prefix)
+    app.include_router(auth.router,      prefix=prefix)
+    app.include_router(users.router,     prefix=prefix)
     app.include_router(templates.router, prefix=prefix)
-    app.include_router(jobs.router, prefix=prefix)
-    app.include_router(payments.router, prefix=prefix)
+    app.include_router(jobs.router,      prefix=prefix)
+    app.include_router(payments.router,  prefix=prefix)
 
-    # ── Startup: apply any missing DB columns + reset stuck jobs ─────────────
+    # ── Startup ───────────────────────────────────────────────────────────────
     @app.on_event("startup")
     async def startup_tasks():
         from app.core.database import AsyncSessionLocal
         from app.models.extraction import ExtractionJob, JobStatus
         from sqlalchemy import text, update
         async with AsyncSessionLocal() as db:
-            # Safely add any missing columns (idempotent — IF NOT EXISTS)
             migrations = [
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(255)",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS jobs_used INTEGER NOT NULL DEFAULT 0",
@@ -94,11 +112,15 @@ def create_app() -> FastAPI:
     async def health():
         return {"status": "ok", "version": settings.APP_VERSION}
 
-    # ── Exception Handlers ────────────────────────────────────────────────────
+    # ── Global error handler — never leak stack traces ────────────────────────
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
-        logger.error("unhandled_exception", error=str(exc), path=request.url.path)
-        return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+        # Log internally but return a generic message to the caller
+        logger.error("unhandled_exception", path=request.url.path, exc_type=type(exc).__name__)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error"},
+        )
 
     return app
 

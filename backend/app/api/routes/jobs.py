@@ -287,10 +287,30 @@ async def upload_files(
     )
 
     async def upload_file(file: UploadFile):
+        # 1. Extension check
         if not file.filename.lower().endswith('.pdf'):
             return None
-        content = await file.read()
-        key = f"{prefix}/{file.filename}"
+
+        # 2. File size check (before reading the whole thing)
+        max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+        content = await file.read(max_bytes + 1)
+        if len(content) > max_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File '{file.filename}' exceeds {settings.MAX_UPLOAD_SIZE_MB} MB limit.",
+            )
+
+        # 3. Magic-bytes check — real PDFs start with %PDF-
+        if not content.startswith(b"%PDF-"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"File '{file.filename}' is not a valid PDF (magic bytes mismatch).",
+            )
+
+        # 4. Sanitize filename — strip directory traversal chars
+        import re, os
+        safe_name = re.sub(r"[^\w\-. ]", "_", os.path.basename(file.filename))
+        key = f"{prefix}/{safe_name}"
         # Run blocking S3 upload in thread pool
         import asyncio
         loop = asyncio.get_event_loop()
@@ -300,7 +320,7 @@ async def upload_files(
             Body=content,
             ContentType="application/pdf",
         ))
-        return file.filename
+        return safe_name
 
     results = await asyncio.gather(*[upload_file(f) for f in files])
     saved = [r for r in results if r]
