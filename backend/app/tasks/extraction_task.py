@@ -56,7 +56,7 @@ def _get_db() -> Session:
     return _get_engine()()
 
 def _run_db(fn, retries: int = 3):
-    """Execute a DB operation in a fresh session with automatic retry on connection errors."""
+    """Execute fn(db) in a fresh session; commit on success, retry on connection errors."""
     import psycopg2
     from sqlalchemy.exc import OperationalError, PendingRollbackError
     last_exc = None
@@ -65,6 +65,7 @@ def _run_db(fn, retries: int = 3):
         try:
             result = fn(db)
             db.commit()
+            db.close()
             return result
         except (OperationalError, PendingRollbackError, psycopg2.OperationalError) as exc:
             last_exc = exc
@@ -72,16 +73,20 @@ def _run_db(fn, retries: int = 3):
                 db.rollback()
             except Exception:
                 pass
-            db.close()
+            try:
+                db.close()
+            except Exception:
+                pass
             if attempt < retries - 1:
                 import time as _time
-                _time.sleep(2 ** attempt)  # 1s, 2s
+                _time.sleep(2 ** attempt)  # 1s, 2s, …
         except Exception:
-            db.rollback()
-            db.close()
+            try:
+                db.rollback()
+                db.close()
+            except Exception:
+                pass
             raise
-        else:
-            db.close()
     raise last_exc
 
 
@@ -122,32 +127,39 @@ async def _async_pipeline(job_id: str):
     # Thread pool for blocking I/O (S3, DB writes, PDF parsing)
     io_pool = ThreadPoolExecutor(max_workers=50, thread_name_prefix="io")
 
-    # ── Step 1: Load job ─────────────────────────────────────────────────
-    # Each DB call uses a fresh session via _run_db — immune to connection drops
-    def _load_job(db):
+    # ── Step 1: Load job — snapshot ALL fields to plain Python values ────
+    # IMPORTANT: never use an ORM object after its session closes.
+    # _run_db closes the session on exit, so we must copy everything we need
+    # into primitives / dicts while the session is still open.
+    def _load_job_snapshot(db):
         job = db.query(ExtractionJob).filter_by(id=job_id).first()
-        if job:
-            # Eagerly load template while session is open
-            _ = job.template
-        return job
+        if not job:
+            return None
+        tmpl = job.template  # trigger lazy-load while session is open
+        return {
+            "id": str(job.id),
+            "storage_provider": job.storage_provider,
+            "storage_path": job.storage_path,
+            "storage_credentials_enc": job.storage_credentials_enc,
+            "llm_model": job.llm_model,
+            "columns": (tmpl.columns if tmpl else []),
+        }
 
-    job: ExtractionJob = await loop.run_in_executor(io_pool, lambda: _run_db(_load_job))
-    if not job:
+    snap = await loop.run_in_executor(io_pool, lambda: _run_db(_load_job_snapshot))
+    if not snap:
         print(f"[TASK] job {job_id} not found in DB", flush=True)
         return
 
-    job_uuid = job.id
-    # Snapshot immutable fields before closing the session
-    template = job.template
-    columns = template.columns if template else []
+    job_uuid = snap["id"]
+    columns = snap["columns"]
     model = (
-        job.llm_model
-        if job.llm_model and job.llm_model not in _DEPRECATED_MODELS
+        snap["llm_model"]
+        if snap["llm_model"] and snap["llm_model"] not in _DEPRECATED_MODELS
         else _DEFAULT_MODEL
     )
 
     def _update_job(**kwargs):
-        """Apply a dict of field updates to the job in a fresh session."""
+        """Apply field updates to the job in a fresh session."""
         def _fn(db):
             j = db.query(ExtractionJob).filter_by(id=job_uuid).first()
             if j:
@@ -164,15 +176,9 @@ async def _async_pipeline(job_id: str):
     # ── Step 2: Download all PDFs in parallel ────────────────────────────
     await loop.run_in_executor(io_pool, lambda: _update_job(status_message="Downloading files…"))
 
-    # We need the job object for _collect_pdfs_sync — load a fresh copy
-    def _load_for_collect(db):
-        j = db.query(ExtractionJob).filter_by(id=job_uuid).first()
-        if j:
-            _ = j.template
-        return j
-    job_for_collect = await loop.run_in_executor(io_pool, lambda: _run_db(_load_for_collect))
+    # Pass the plain snapshot dict — no ORM objects cross the session boundary
     pdf_paths: List[str] = await loop.run_in_executor(
-        io_pool, _collect_pdfs_sync, job_for_collect
+        io_pool, _collect_pdfs_sync, snap
     )
     n = len(pdf_paths)
     print(f"[TASK] job={job_id} files={n} model={model}", flush=True)
@@ -322,10 +328,13 @@ async def _async_pipeline(job_id: str):
 
 # ── PDF collection (sync, runs in thread pool) ───────────────────────────────
 
-def _collect_pdfs_sync(job: ExtractionJob) -> List[str]:
-    """Download/locate all PDFs. S3 downloads run in parallel."""
-    if job.storage_provider == "local":
-        path = job.storage_path or ""
+def _collect_pdfs_sync(snap: dict) -> List[str]:
+    """Download/locate all PDFs. Accepts a plain dict snapshot (no ORM objects)."""
+    provider = snap["storage_provider"]
+    path = snap["storage_path"] or ""
+    creds_enc = snap["storage_credentials_enc"]
+
+    if provider == "local":
         if os.path.isdir(path):
             return [
                 os.path.join(path, f)
@@ -334,14 +343,10 @@ def _collect_pdfs_sync(job: ExtractionJob) -> List[str]:
             ]
         return []
 
-    creds = (
-        json.loads(decrypt_secret(job.storage_credentials_enc))
-        if job.storage_credentials_enc
-        else {}
-    )
+    creds = json.loads(decrypt_secret(creds_enc)) if creds_enc else {}
     tmpdir = tempfile.mkdtemp(prefix="docuextract_")
 
-    if job.storage_provider == "s3" and not creds:
+    if provider == "s3" and not creds:
         creds = {
             "access_key": settings.AWS_ACCESS_KEY_ID,
             "secret_key": settings.AWS_SECRET_ACCESS_KEY,
@@ -349,26 +354,23 @@ def _collect_pdfs_sync(job: ExtractionJob) -> List[str]:
         }
 
     from app.services.storage.s3_service import get_storage_service
-    svc = get_storage_service(job.storage_provider, creds)
+    svc = get_storage_service(provider, creds)
 
-    if job.storage_provider == "s3":
-        storage = job.storage_path or ""
-        bucket, prefix = storage.split("/", 1) if "/" in storage else (storage, "")
+    if provider == "s3":
+        bucket, prefix = path.split("/", 1) if "/" in path else (path, "")
         print(f"[S3] bucket={bucket!r} prefix={prefix!r}", flush=True)
         keys = svc.list_pdfs(bucket, prefix)
         print(f"[S3] {len(keys)} PDFs listed", flush=True)
-
-        # Download all S3 files in parallel
         with ThreadPoolExecutor(max_workers=min(len(keys), 20)) as pool:
             futures = [pool.submit(svc.download_pdf, bucket, key, tmpdir) for key in keys]
             return [f.result() for f in futures]
 
-    elif job.storage_provider == "google_drive":
-        files = svc.list_pdfs(job.storage_path)
+    elif provider == "google_drive":
+        files = svc.list_pdfs(path)
         return [svc.download_pdf(f["id"], tmpdir, f["name"]) for f in files]
 
-    elif job.storage_provider == "dropbox":
-        files = svc.list_pdfs(job.storage_path)
+    elif provider == "dropbox":
+        files = svc.list_pdfs(path)
         return [svc.download_pdf(f["path"], tmpdir) for f in files]
 
     return []
