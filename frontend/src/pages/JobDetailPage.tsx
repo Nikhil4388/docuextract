@@ -22,15 +22,12 @@ export default function JobDetailPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
 
-  const handleRefresh = () => {
-    qc.invalidateQueries({ queryKey: ['job', jobId] });
-    qc.invalidateQueries({ queryKey: ['job-results', jobId] });
-  };
+  const [refreshing, setRefreshing] = useState(false);
 
   const { data: job, refetch: refetchJob } = useQuery<ExtractionJob>({
     queryKey: ['job', jobId],
     queryFn: () => api.get(`/jobs/${jobId}`).then((r) => r.data),
-    refetchInterval: (q) => ['pending', 'processing'].includes(q.state.data?.status ?? '') ? 2000 : false,
+    refetchInterval: (q) => ['pending', 'processing'].includes(q.state.data?.status ?? '') ? 3000 : false,
   });
 
   const { data: results, isLoading: resultsLoading, refetch: refetchResults } = useQuery<ExtractionResult[]>({
@@ -38,6 +35,15 @@ export default function JobDetailPage() {
     queryFn: () => api.get(`/jobs/${jobId}/results`, { params: { search: search || undefined, limit: 1000 } }).then((r) => r.data),
     enabled: job?.status === 'completed' || job?.status === 'failed',
   });
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refetchJob();
+    if (job?.status === 'completed' || job?.status === 'failed') {
+      await refetchResults();
+    }
+    setRefreshing(false);
+  };
 
   const handleExport = async () => {
     const res = await api.get(`/jobs/${jobId}/export/excel`, { responseType: 'blob' });
@@ -116,7 +122,9 @@ export default function JobDetailPage() {
         <Typography variant="h5" fontWeight={700}>{job.name}</Typography>
         <Chip label={job.status} color={statusColor(job.status)} size="small" />
         <Tooltip title="Refresh">
-          <IconButton onClick={handleRefresh}><Refresh /></IconButton>
+          <IconButton onClick={handleRefresh} disabled={refreshing}>
+            {refreshing ? <CircularProgress size={18} /> : <Refresh />}
+          </IconButton>
         </Tooltip>
       </Box>
 
@@ -144,6 +152,13 @@ export default function JobDetailPage() {
 
       {job.error_message && job.status === 'failed' && (
         <Alert severity="error" sx={{ mb: 3 }}>{job.error_message}</Alert>
+      )}
+
+      {/* Billing / fatal error stored in status_message on a completed job */}
+      {job.status_message && job.status === 'completed' && job.failed_files > 0 && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          {job.status_message}
+        </Alert>
       )}
 
       {/* Stats */}
