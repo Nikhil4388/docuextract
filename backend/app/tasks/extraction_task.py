@@ -205,10 +205,18 @@ async def _async_pipeline(job_id: str):
     extractor = PDFExtractor()
     lock = asyncio.Lock()
     progress = {"ok": 0, "fail": 0}
+    billing_error: List[str] = []   # set to non-empty if we hit a billing wall
 
     async def extract_one(path: str) -> Tuple[str, Any]:
         async with semaphore:
             fname = os.path.basename(path)
+
+            # If billing is exhausted there's no point calling the API again
+            if billing_error:
+                async with lock:
+                    progress["fail"] += 1
+                return path, Exception(billing_error[0])
+
             try:
                 pages = await loop.run_in_executor(
                     io_pool, extractor.extract_text, path
@@ -273,6 +281,21 @@ async def _async_pipeline(job_id: str):
                     progress["fail"] += 1
                 return path, Exception("Rate limit — retry job")
 
+            except _anthropic.BadRequestError as exc:
+                msg_text = str(exc)
+                if "credit balance is too low" in msg_text or "billing" in msg_text.lower():
+                    err = "Anthropic API credit balance is too low. Please top up at console.anthropic.com → Billing."
+                    print(f"[TASK] 💳 billing error: {err}", flush=True)
+                    async with lock:
+                        if not billing_error:
+                            billing_error.append(err)
+                        progress["fail"] += 1
+                    return path, Exception(err)
+                print(f"[TASK] ❌ {fname}: {type(exc).__name__}: {exc}", flush=True)
+                async with lock:
+                    progress["fail"] += 1
+                return path, exc
+
             except Exception as exc:
                 print(f"[TASK] ❌ {fname}: {type(exc).__name__}: {exc}", flush=True)
                 async with lock:
@@ -317,12 +340,19 @@ async def _async_pipeline(job_id: str):
             j.processed_files = progress["ok"]
             j.failed_files = progress["fail"]
             j.status = JobStatus.COMPLETED
-            j.status_message = None
             j.completed_at = datetime.utcnow()
+            # Surface billing / fatal errors on the job itself so the UI can show them
+            if billing_error:
+                j.status_message = billing_error[0]
+            else:
+                j.status_message = None
 
     await loop.run_in_executor(io_pool, lambda: _run_db(_save_all))
 
-    await client.aclose()
+    try:
+        await client.close()
+    except Exception:
+        pass
     io_pool.shutdown(wait=False)
 
 
