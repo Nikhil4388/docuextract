@@ -7,6 +7,7 @@ from typing import Optional
 from datetime import datetime, timedelta
 import secrets
 import random
+import time
 import httpx
 
 from app.core.database import get_db
@@ -22,28 +23,39 @@ from app.services.email_service import send_otp_email, send_password_reset_email
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-# ── Cookie helpers ─────────────────────────────────────────────────────────────
+# ── One-time OAuth exchange codes (in-memory, 60s TTL) ───────────────────────
+# Avoids needing to pass tokens in URLs or set cross-origin cookies on redirect.
+_oauth_codes: dict[str, tuple[str, float]] = {}
 
-def _set_auth_cookies(response: Response, user_id: str) -> None:
-    """Set httpOnly auth cookies. Tokens never touch client-side JS.
 
-    SameSite=None + Secure=True is required because the frontend (Vercel) and
-    backend (Railway) are on different domains. SameSite=Lax would block the
-    cookies on cross-origin XHR requests (e.g. axios withCredentials calls).
-    CORS + httpOnly still protect against CSRF and XSS respectively.
+def _create_oauth_code(user_id: str) -> str:
+    now = time.time()
+    # Prune expired entries
+    expired = [k for k, (_, exp) in _oauth_codes.items() if exp < now]
+    for k in expired:
+        del _oauth_codes[k]
+    code = secrets.token_urlsafe(32)
+    _oauth_codes[code] = (user_id, now + 60)
+    return code
+
+
+def _consume_oauth_code(code: str) -> Optional[str]:
+    """Returns user_id if valid, None if expired or not found."""
+    entry = _oauth_codes.pop(code, None)
+    if not entry:
+        return None
+    user_id, expires_at = entry
+    return user_id if time.time() <= expires_at else None
+
+
+# ── Refresh cookie helpers ─────────────────────────────────────────────────────
+
+def _set_refresh_cookie(response: Response, user_id: str) -> None:
+    """Set the refresh token as an httpOnly cookie.
+    SameSite=None + Secure=True allows cross-origin use (Vercel → Railway).
+    The access token is returned in the JSON body and stored in JS memory only.
     """
-    access_token  = create_access_token(str(user_id))
     refresh_token = create_refresh_token(str(user_id))
-
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        secure=True,        # required for SameSite=None
-        samesite="none",    # allow cross-origin requests from Vercel → Railway
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        path="/",
-    )
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
@@ -51,14 +63,18 @@ def _set_auth_cookies(response: Response, user_id: str) -> None:
         secure=True,
         samesite="none",
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
-        path="/api/v1/auth/refresh",  # only sent to the refresh endpoint
+        path="/api/v1/auth/refresh",
     )
 
 
-def _clear_auth_cookies(response: Response) -> None:
-    """Clear both auth cookies (logout). Must match same attributes as set_cookie."""
-    response.delete_cookie("access_token",  path="/",                    secure=True, samesite="none", httponly=True)
-    response.delete_cookie("refresh_token", path="/api/v1/auth/refresh", secure=True, samesite="none", httponly=True)
+def _clear_refresh_cookie(response: Response) -> None:
+    response.delete_cookie(
+        "refresh_token",
+        path="/api/v1/auth/refresh",
+        secure=True,
+        samesite="none",
+        httponly=True,
+    )
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -76,6 +92,10 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
+class AccessTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
 class PasswordResetRequest(BaseModel):
     email: EmailStr
 
@@ -86,6 +106,9 @@ class PasswordResetConfirm(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
+
+class ExchangeRequest(BaseModel):
+    code: str
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -154,9 +177,9 @@ async def resend_otp(
     return {"message": "If that email exists and is unverified, a new OTP was sent."}
 
 
-# ── Login / Logout ────────────────────────────────────────────────────────────
+# ── Login ─────────────────────────────────────────────────────────────────────
 
-@router.post("/login")
+@router.post("/login", response_model=AccessTokenResponse)
 async def login(payload: LoginRequest, response: Response, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == payload.email))
     user = result.scalar_one_or_none()
@@ -168,24 +191,33 @@ async def login(payload: LoginRequest, response: Response, db: AsyncSession = De
     if not user.is_verified:
         raise HTTPException(status_code=403, detail="Email not verified.")
 
-    _set_auth_cookies(response, str(user.id))
-    return {"message": "Login successful"}
+    # Access token → returned in body (stored in JS memory, not localStorage)
+    # Refresh token → httpOnly cookie (invisible to JS)
+    _set_refresh_cookie(response, str(user.id))
+    return AccessTokenResponse(access_token=create_access_token(str(user.id)))
 
+
+# ── Logout ────────────────────────────────────────────────────────────────────
 
 @router.post("/logout")
 async def logout(response: Response):
-    _clear_auth_cookies(response)
+    _clear_refresh_cookie(response)
     return {"message": "Logged out successfully"}
 
 
-# ── Token refresh ─────────────────────────────────────────────────────────────
+# ── Refresh access token ──────────────────────────────────────────────────────
 
-@router.post("/refresh")
+@router.post("/refresh", response_model=AccessTokenResponse)
 async def refresh_token(
     response: Response,
     refresh_token: Optional[str] = Cookie(None),
     db: AsyncSession = Depends(get_db),
 ):
+    """
+    Reads refresh_token from httpOnly cookie.
+    Returns a fresh access_token in the JSON body.
+    Frontend stores it in memory only.
+    """
     if not refresh_token:
         raise HTTPException(status_code=401, detail="No refresh token")
     try:
@@ -201,8 +233,35 @@ async def refresh_token(
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="User not found")
 
-    _set_auth_cookies(response, str(user.id))
-    return {"message": "Token refreshed"}
+    # Rotate refresh token cookie + return new access token
+    _set_refresh_cookie(response, str(user.id))
+    return AccessTokenResponse(access_token=create_access_token(str(user.id)))
+
+
+# ── OAuth one-time code exchange ──────────────────────────────────────────────
+
+@router.post("/exchange", response_model=AccessTokenResponse)
+async def exchange_oauth_code(
+    payload: ExchangeRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Exchange a one-time OAuth code for a session.
+    The code is created server-side after Google callback and put in the redirect URL.
+    It expires in 60 seconds and can only be used once.
+    """
+    user_id = _consume_oauth_code(payload.code)
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Invalid or expired OAuth code")
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    _set_refresh_cookie(response, str(user.id))
+    return AccessTokenResponse(access_token=create_access_token(str(user.id)))
 
 
 # ── Password reset ────────────────────────────────────────────────────────────
@@ -310,7 +369,7 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
             user.auth_provider = AuthProvider.GOOGLE
             user.oauth_id = userinfo["sub"]
             user.is_verified = True
-            if userinfo.get("name"):   user.full_name = userinfo["name"]
+            if userinfo.get("name"):    user.full_name = userinfo["name"]
             if userinfo.get("picture"): user.avatar_url = userinfo["picture"]
             await db.flush()
     else:
@@ -318,7 +377,8 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
         if userinfo.get("picture"): user.avatar_url = userinfo["picture"]
         await db.flush()
 
-    # Set cookies server-side — NO tokens in the redirect URL
-    redirect = RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/callback")
-    _set_auth_cookies(redirect, str(user.id))
-    return redirect
+    # Create a one-time code and redirect — no tokens in URL, no cross-origin cookie issues
+    exchange_code = _create_oauth_code(str(user.id))
+    return RedirectResponse(
+        url=f"{settings.FRONTEND_URL}/auth/callback?code={exchange_code}"
+    )

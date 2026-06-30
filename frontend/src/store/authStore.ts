@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { User } from '../types';
-import api from '../services/api';
+import api, { setAccessToken, clearAccessToken } from '../services/api';
 
 interface AuthState {
   user: User | null;
@@ -10,21 +10,21 @@ interface AuthState {
   register: (email: string, password: string, fullName?: string) => Promise<void>;
   logout: () => Promise<void>;
   fetchMe: () => Promise<void>;
-  // kept for OAuth callback compatibility — now just calls fetchMe
-  setTokensAndFetch: (_tokens: unknown) => Promise<void>;
+  // Called by OAuth callback — receives the one-time exchange code from URL
+  setTokensAndFetch: (code: string | null) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isLoading: false,
-  // Start unauthenticated — fetchMe() in App.tsx confirms the session via cookie
   isAuthenticated: false,
 
   login: async (email, password) => {
     set({ isLoading: true });
     try {
-      // Backend sets httpOnly cookies; no tokens returned in body
-      await api.post('/auth/login', { email, password });
+      // Backend returns access_token in body + sets refresh_token httpOnly cookie
+      const res = await api.post<{ access_token: string }>('/auth/login', { email, password });
+      setAccessToken(res.data.access_token);
       const me = await api.get<User>('/users/me');
       set({ user: me.data, isAuthenticated: true });
     } finally {
@@ -43,24 +43,30 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     try {
-      await api.post('/auth/logout');
-    } catch {
-      // Even if the request fails, clear local state
-    }
+      await api.post('/auth/logout');  // clears refresh cookie server-side
+    } catch { /* ignore */ }
+    clearAccessToken();
     set({ user: null, isAuthenticated: false });
   },
 
   fetchMe: async () => {
+    // If no access token in memory, the 401 interceptor in api.ts will automatically
+    // call /auth/refresh (using the httpOnly cookie) to get one, then retry this.
     try {
       const me = await api.get<User>('/users/me');
       set({ user: me.data, isAuthenticated: true });
     } catch {
+      clearAccessToken();
       set({ user: null, isAuthenticated: false });
     }
   },
 
-  // OAuth callback: cookies already set by backend redirect — just verify session
-  setTokensAndFetch: async (_tokens) => {
+  setTokensAndFetch: async (code: string | null) => {
+    if (code) {
+      // Exchange the one-time OAuth code for an access token + refresh cookie
+      const res = await api.post<{ access_token: string }>('/auth/exchange', { code });
+      setAccessToken(res.data.access_token);
+    }
     const me = await api.get<User>('/users/me');
     set({ user: me.data, isAuthenticated: true });
   },

@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { SnackbarProvider, useSnackbar } from 'notistack';
@@ -129,13 +129,15 @@ function InactivityGuard({ children }: { children: React.ReactNode }) {
 }
 
 function AuthCallbackPage() {
+  const [params] = useSearchParams();
   const { setTokensAndFetch } = useAuthStore();
   const navigate = useNavigate();
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    // Cookies were set by the backend redirect — just verify the session
-    setTokensAndFetch(null)
+    // Backend puts a one-time exchange code in the URL (not the token itself)
+    const code = params.get('code');
+    setTokensAndFetch(code)
       .then(() => navigate('/dashboard', { replace: true }))
       .catch(() => { setError(true); navigate('/login', { replace: true }); });
   }, []);

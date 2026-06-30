@@ -1,5 +1,6 @@
 from typing import Optional
-from fastapi import Depends, HTTPException, status, Cookie
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from jose import JWTError
@@ -8,20 +9,23 @@ from app.core.database import get_db
 from app.core.security import decode_token
 from app.models.user import User, UserRole
 
+security = HTTPBearer()
+
 
 async def get_current_user(
-    access_token: Optional[str] = Cookie(None),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    """Read the access token from the httpOnly cookie (invisible to JS)."""
+    """Read the access token from the Authorization: Bearer header.
+    The token lives in JS memory only (not localStorage, not a cookie).
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
     )
-    if not access_token:
-        raise credentials_exception
     try:
-        payload = decode_token(access_token)
+        payload = decode_token(credentials.credentials)
         user_id: str = payload.get("sub")
         token_type: str = payload.get("type")
         if user_id is None or token_type != "access":
@@ -43,12 +47,12 @@ async def get_current_admin(current_user: User = Depends(get_current_user)) -> U
 
 
 async def get_optional_user(
-    access_token: Optional[str] = Cookie(None),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
     db: AsyncSession = Depends(get_db),
 ) -> Optional[User]:
-    if not access_token:
+    if not credentials:
         return None
     try:
-        return await get_current_user(access_token=access_token, db=db)
+        return await get_current_user(credentials, db)
     except HTTPException:
         return None
