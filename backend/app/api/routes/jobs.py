@@ -17,6 +17,8 @@ from app.services.extraction_service import ExtractionService
 
 router = APIRouter(prefix="/jobs", tags=["Extraction Jobs"])
 
+from app.tasks.cleanup_task import cleanup_old_jobs as _cleanup_task
+
 
 class JobCreate(BaseModel):
     name: str
@@ -230,6 +232,19 @@ async def export_excel(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# ── Admin: manual cleanup trigger ────────────────────────────────────────────
+@router.post("/admin/trigger-cleanup", status_code=200)
+async def trigger_cleanup(current_user: User = Depends(get_current_user)):
+    """
+    Admin-only: immediately enqueue the 7-day cleanup task.
+    Useful for testing or emergency data purges.
+    """
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    task = _cleanup_task.delay()
+    return {"message": "Cleanup task queued", "task_id": task.id}
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

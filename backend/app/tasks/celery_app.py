@@ -15,8 +15,8 @@ broker_url = _clean_redis_url(settings.CELERY_BROKER_URL)
 celery_app = Celery(
     "docuextract",
     broker=broker_url,
-    backend=None,  # results tracked in our own DB, not Redis
-    include=["app.tasks.extraction_task"],
+    backend="cache+memory://",  # in-process only — no Redis writes for results
+    include=["app.tasks.extraction_task", "app.tasks.cleanup_task"],
 )
 
 # SSL config for rediss:// URLs (Redis Cloud TLS, Upstash, etc.)
@@ -34,8 +34,20 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
     task_routes={
         "app.tasks.extraction_task.run_extraction_job": {"queue": "extraction"},
+        "app.tasks.cleanup_task.cleanup_old_jobs":      {"queue": "celery"},
     },
     broker_use_ssl=_ssl_opts or None,
+
+    # ── Celery Beat schedule ──────────────────────────────────────────────────
+    # Runs cleanup_old_jobs once every 7 days.
+    # On first deploy it fires ~7 days after the worker starts.
+    beat_schedule={
+        "cleanup-jobs-every-7-days": {
+            "task":     "app.tasks.cleanup_task.cleanup_old_jobs",
+            "schedule": 60 * 60 * 24 * 7,   # 604 800 seconds = 7 days
+            "options":  {"queue": "celery"},
+        },
+    },
 )
 
 
