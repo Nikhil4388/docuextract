@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Box, Typography, Container } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import LogoIcon from '../components/LogoIcon';
 
@@ -32,15 +32,15 @@ const USE_CASES = [
 ];
 
 const STATS = [
-  { value: '100x', label: 'Faster than manual', color: '#a5b4fc' },
+  { value: '100x', label: 'Faster than manual',  color: '#a5b4fc' },
   { value: '95%+', label: 'Extraction accuracy', color: '#6ee7b7' },
-  { value: '<10s', label: 'Per 10 files',        color: '#67e8f9' },
+  { value: '<10s', label: 'Per 10 files',         color: '#67e8f9' },
   { value: '0',   label: 'Lines of code needed', color: '#fde68a' },
 ];
 
 const FAQS = [
   { q: 'How do I convert PDF to Excel automatically?', a: 'Upload your PDFs to MultiPDFToExcel, create a template with the column names you want (invoice number, vendor, date, amount — anything), and the AI reads every PDF and builds a clean Excel spreadsheet automatically.' },
-  { q: 'Can I convert multiple PDFs to Excel at once?', a: 'Yes — that\'s what we\'re built for. Upload hundreds of PDFs in one batch. They all run in parallel so 100 PDFs finish in under 2 minutes, all rows in one Excel file.' },
+  { q: 'Can I convert multiple PDFs to Excel at once?', a: "Yes — that's what we're built for. Upload hundreds of PDFs in one batch. They all run in parallel so 100 PDFs finish in under 2 minutes, all rows in one Excel file." },
   { q: 'Does the PDF to Excel converter work with scanned PDFs?', a: 'Yes. The AI reads both native digital PDFs and scanned image PDFs. Built-in OCR means no extra tools needed — just upload and extract.' },
   { q: 'What types of PDFs can I convert to Excel?', a: 'Invoices, receipts, bank statements, resumes, contracts, purchase orders, medical records, research papers — any PDF with readable text or images.' },
   { q: 'Is there a free PDF to Excel converter?', a: 'Yes. Sign up free with Google and start converting PDFs to Excel immediately. No credit card required.' },
@@ -56,598 +56,550 @@ const TRUST = [
   { icon: '⚡', label: 'No Permanent Storage' },
 ];
 
-// ── Particle network canvas hook ──────────────────────────────────────────────
-function useParticleNetwork(canvasRef: React.RefObject<HTMLCanvasElement>) {
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+// ── 3-D PDF stack (pure CSS) ──────────────────────────────────────────────────
+function PDFStack() {
+  return (
+    <Box sx={{
+      perspective: '1200px',
+      width: { xs: 300, md: 380 },
+      height: { xs: 300, md: 380 },
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <Box sx={{
+        position: 'relative',
+        width: { xs: 220, md: 270 },
+        height: { xs: 160, md: 200 },
+        transformStyle: 'preserve-3d',
+        animation: 'pdfFloat 10s ease-in-out infinite',
+      }}>
+        {/* Sheet 1 — cyan tint */}
+        <Box sx={{
+          position: 'absolute', inset: 0, borderRadius: '16px',
+          bgcolor: '#a5f3fc',
+          transform: 'translateZ(-90px) translateY(22px) rotateX(4deg)',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.18)',
+        }} />
+        {/* Sheet 2 — violet */}
+        <Box sx={{
+          position: 'absolute', inset: 0, borderRadius: '16px',
+          bgcolor: '#c4b5fd',
+          transform: 'translateZ(-55px) translateY(14px) rotateX(2deg)',
+        }} />
+        {/* Sheet 3 — indigo */}
+        <Box sx={{
+          position: 'absolute', inset: 0, borderRadius: '16px',
+          background: 'linear-gradient(135deg, #c7d2fe, #e0e7ff)',
+          transform: 'translateZ(-22px) translateY(6px)',
+        }} />
 
-    let animId: number;
-    const COLORS = ['#6366f1', '#8b5cf6', '#06b6d4', '#818cf8', '#a78bfa', '#38bdf8'];
+        {/* Sheet 4 — PDF input (white) */}
+        <Box sx={{
+          position: 'absolute', inset: 0, borderRadius: '16px',
+          bgcolor: 'white', transform: 'translateZ(12px)',
+          boxShadow: '0 28px 80px rgba(0,0,0,0.2)',
+          p: 2.5, overflow: 'hidden',
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+            <Box sx={{ width: 22, height: 22, borderRadius: '5px', bgcolor: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Typography sx={{ color: 'white', fontSize: 7, fontWeight: 900, lineHeight: 1 }}>PDF</Typography>
+            </Box>
+            <Box>
+              <Box sx={{ height: 5, width: 70, bgcolor: '#1e293b', borderRadius: 1, mb: 0.5 }} />
+              <Box sx={{ height: 3.5, width: 45, bgcolor: '#cbd5e1', borderRadius: 1 }} />
+            </Box>
+          </Box>
+          {[85, 65, 78, 55, 72, 48, 80].map((w, i) => (
+            <Box key={i} sx={{ height: 3.5, width: `${w}%`, bgcolor: i % 3 === 0 ? '#ddd6fe' : '#e2e8f0', borderRadius: 1, mb: 0.9 }} />
+          ))}
+          <Box sx={{ mt: 1.5, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0.5 }}>
+            {['Invoice#', 'Date', 'Amount', 'INV-001', 'Jan 15', '$1,250', 'INV-002', 'Feb 01', '$890'].map((t, i) => (
+              <Box key={i} sx={{
+                height: i < 3 ? 15 : 13, borderRadius: '3px',
+                bgcolor: i < 3 ? '#6366f1' : '#f1f5f9',
+                display: 'flex', alignItems: 'center', px: 0.5,
+              }}>
+                <Typography sx={{ fontSize: 5.5, fontWeight: i < 3 ? 800 : 400, color: i < 3 ? 'white' : '#64748b', lineHeight: 1 }}>{t}</Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
 
-    const resize = () => {
-      canvas.width  = window.innerWidth;
-      canvas.height = document.documentElement.scrollHeight;
-    };
-    resize();
-
-    type P = { x: number; y: number; vx: number; vy: number; r: number; color: string; alpha: number };
-
-    const N = 110;
-    const MAX_DIST = 170;
-
-    const pts: P[] = Array.from({ length: N }, () => ({
-      x:     Math.random() * canvas.width,
-      y:     Math.random() * canvas.height,
-      vx:    (Math.random() - 0.5) * 0.35,
-      vy:    (Math.random() - 0.5) * 0.35,
-      r:     Math.random() * 1.8 + 0.6,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      alpha: Math.random() * 0.45 + 0.15,
-    }));
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Aurora top glow
-      const aura = ctx.createRadialGradient(canvas.width / 2, -100, 0, canvas.width / 2, -100, canvas.width * 0.8);
-      aura.addColorStop(0, 'rgba(99,102,241,0.13)');
-      aura.addColorStop(0.5, 'rgba(139,92,246,0.06)');
-      aura.addColorStop(1, 'transparent');
-      ctx.fillStyle = aura;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Connections
-      for (let i = 0; i < N; i++) {
-        for (let j = i + 1; j < N; j++) {
-          const dx = pts[i].x - pts[j].x;
-          const dy = pts[i].y - pts[j].y;
-          const d  = Math.sqrt(dx * dx + dy * dy);
-          if (d < MAX_DIST) {
-            const a = (1 - d / MAX_DIST) * 0.28;
-            ctx.beginPath();
-            ctx.moveTo(pts[i].x, pts[i].y);
-            ctx.lineTo(pts[j].x, pts[j].y);
-            ctx.strokeStyle = `rgba(99,102,241,${a})`;
-            ctx.lineWidth   = 0.6;
-            ctx.stroke();
-          }
-        }
-      }
-
-      // Nodes
-      for (const p of pts) {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0 || p.x > canvas.width)  p.vx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-
-        ctx.shadowBlur  = 8;
-        ctx.shadowColor = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle   = p.color;
-        ctx.globalAlpha = p.alpha;
-        ctx.fill();
-        ctx.shadowBlur  = 0;
-        ctx.globalAlpha = 1;
-      }
-
-      animId = requestAnimationFrame(draw);
-    };
-
-    draw();
-    window.addEventListener('resize', resize);
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener('resize', resize);
-    };
-  }, [canvasRef]);
+        {/* Sheet 5 — Excel output (indigo gradient) */}
+        <Box sx={{
+          position: 'absolute', inset: 0, borderRadius: '16px',
+          background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+          transform: 'translateZ(46px)',
+          boxShadow: '0 32px 80px rgba(99,102,241,0.4)',
+          p: 2, overflow: 'hidden',
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+            <Box sx={{ width: 20, height: 20, borderRadius: '4px', bgcolor: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Typography sx={{ color: 'white', fontSize: 6, fontWeight: 900, lineHeight: 1 }}>XLS</Typography>
+            </Box>
+            <Typography sx={{ color: 'rgba(255,255,255,0.9)', fontSize: 9, fontWeight: 700 }}>data_extracted.xlsx</Typography>
+          </Box>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 0.4 }}>
+            {['Invoice#', 'Date', 'Vendor', 'Amount',
+              'INV-001', 'Jan 15', 'Acme', '$1,250',
+              'INV-002', 'Feb 01', 'Tech', '$890',
+              'INV-003', 'Feb 15', 'Cloud', '$2,100'].map((t, i) => (
+              <Box key={i} sx={{
+                height: i < 4 ? 15 : 13, borderRadius: '3px',
+                bgcolor: i < 4 ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+                display: 'flex', alignItems: 'center', px: 0.5,
+              }}>
+                <Typography sx={{ fontSize: 5, fontWeight: i < 4 ? 800 : 400, color: 'rgba(255,255,255,0.9)', lineHeight: 1 }}>{t}</Typography>
+              </Box>
+            ))}
+          </Box>
+          <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', gap: 0.8 }}>
+            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#6ee7b7', flexShrink: 0 }} />
+            <Typography sx={{ fontSize: 7.5, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>16 files extracted · 100% confidence</Typography>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
 }
 
-// ── Component ──────────────────────────────────────────────────────────────────
+// ── Component ─────────────────────────────────────────────────────────────────
 export default function LandingPage() {
-  const navigate    = useNavigate();
-  const [faqOpen, setFaqOpen] = useState<number | null>(null);
-  const [scrolled, setScrolled] = useState(false);
-  const canvasRef   = useRef<HTMLCanvasElement>(null);
-
-  useParticleNetwork(canvasRef);
+  const navigate = useNavigate();
+  const [faqOpen,    setFaqOpen]    = useState<number | null>(null);
+  const [crazyMode,  setCrazyMode]  = useState(false);
 
   const handleLogin = () => {
     window.location.href = `${import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1'}/auth/google`;
   };
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
   return (
-    <Box sx={{ bgcolor: '#07071a', minHeight: '100vh', color: 'white', overflowX: 'hidden' }}>
+    <Box sx={{ bgcolor: '#e8e2d8', minHeight: '100vh', p: { xs: 1.5, md: 2 } }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         * { box-sizing: border-box; }
         body { margin: 0; }
-        @keyframes gradShift   { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-        @keyframes fadeUp      { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes glowPulse   { 0%,100%{box-shadow:0 0 30px rgba(99,102,241,.25)} 50%{box-shadow:0 0 70px rgba(139,92,246,.45),0 0 120px rgba(99,102,241,.18)} }
-        @keyframes blink       { 0%,100%{opacity:1} 50%{opacity:.35} }
-        @keyframes scanLine    { 0%{transform:translateY(-100%)} 100%{transform:translateY(100vh)} }
-        @keyframes shieldPulse { 0%,100%{opacity:.15;transform:scale(1)} 50%{opacity:.3;transform:scale(1.04)} }
-        @keyframes trustScroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-        ::-webkit-scrollbar{width:5px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:rgba(99,102,241,.3);border-radius:10px}
+        @keyframes pdfFloat {
+          0%,100% { transform: rotateX(18deg) rotateY(-22deg) rotateZ(2deg); }
+          33%      { transform: rotateX(12deg) rotateY(18deg)  rotateZ(-3deg); }
+          66%      { transform: rotateX(22deg) rotateY(8deg)   rotateZ(4deg); }
+        }
+        @keyframes gradShift {
+          0%,100% { background-position: 0% 50%; }
+          50%      { background-position: 100% 50%; }
+        }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(24px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes blink {
+          0%,100% { opacity: 1; } 50% { opacity: 0.3; }
+        }
+        @keyframes marquee {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        ${crazyMode ? `
+          @keyframes rainbow { 0%{filter:hue-rotate(0deg)} 100%{filter:hue-rotate(360deg)} }
+          .main-frame { animation: rainbow 1.5s linear infinite !important; }
+          .pdf-float  { animation-duration: 1.5s !important; }
+        ` : ''}
+        ::-webkit-scrollbar{width:5px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.15);border-radius:10px}
       `}</style>
 
-      {/* ── PARTICLE NETWORK CANVAS ── */}
-      <canvas ref={canvasRef} style={{
-        position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-        zIndex: 0, pointerEvents: 'none', opacity: 0.85,
-      }} />
-
-      {/* ── Subtle grid overlay ── */}
-      <Box sx={{
-        position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
-        backgroundImage: `linear-gradient(rgba(99,102,241,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,.03) 1px, transparent 1px)`,
-        backgroundSize: '64px 64px',
-      }} />
-
-      {/* ── Scan-line shimmer ── */}
-      <Box sx={{
-        position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden',
+      {/* ══ OUTER DARK FRAME ══════════════════════════════════════════════════ */}
+      <Box className="main-frame" sx={{
+        bgcolor: '#0c0c0c',
+        borderRadius: { xs: '20px', md: '26px' },
+        overflow: 'hidden',
+        boxShadow: '0 60px 140px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05)',
       }}>
+
+        {/* ══ HERO — CREAM / LIGHT SECTION ══════════════════════════════════ */}
         <Box sx={{
-          position: 'absolute', left: 0, right: 0, height: '2px',
-          background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.08), transparent)',
-          animation: 'scanLine 12s linear infinite',
-        }} />
-      </Box>
-
-      {/* ── NAVBAR ── */}
-      <Box sx={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
-        px: { xs: 3, md: 6 }, py: 1.5,
-        display: 'flex', alignItems: 'center', gap: 3,
-        bgcolor: scrolled ? 'rgba(7,7,26,0.88)' : 'transparent',
-        backdropFilter: scrolled ? 'blur(24px)' : 'none',
-        borderBottom: scrolled ? '1px solid rgba(99,102,241,0.1)' : '1px solid transparent',
-        transition: 'all 0.3s ease',
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1 }}>
-          <Box sx={{ boxShadow: '0 4px 16px rgba(99,102,241,0.5)', borderRadius: '10px' }}>
-            <LogoIcon size={36} borderRadius={10} />
-          </Box>
-          <Typography sx={{ fontWeight: 900, fontSize: 17, color: 'white', letterSpacing: -0.3 }}>
-            MultiPDFToExcel
-          </Typography>
-        </Box>
-
-        <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 4 }}>
-          {[['Features','#features'],['How It Works','#how-it-works'],['FAQ','#faq']].map(([label, href]) => (
-            <Box key={label} component="a" href={href}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault();
-                document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: 600, textDecoration: 'none', cursor: 'pointer', '&:hover': { color: 'white' }, transition: 'color 0.15s' }}>
-              {label}
-            </Box>
-          ))}
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 1.5 }}>
-          <Box onClick={() => navigate('/login')} sx={{
-            px: 2.5, py: 0.9, borderRadius: 2.5, cursor: 'pointer',
-            border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)',
-            fontSize: 13, fontWeight: 600,
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.06)', color: 'white' },
-            transition: 'all 0.15s',
-          }}>Sign In</Box>
-          <Box onClick={handleLogin} sx={{
-            px: 2.5, py: 0.9, borderRadius: 2.5, cursor: 'pointer',
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            fontSize: 13, fontWeight: 700, color: 'white',
-            boxShadow: '0 4px 14px rgba(99,102,241,0.4)',
-            '&:hover': { opacity: 0.9, transform: 'translateY(-1px)' },
-            transition: 'all 0.2s ease',
-          }}>Get Started Free</Box>
-        </Box>
-      </Box>
-
-      {/* ── HERO ── */}
-      <Box sx={{ position: 'relative', zIndex: 1, pt: { xs: 16, md: 24 }, pb: { xs: 8, md: 14 }, textAlign: 'center', px: 3 }}>
-
-        {/* Badge */}
-        <Box sx={{
-          display: 'inline-flex', alignItems: 'center', gap: 1, mb: 4,
-          bgcolor: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)',
-          borderRadius: 6, px: 2.5, py: 0.8,
-          animation: 'fadeUp 0.6s ease both',
+          bgcolor: '#e8e2d8',
+          borderRadius: { xs: '18px 18px 0 0', md: '24px 24px 0 0' },
+          position: 'relative',
+          overflow: 'hidden',
+          minHeight: '100vh',
         }}>
-          <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: '#10b981', boxShadow: '0 0 8px #10b981', animation: 'blink 2s ease infinite' }} />
-          <Typography sx={{ color: '#a5b4fc', fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>
-            AI-POWERED · FREE TO START · NO CODE
-          </Typography>
-        </Box>
 
-        {/* H1 */}
-        <Typography component="h1" sx={{
-          fontSize: { xs: 36, sm: 52, md: 68 }, fontWeight: 900, lineHeight: 1.05,
-          letterSpacing: -1.5, mb: 3,
-          animation: 'fadeUp 0.6s ease 0.1s both',
-          fontFamily: '"Inter", sans-serif',
-        }}>
-          <Box component="span" sx={{
-            background: 'linear-gradient(135deg, #ffffff 0%, #c4b5fd 35%, #818cf8 65%, #06b6d4 100%)',
-            backgroundSize: '200% 200%', animation: 'gradShift 6s ease infinite',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-          }}>PDF to Excel</Box>
-          <br />
-          <Box component="span" sx={{ color: 'white' }}>Converter with AI —</Box>
-          <br />
-          <Box component="span" sx={{
-            background: 'linear-gradient(135deg, #a5b4fc, #818cf8, #06b6d4)',
-            backgroundSize: '200% 200%', animation: 'gradShift 5s ease 1s infinite',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-          }}>Batch. Fast. Accurate.</Box>
-        </Typography>
-
-        <Typography component="h2" sx={{
-          fontSize: { xs: 16, md: 20 }, color: 'rgba(255,255,255,0.5)', maxWidth: 640,
-          mx: 'auto', mb: 5, lineHeight: 1.7, fontWeight: 400,
-          animation: 'fadeUp 0.6s ease 0.2s both',
-        }}>
-          Convert hundreds of PDFs to Excel in one click. Upload your files, tell the AI
-          which fields to extract, and download a clean spreadsheet in seconds —
-          no manual copy-paste, no code.
-        </Typography>
-
-        {/* CTA Buttons */}
-        <Box sx={{
-          display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap',
-          animation: 'fadeUp 0.6s ease 0.3s both',
-        }}>
-          <Box onClick={handleLogin} sx={{
-            display: 'flex', alignItems: 'center', gap: 2,
-            px: 4, py: 1.8, borderRadius: 3, cursor: 'pointer',
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            boxShadow: '0 8px 32px rgba(99,102,241,0.45)',
-            animation: 'glowPulse 4s ease infinite',
-            '&:hover': { transform: 'translateY(-3px)', boxShadow: '0 16px 48px rgba(99,102,241,0.6)' },
-            transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+          {/* ── NAV ── */}
+          <Box sx={{
+            display: 'flex', alignItems: 'center',
+            px: { xs: 3, md: 5 }, py: 2.5,
+            borderBottom: '1px solid rgba(0,0,0,0.07)',
           }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
-              <path fill="#ffffff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" opacity=".9"/>
-              <path fill="#ffffff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" opacity=".8"/>
-              <path fill="#ffffff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" opacity=".7"/>
-              <path fill="#ffffff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" opacity=".9"/>
-            </svg>
-            <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 16 }}>Start Extracting Free</Typography>
-          </Box>
-
-          <Box onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })} sx={{
-            display: 'flex', alignItems: 'center', gap: 1.5,
-            px: 4, py: 1.8, borderRadius: 3, cursor: 'pointer',
-            border: '1px solid rgba(255,255,255,0.15)',
-            bgcolor: 'rgba(255,255,255,0.04)',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.25)' },
-            transition: 'all 0.2s ease',
-          }}>
-            <Typography sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 700, fontSize: 15 }}>↓ See How It Works</Typography>
-          </Box>
-        </Box>
-
-        {/* ── TRUST / SECURITY STRIP ── */}
-        <Box sx={{
-          display: 'flex', gap: { xs: 2, md: 4 }, justifyContent: 'center', flexWrap: 'wrap',
-          mt: 4, mb: 1, animation: 'fadeUp 0.6s ease 0.4s both',
-        }}>
-          {TRUST.map((t) => (
-            <Box key={t.label} sx={{
-              display: 'flex', alignItems: 'center', gap: 0.7,
-              px: 1.5, py: 0.5, borderRadius: 2,
-              bgcolor: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.07)',
-            }}>
-              <Typography sx={{ fontSize: 13 }}>{t.icon}</Typography>
-              <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: 0.5 }}>
-                {t.label}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ boxShadow: '0 4px 14px rgba(99,102,241,0.4)', borderRadius: '9px' }}>
+                <LogoIcon size={34} borderRadius={9} />
+              </Box>
+              <Typography sx={{ fontWeight: 900, fontSize: 15, color: '#0c0c0c', letterSpacing: -0.3 }}>
+                MultiPDFToExcel
               </Typography>
             </Box>
-          ))}
-        </Box>
 
-        {/* Hero mockup */}
-        <Box sx={{
-          mt: 9, mx: 'auto', maxWidth: 860,
-          bgcolor: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: '20px', p: { xs: 2, md: 3 },
-          backdropFilter: 'blur(24px)',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(99,102,241,0.08), inset 0 1px 0 rgba(255,255,255,0.05)',
-          animation: 'fadeUp 0.7s ease 0.45s both',
-        }}>
-          {/* Browser chrome */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5 }}>
-            {['#ef4444','#f59e0b','#22c55e'].map(c => (
-              <Box key={c} sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: c, opacity: 0.7 }} />
-            ))}
+            {/* Pill nav */}
             <Box sx={{
-              flex: 1, mx: 2, bgcolor: 'rgba(255,255,255,0.06)', borderRadius: 1.5,
-              px: 2, py: 0.5, display: 'flex', alignItems: 'center', gap: 1,
+              display: { xs: 'none', md: 'flex' }, alignItems: 'center', ml: 5,
+              border: '1px solid rgba(0,0,0,0.1)', borderRadius: 100, px: 0.5, py: 0.5,
             }}>
-              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981', boxShadow: '0 0 6px #10b981' }} />
-              <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>
-                docuextract.vercel.app/jobs/new
-              </Typography>
-            </Box>
-          </Box>
-
-          {/* Mock content */}
-          <Box sx={{ display: 'flex', gap: 2, minHeight: 200 }}>
-            <Box sx={{
-              width: 140, bgcolor: 'rgba(255,255,255,0.03)', borderRadius: 2,
-              p: 1.5, display: { xs: 'none', sm: 'flex' }, flexDirection: 'column', gap: 0.5,
-              border: '1px solid rgba(255,255,255,0.05)',
-            }}>
-              {['⚡ Dashboard', '🚀 Jobs', '📋 Templates', '⚙️ Settings'].map((item, i) => (
-                <Box key={item} sx={{ py: 0.8, px: 1.5, borderRadius: 1.5, bgcolor: i === 1 ? 'rgba(99,102,241,0.5)' : 'transparent' }}>
-                  <Typography sx={{ fontSize: 11, color: i === 1 ? 'white' : 'rgba(255,255,255,0.3)', fontWeight: i === 1 ? 700 : 400 }}>
-                    {item}
-                  </Typography>
+              {[['Features', '#features'], ['How It Works', '#how-it-works'], ['FAQ', '#faq']].map(([label, href]) => (
+                <Box key={label} component="a" href={href}
+                  onClick={(e: React.MouseEvent) => {
+                    e.preventDefault();
+                    document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  sx={{
+                    px: 2.5, py: 0.9, borderRadius: 100, fontSize: 13, fontWeight: 600,
+                    color: 'rgba(0,0,0,0.65)', textDecoration: 'none', cursor: 'pointer',
+                    '&:hover': { bgcolor: 'rgba(0,0,0,0.07)', color: '#0c0c0c' },
+                    transition: 'all 0.15s',
+                  }}>
+                  {label}
                 </Box>
               ))}
             </Box>
 
-            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <Box sx={{ border: '1.5px dashed rgba(99,102,241,0.4)', borderRadius: 2, p: 2.5, textAlign: 'center', bgcolor: 'rgba(99,102,241,0.04)' }}>
-                <Typography sx={{ fontSize: 20, mb: 0.5 }}>📂</Typography>
-                <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 600 }}>
-                  5 PDFs selected — invoice_q1.pdf, invoice_q2.pdf, report.pdf...
+            <Box sx={{ flex: 1 }} />
+
+            <Box onClick={() => navigate('/login')} sx={{
+              px: 2.5, py: 1, borderRadius: 100, cursor: 'pointer', mr: 1.5,
+              border: '1px solid rgba(0,0,0,0.1)', color: 'rgba(0,0,0,0.55)',
+              fontSize: 13, fontWeight: 600,
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.06)', color: '#0c0c0c' },
+              transition: 'all 0.15s',
+            }}>
+              Sign In
+            </Box>
+
+            <Box onClick={handleLogin} sx={{
+              display: 'flex', alignItems: 'center', gap: 1.5,
+              px: 2.5, py: 1, borderRadius: 100, cursor: 'pointer',
+              bgcolor: '#0c0c0c', color: 'white',
+              fontSize: 13, fontWeight: 700,
+              boxShadow: '0 4px 14px rgba(0,0,0,0.25)',
+              '&:hover': { bgcolor: '#1f1f1f', transform: 'translateY(-1px)', boxShadow: '0 6px 20px rgba(0,0,0,0.3)' },
+              transition: 'all 0.2s ease',
+            }}>
+              <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: '#6ee7b7', animation: 'blink 2s ease infinite', flexShrink: 0 }} />
+              Let's Connect
+            </Box>
+          </Box>
+
+          {/* ── HERO BODY ── */}
+          <Box sx={{
+            display: 'flex', alignItems: 'center',
+            px: { xs: 3, md: 6 }, pt: { xs: 10, md: 14 }, pb: { xs: 8, md: 12 },
+            gap: 4, flexWrap: { xs: 'wrap', lg: 'nowrap' },
+          }}>
+            {/* Left: copy */}
+            <Box sx={{ flex: 1, minWidth: 280, animation: 'fadeUp 0.7s ease both' }}>
+              {/* Badge */}
+              <Box sx={{
+                display: 'inline-flex', alignItems: 'center', gap: 1, mb: 4,
+                px: 2, py: 0.8, borderRadius: 100,
+                border: '1px solid rgba(0,0,0,0.1)', bgcolor: 'rgba(0,0,0,0.04)',
+              }}>
+                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#10b981', animation: 'blink 2s ease infinite' }} />
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#0c0c0c', letterSpacing: 1 }}>
+                  AI-POWERED · FREE TO START · NO CODE
                 </Typography>
               </Box>
 
-              <Box sx={{ bgcolor: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 2, p: 1.5, display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981', boxShadow: '0 0 8px #10b981', animation: 'blink 1.2s ease infinite', flexShrink: 0 }} />
-                <Box sx={{ flex: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                    <Typography sx={{ fontSize: 11, color: '#6ee7b7', fontWeight: 600 }}>AI Extracting Data…</Typography>
-                    <Typography sx={{ fontSize: 11, color: '#6ee7b7', fontWeight: 700 }}>87%</Typography>
-                  </Box>
-                  <Box sx={{ height: 4, bgcolor: 'rgba(16,185,129,0.15)', borderRadius: 2, overflow: 'hidden' }}>
-                    <Box sx={{ height: '100%', width: '87%', background: 'linear-gradient(90deg, #10b981, #06b6d4)', borderRadius: 2, boxShadow: '0 0 8px rgba(16,185,129,0.6)' }} />
-                  </Box>
+              {/* H1 */}
+              <Typography component="h1" sx={{
+                fontSize: { xs: 48, sm: 62, md: 78 },
+                fontWeight: 900, lineHeight: 0.95,
+                letterSpacing: -2.5, color: '#0c0c0c',
+                mb: 3, fontFamily: '"Inter", sans-serif',
+              }}>
+                Extract Data<br />from PDFs —<br />
+                <Box component="span" sx={{
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 45%, #06b6d4 100%)',
+                  backgroundSize: '200% 200%',
+                  animation: 'gradShift 5s ease infinite',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}>Instantly.</Box>
+              </Typography>
+
+              <Typography component="h2" sx={{
+                fontSize: { xs: 15, md: 18 }, color: 'rgba(0,0,0,0.45)',
+                maxWidth: 500, mb: 5, lineHeight: 1.75, fontWeight: 400,
+              }}>
+                Upload hundreds of PDFs, tell AI which fields to extract,
+                and download a clean Excel spreadsheet in seconds.
+                No manual copy-paste, no code.
+              </Typography>
+
+              {/* CTAs */}
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 5 }}>
+                <Box onClick={handleLogin} sx={{
+                  display: 'flex', alignItems: 'center', gap: 2,
+                  px: 3.5, py: 1.7, borderRadius: 100, cursor: 'pointer',
+                  bgcolor: '#0c0c0c', color: 'white',
+                  fontWeight: 800, fontSize: 15,
+                  boxShadow: '0 8px 28px rgba(0,0,0,0.25)',
+                  '&:hover': { bgcolor: '#1f1f1f', transform: 'translateY(-2px)', boxShadow: '0 14px 40px rgba(0,0,0,0.3)' },
+                  transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                    <path fill="white" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" opacity=".9"/>
+                    <path fill="white" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" opacity=".7"/>
+                    <path fill="white" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" opacity=".5"/>
+                    <path fill="white" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" opacity=".9"/>
+                  </svg>
+                  Start Extracting Free
+                </Box>
+                <Box onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })} sx={{
+                  display: 'flex', alignItems: 'center', gap: 1,
+                  px: 3.5, py: 1.7, borderRadius: 100, cursor: 'pointer',
+                  border: '1.5px solid rgba(0,0,0,0.15)', color: 'rgba(0,0,0,0.6)',
+                  fontWeight: 600, fontSize: 14,
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.06)', borderColor: 'rgba(0,0,0,0.25)', color: '#0c0c0c' },
+                  transition: 'all 0.2s ease',
+                }}>
+                  See How It Works ↓
                 </Box>
               </Box>
 
-              <Box sx={{ bgcolor: 'rgba(255,255,255,0.03)', borderRadius: 2, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', bgcolor: 'rgba(99,102,241,0.15)' }}>
-                  {['Invoice #','Date','Vendor','Amount'].map(h => (
-                    <Box key={h} sx={{ px: 1.5, py: 0.8 }}>
-                      <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#a5b4fc' }}>{h}</Typography>
-                    </Box>
-                  ))}
-                </Box>
-                {[['INV-001','Jan 15','Acme Corp','$1,250'],['INV-002','Feb 01','TechSup','$890'],['INV-003','Feb 15','CloudSvc','$2,100']].map((row, i) => (
-                  <Box key={i} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                    {row.map((cell, j) => (
-                      <Box key={j} sx={{ px: 1.5, py: 0.8 }}>
-                        <Typography sx={{ fontSize: 10, color: j === 3 ? '#6ee7b7' : 'rgba(255,255,255,0.5)' }}>{cell}</Typography>
-                      </Box>
-                    ))}
+              {/* Trust badges */}
+              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                {TRUST.map((t) => (
+                  <Box key={t.label} sx={{
+                    display: 'flex', alignItems: 'center', gap: 0.7,
+                    px: 1.5, py: 0.6, borderRadius: 100,
+                    border: '1px solid rgba(0,0,0,0.1)',
+                  }}>
+                    <Typography sx={{ fontSize: 12 }}>{t.icon}</Typography>
+                    <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>{t.label}</Typography>
                   </Box>
                 ))}
               </Box>
             </Box>
+
+            {/* Right: 3D PDF stack */}
+            <Box sx={{
+              flex: 1, minWidth: 280, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              animation: 'fadeUp 0.7s ease 0.2s both',
+            }}>
+              <Box className="pdf-float">
+                <PDFStack />
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Crazy mode toggle */}
+          <Box sx={{
+            position: 'absolute', bottom: 20, right: 20,
+            display: 'flex', alignItems: 'center', gap: 1.5,
+            px: 2, py: 0.9, borderRadius: 100,
+            bgcolor: '#0c0c0c',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+          }}>
+            <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>Crazy mode:</Typography>
+            {(['On', 'Off'] as const).map((v) => (
+              <Box key={v} onClick={() => setCrazyMode(v === 'On')} sx={{
+                px: 1.5, py: 0.35, borderRadius: 100, cursor: 'pointer', fontSize: 11, fontWeight: 700,
+                bgcolor: (v === 'On') === crazyMode ? 'white' : 'transparent',
+                color: (v === 'On') === crazyMode ? '#0c0c0c' : 'rgba(255,255,255,0.4)',
+                transition: 'all 0.2s',
+              }}>{v}</Box>
+            ))}
           </Box>
         </Box>
-      </Box>
 
-      {/* ── STATS STRIP ── */}
-      <Box sx={{ position: 'relative', zIndex: 1, py: 8 }}>
-        <Container maxWidth="lg">
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 3 }}>
-            {STATS.map((s, i) => (
-              <Box key={s.label} sx={{
-                textAlign: 'center', p: 3, borderRadius: '16px',
-                bgcolor: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                backdropFilter: 'blur(12px)',
-                animation: `fadeUp 0.5s ease ${i * 0.08}s both`,
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.05)', borderColor: `${s.color}30`, boxShadow: `0 8px 30px ${s.color}15` },
-                transition: 'all 0.2s ease',
-              }}>
-                <Typography sx={{ fontSize: 44, fontWeight: 900, lineHeight: 1, mb: 0.5, color: s.color, fontFamily: '"Inter", sans-serif' }}>{s.value}</Typography>
-                <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: 500 }}>{s.label}</Typography>
-              </Box>
-            ))}
-          </Box>
-        </Container>
-      </Box>
+        {/* ══ DARK SECTIONS ═════════════════════════════════════════════════ */}
+        <Box sx={{ bgcolor: '#0c0c0c', color: 'white' }}>
 
-      {/* ── HOW IT WORKS ── */}
-      <Box id="how-it-works" sx={{ position: 'relative', zIndex: 1, py: 12 }}>
-        <Container maxWidth="lg">
-          <Box sx={{ textAlign: 'center', mb: 8 }}>
-            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, mb: 2, bgcolor: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.25)', borderRadius: 6, px: 2, py: 0.6 }}>
-              <Typography sx={{ color: '#67e8f9', fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>HOW IT WORKS</Typography>
-            </Box>
-            <Typography sx={{ fontSize: { xs: 30, md: 44 }, fontWeight: 900, letterSpacing: -0.5, mb: 2 }}>
-              From PDF to Excel in{' '}
-              <Box component="span" sx={{ background: 'linear-gradient(135deg, #818cf8, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>4 steps</Box>
-            </Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,0.45)', fontSize: 17, maxWidth: 520, mx: 'auto' }}>No code, no setup, no complexity. Just upload and extract.</Typography>
-          </Box>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(4, 1fr)' }, gap: 3, position: 'relative' }}>
-            <Box sx={{ display: { xs: 'none', md: 'block' }, position: 'absolute', top: 40, left: '12.5%', right: '12.5%', height: 1, background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.4), rgba(6,182,212,0.4), transparent)', zIndex: 0 }} />
-            {STEPS.map((s, i) => (
-              <Box key={s.num} sx={{
-                position: 'relative', zIndex: 1, p: 3, borderRadius: '20px',
-                bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(10px)', textAlign: 'center',
-                '&:hover': { bgcolor: 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.3)', transform: 'translateY(-4px)', boxShadow: '0 16px 40px rgba(99,102,241,0.18)' },
-                transition: 'all 0.25s ease', animation: `fadeUp 0.5s ease ${0.1 + i * 0.1}s both`,
-              }}>
-                <Box sx={{ width: 56, height: 56, borderRadius: '50%', mx: 'auto', mb: 2, background: 'linear-gradient(135deg, rgba(99,102,241,0.3), rgba(139,92,246,0.3))', border: '1px solid rgba(99,102,241,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>{s.icon}</Box>
-                <Box sx={{ display: 'inline-block', px: 1.5, py: 0.3, borderRadius: 4, mb: 1.5, bgcolor: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.2)' }}>
-                  <Typography sx={{ fontSize: 10, fontWeight: 800, color: '#a5b4fc', letterSpacing: 1 }}>STEP {s.num}</Typography>
+          {/* Stats */}
+          <Box sx={{ py: 10, px: { xs: 3, md: 6 }, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4,1fr)' }, gap: 2 }}>
+              {STATS.map((s) => (
+                <Box key={s.label} sx={{
+                  p: { xs: 3, md: 4 }, borderRadius: '20px',
+                  border: '1px solid rgba(255,255,255,0.07)',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.025)', borderColor: `${s.color}20` },
+                  transition: 'all 0.2s',
+                }}>
+                  <Typography sx={{ fontSize: { xs: 42, md: 52 }, fontWeight: 900, color: s.color, lineHeight: 1, mb: 0.5, fontFamily: '"Inter",sans-serif' }}>
+                    {s.value}
+                  </Typography>
+                  <Typography sx={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, fontWeight: 500 }}>{s.label}</Typography>
                 </Box>
-                <Typography sx={{ fontSize: 16, fontWeight: 800, color: 'white', mb: 1 }}>{s.title}</Typography>
-                <Typography sx={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>{s.desc}</Typography>
-              </Box>
-            ))}
-          </Box>
-        </Container>
-      </Box>
-
-      {/* ── FEATURES ── */}
-      <Box id="features" sx={{ position: 'relative', zIndex: 1, py: 12 }}>
-        <Container maxWidth="lg">
-          <Box sx={{ textAlign: 'center', mb: 8 }}>
-            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, mb: 2, bgcolor: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', borderRadius: 6, px: 2, py: 0.6 }}>
-              <Typography sx={{ color: '#c4b5fd', fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>FEATURES</Typography>
-            </Box>
-            <Typography sx={{ fontSize: { xs: 30, md: 44 }, fontWeight: 900, letterSpacing: -0.5, mb: 2 }}>
-              Everything you need,{' '}
-              <Box component="span" sx={{ background: 'linear-gradient(135deg, #c4b5fd, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>nothing you don't</Box>
-            </Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,0.45)', fontSize: 17, maxWidth: 520, mx: 'auto' }}>Powerful AI extraction with a dead-simple interface</Typography>
-          </Box>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
-            {FEATURES.map((f, i) => (
-              <Box key={f.title} sx={{
-                p: 3.5, borderRadius: '20px', bgcolor: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(10px)',
-                animation: `fadeUp 0.5s ease ${0.05 + i * 0.07}s both`,
-                '&:hover': { bgcolor: `${f.color}0a`, borderColor: `${f.color}35`, transform: 'translateY(-4px)', boxShadow: `0 16px 40px ${f.color}18` },
-                transition: 'all 0.25s ease',
-              }}>
-                <Box sx={{ width: 52, height: 52, borderRadius: '14px', mb: 2.5, bgcolor: `${f.color}15`, border: `1px solid ${f.color}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>{f.icon}</Box>
-                <Typography sx={{ fontSize: 16, fontWeight: 800, color: 'white', mb: 1 }}>{f.title}</Typography>
-                <Typography sx={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.7 }}>{f.desc}</Typography>
-              </Box>
-            ))}
-          </Box>
-        </Container>
-      </Box>
-
-      {/* ── USE CASES ── */}
-      <Box sx={{ position: 'relative', zIndex: 1, py: 8 }}>
-        <Container maxWidth="lg">
-          <Typography sx={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13, fontWeight: 700, letterSpacing: 2, mb: 4 }}>WORKS WITH ANY PDF TYPE</Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, justifyContent: 'center' }}>
-            {USE_CASES.map((u) => (
-              <Box key={u.label} sx={{
-                display: 'flex', alignItems: 'center', gap: 1, px: 2.5, py: 1, borderRadius: 6,
-                bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                '&:hover': { bgcolor: 'rgba(99,102,241,0.12)', borderColor: 'rgba(99,102,241,0.3)' },
-                transition: 'all 0.15s ease', cursor: 'default',
-              }}>
-                <Typography sx={{ fontSize: 16 }}>{u.emoji}</Typography>
-                <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>{u.label}</Typography>
-              </Box>
-            ))}
-          </Box>
-        </Container>
-      </Box>
-
-      {/* ── FAQ ── */}
-      <Box id="faq" sx={{ position: 'relative', zIndex: 1, py: 12 }}>
-        <Container maxWidth="md">
-          <Box sx={{ textAlign: 'center', mb: 8 }}>
-            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, mb: 2, bgcolor: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 6, px: 2, py: 0.6 }}>
-              <Typography sx={{ color: '#6ee7b7', fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>FAQ</Typography>
-            </Box>
-            <Typography sx={{ fontSize: { xs: 28, md: 40 }, fontWeight: 900, letterSpacing: -0.5 }}>Common questions</Typography>
-          </Box>
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {FAQS.map((faq, i) => (
-              <Box key={i} onClick={() => setFaqOpen(faqOpen === i ? null : i)} sx={{
-                borderRadius: '16px', overflow: 'hidden',
-                border: `1px solid ${faqOpen === i ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.07)'}`,
-                bgcolor: faqOpen === i ? 'rgba(99,102,241,0.07)' : 'rgba(255,255,255,0.03)',
-                cursor: 'pointer', transition: 'all 0.2s ease',
-                '&:hover': { borderColor: 'rgba(99,102,241,0.25)', bgcolor: 'rgba(99,102,241,0.05)' },
-              }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2.5 }}>
-                  <Typography sx={{ fontSize: 15, fontWeight: 700, color: faqOpen === i ? 'white' : 'rgba(255,255,255,0.8)', pr: 2 }}>{faq.q}</Typography>
-                  <Box sx={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, bgcolor: faqOpen === i ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: faqOpen === i ? '#a5b4fc' : 'rgba(255,255,255,0.3)', transition: 'all 0.2s ease', transform: faqOpen === i ? 'rotate(45deg)' : 'none' }}>+</Box>
-                </Box>
-                {faqOpen === i && (
-                  <Box sx={{ px: 3, pb: 2.5 }}>
-                    <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, lineHeight: 1.8 }}>{faq.a}</Typography>
-                  </Box>
-                )}
-              </Box>
-            ))}
-          </Box>
-        </Container>
-      </Box>
-
-      {/* ── CTA ── */}
-      <Box sx={{ position: 'relative', zIndex: 1, py: 14, textAlign: 'center', px: 3 }}>
-        <Container maxWidth="md" sx={{ position: 'relative', zIndex: 1 }}>
-          <Box sx={{
-            p: { xs: 4, md: 7 }, borderRadius: '28px',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(139,92,246,0.12) 50%, rgba(6,182,212,0.08) 100%)',
-            border: '1px solid rgba(99,102,241,0.22)',
-            backdropFilter: 'blur(24px)',
-            boxShadow: '0 32px 80px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)',
-            animation: 'glowPulse 6s ease infinite',
-          }}>
-            <Box sx={{ fontSize: 56, mb: 2 }}>🚀</Box>
-            <Typography sx={{ fontSize: { xs: 28, md: 44 }, fontWeight: 900, letterSpacing: -0.5, mb: 2 }}>
-              Ready to save hours of{' '}
-              <Box component="span" sx={{ background: 'linear-gradient(135deg, #a5b4fc, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>manual work?</Box>
-            </Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 17, mb: 5, maxWidth: 480, mx: 'auto' }}>
-              Free to start. No credit card. No code. Sign in with Google and extract your first PDF in under a minute.
-            </Typography>
-
-            <Box onClick={handleLogin} sx={{
-              display: 'inline-flex', alignItems: 'center', gap: 2,
-              px: 5, py: 2, borderRadius: 3.5, cursor: 'pointer',
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              boxShadow: '0 12px 40px rgba(99,102,241,0.5)',
-              '&:hover': { transform: 'translateY(-3px)', boxShadow: '0 20px 56px rgba(99,102,241,0.65)', opacity: 0.95 },
-              transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
-            }}>
-              <svg width="20" height="20" viewBox="0 0 24 24">
-                <path fill="white" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" opacity=".9"/>
-                <path fill="white" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" opacity=".8"/>
-                <path fill="white" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" opacity=".7"/>
-                <path fill="white" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" opacity=".9"/>
-              </svg>
-              <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 17 }}>Get Started Free with Google</Typography>
-            </Box>
-
-            <Box sx={{ display: 'flex', gap: 3, justifyContent: 'center', mt: 4, flexWrap: 'wrap' }}>
-              {['✓ Free to start', '✓ No credit card', '✓ No code required', '✓ Secure & private'].map((t) => (
-                <Typography key={t} sx={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>{t}</Typography>
               ))}
             </Box>
           </Box>
-        </Container>
-      </Box>
 
-      {/* ── FOOTER ── */}
-      <Box sx={{ position: 'relative', zIndex: 1, borderTop: '1px solid rgba(255,255,255,0.05)', py: 5, px: 4, textAlign: 'center' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: 'center', mb: 1.5 }}>
-          <Box sx={{ boxShadow: '0 4px 12px rgba(99,102,241,0.4)', borderRadius: '8px' }}>
-            <LogoIcon size={28} borderRadius={8} />
+          {/* How it works */}
+          <Box id="how-it-works" sx={{ py: 14, px: { xs: 3, md: 6 }, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, color: 'rgba(255,255,255,0.25)', mb: 2 }}>
+              HOW IT WORKS
+            </Typography>
+            <Typography sx={{ fontSize: { xs: 34, md: 52 }, fontWeight: 900, letterSpacing: -1.5, mb: 10, lineHeight: 1.05 }}>
+              From PDF to Excel<br />in 4 simple steps.
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4,1fr)' }, gap: 2 }}>
+              {STEPS.map((s, i) => (
+                <Box key={s.num} sx={{
+                  p: 3.5, borderRadius: '20px', border: '1px solid rgba(255,255,255,0.07)',
+                  animation: `fadeUp 0.5s ease ${i * 0.1}s both`,
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(99,102,241,0.3)', transform: 'translateY(-4px)' },
+                  transition: 'all 0.25s',
+                }}>
+                  <Typography sx={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: 'rgba(255,255,255,0.18)', mb: 2 }}>
+                    {s.num}
+                  </Typography>
+                  <Typography sx={{ fontSize: 26, mb: 1.5 }}>{s.icon}</Typography>
+                  <Typography sx={{ fontSize: 15, fontWeight: 800, mb: 1 }}>{s.title}</Typography>
+                  <Typography sx={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.75 }}>{s.desc}</Typography>
+                </Box>
+              ))}
+            </Box>
           </Box>
-          <Typography sx={{ fontWeight: 900, fontSize: 15, color: 'white' }}>MultiPDFToExcel</Typography>
+
+          {/* Features */}
+          <Box id="features" sx={{ py: 14, px: { xs: 3, md: 6 }, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, color: 'rgba(255,255,255,0.25)', mb: 2 }}>
+              FEATURES
+            </Typography>
+            <Typography sx={{ fontSize: { xs: 34, md: 52 }, fontWeight: 900, letterSpacing: -1.5, mb: 10, lineHeight: 1.05 }}>
+              Everything you need,<br />nothing you don't.
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3,1fr)' }, gap: 2 }}>
+              {FEATURES.map((f, i) => (
+                <Box key={f.title} sx={{
+                  p: 3.5, borderRadius: '20px', border: '1px solid rgba(255,255,255,0.07)',
+                  animation: `fadeUp 0.5s ease ${i * 0.07}s both`,
+                  '&:hover': { bgcolor: `${f.color}08`, borderColor: `${f.color}25`, transform: 'translateY(-4px)' },
+                  transition: 'all 0.25s',
+                }}>
+                  <Box sx={{ width: 48, height: 48, borderRadius: '14px', mb: 2.5, bgcolor: `${f.color}12`, border: `1px solid ${f.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+                    {f.icon}
+                  </Box>
+                  <Typography sx={{ fontSize: 15, fontWeight: 800, mb: 1 }}>{f.title}</Typography>
+                  <Typography sx={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.75 }}>{f.desc}</Typography>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+
+          {/* Use cases marquee */}
+          <Box sx={{ py: 8, borderBottom: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+            <Typography sx={{ textAlign: 'center', fontSize: 11, fontWeight: 700, letterSpacing: 2, color: 'rgba(255,255,255,0.2)', mb: 5 }}>
+              WORKS WITH ANY PDF TYPE
+            </Typography>
+            <Box sx={{ display: 'flex', animation: 'marquee 22s linear infinite', width: 'max-content', gap: 2 }}>
+              {[...USE_CASES, ...USE_CASES].map((u, i) => (
+                <Box key={i} sx={{
+                  display: 'flex', alignItems: 'center', gap: 1, px: 2.5, py: 1.2, borderRadius: 100,
+                  border: '1px solid rgba(255,255,255,0.1)', whiteSpace: 'nowrap', flexShrink: 0,
+                }}>
+                  <Typography sx={{ fontSize: 15 }}>{u.emoji}</Typography>
+                  <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.45)' }}>{u.label}</Typography>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+
+          {/* FAQ */}
+          <Box id="faq" sx={{ py: 14, px: { xs: 3, md: 6 }, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, color: 'rgba(255,255,255,0.25)', mb: 2 }}>
+              FAQ
+            </Typography>
+            <Typography sx={{ fontSize: { xs: 34, md: 52 }, fontWeight: 900, letterSpacing: -1.5, mb: 10, lineHeight: 1.05 }}>
+              Common questions.
+            </Typography>
+            <Box sx={{ maxWidth: 800 }}>
+              {FAQS.map((faq, i) => (
+                <Box key={i} onClick={() => setFaqOpen(faqOpen === i ? null : i)} sx={{
+                  borderTop: i === 0 ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                  borderBottom: '1px solid rgba(255,255,255,0.08)',
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' },
+                  transition: 'all 0.15s',
+                }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 3 }}>
+                    <Typography sx={{ fontSize: { xs: 14, md: 16 }, fontWeight: 600, color: faqOpen === i ? 'white' : 'rgba(255,255,255,0.65)', pr: 4 }}>
+                      {faq.q}
+                    </Typography>
+                    <Box sx={{
+                      width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'rgba(255,255,255,0.4)', fontSize: 18,
+                      transform: faqOpen === i ? 'rotate(45deg)' : 'none',
+                      transition: 'transform 0.2s ease',
+                    }}>+</Box>
+                  </Box>
+                  {faqOpen === i && (
+                    <Box sx={{ pb: 3, pr: { xs: 0, md: 8 } }}>
+                      <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, lineHeight: 1.85 }}>{faq.a}</Typography>
+                    </Box>
+                  )}
+                </Box>
+              ))}
+            </Box>
+          </Box>
+
+          {/* CTA */}
+          <Box sx={{ py: 18, px: { xs: 3, md: 6 }, textAlign: 'center' }}>
+            <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, color: 'rgba(255,255,255,0.25)', mb: 4 }}>
+              GET STARTED
+            </Typography>
+            <Typography sx={{
+              fontSize: { xs: 42, md: 72 }, fontWeight: 900, letterSpacing: -2.5, lineHeight: 0.95, mb: 5,
+            }}>
+              Ready to save hours<br />of manual work?
+            </Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,0.35)', fontSize: 18, mb: 7, maxWidth: 480, mx: 'auto', lineHeight: 1.7 }}>
+              Free to start. No credit card. No code required.
+            </Typography>
+            <Box onClick={handleLogin} sx={{
+              display: 'inline-flex', alignItems: 'center', gap: 2,
+              px: 5, py: 2.2, borderRadius: 100, cursor: 'pointer',
+              bgcolor: 'white', color: '#0c0c0c',
+              fontWeight: 800, fontSize: 16,
+              boxShadow: '0 12px 40px rgba(255,255,255,0.12)',
+              '&:hover': { transform: 'translateY(-3px)', boxShadow: '0 20px 56px rgba(255,255,255,0.2)', bgcolor: '#f5f5f5' },
+              transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                <path fill="#0c0c0c" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" opacity=".9"/>
+                <path fill="#0c0c0c" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" opacity=".7"/>
+                <path fill="#0c0c0c" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" opacity=".5"/>
+                <path fill="#0c0c0c" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" opacity=".9"/>
+              </svg>
+              Get Started Free with Google
+            </Box>
+            <Box sx={{ display: 'flex', gap: 4, justifyContent: 'center', mt: 5, flexWrap: 'wrap' }}>
+              {['✓ Free to start', '✓ No credit card', '✓ No code required', '✓ Secure & private'].map((t) => (
+                <Typography key={t} sx={{ fontSize: 13, color: 'rgba(255,255,255,0.25)', fontWeight: 500 }}>{t}</Typography>
+              ))}
+            </Box>
+          </Box>
+
+          {/* Footer */}
+          <Box sx={{
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+            py: 5, px: { xs: 3, md: 6 },
+            display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap',
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <LogoIcon size={26} borderRadius={7} />
+              <Typography sx={{ fontWeight: 900, fontSize: 14, color: 'rgba(255,255,255,0.8)' }}>MultiPDFToExcel</Typography>
+            </Box>
+            <Box sx={{ flex: 1 }} />
+            <Typography sx={{ color: 'rgba(255,255,255,0.18)', fontSize: 12 }}>
+              Extract data from multiple PDFs into Excel automatically using AI
+            </Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,0.12)', fontSize: 12 }}>
+              © {new Date().getFullYear()} MultiPDFToExcel. All rights reserved.
+            </Typography>
+          </Box>
+
         </Box>
-        <Typography sx={{ color: 'rgba(255,255,255,0.25)', fontSize: 13 }}>
-          Extract data from multiple PDFs into Excel automatically using AI
-        </Typography>
-        <Typography sx={{ color: 'rgba(255,255,255,0.15)', fontSize: 12, mt: 2 }}>
-          © {new Date().getFullYear()} MultiPDFToExcel. All rights reserved.
-        </Typography>
       </Box>
     </Box>
   );
