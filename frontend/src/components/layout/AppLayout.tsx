@@ -14,6 +14,7 @@ const NAV = [
   { label: 'Jobs',      path: '/jobs',      icon: '◉', emoji: '🚀' },
   { label: 'Templates', path: '/templates', icon: '◧', emoji: '📋' },
   { label: 'Settings',  path: '/settings',  icon: '◎', emoji: '⚙️' },
+  { label: 'Contact',   path: '/contact',   icon: '◎', emoji: '✉️' },
 ];
 
 // SVG icons for nav
@@ -41,6 +42,12 @@ const Icons: Record<string, React.FC<{ active: boolean }>> = {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
       <circle cx="12" cy="12" r="3" stroke={active ? 'white' : 'rgba(255,255,255,0.45)'} strokeWidth="1.8"/>
       <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke={active ? 'white' : 'rgba(255,255,255,0.45)'} strokeWidth="1.8"/>
+    </svg>
+  ),
+  Contact: ({ active }) => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke={active ? 'white' : 'rgba(255,255,255,0.45)'} strokeWidth="1.8" strokeLinecap="round"/>
+      <path d="M22 6l-10 7L2 6" stroke={active ? 'white' : 'rgba(255,255,255,0.45)'} strokeWidth="1.8" strokeLinecap="round"/>
     </svg>
   ),
 };
@@ -247,54 +254,91 @@ export default function AppLayout() {
         transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         PaperProps={{
           sx: {
-            borderRadius: 3, width: 280, overflow: 'hidden',
-            background: '#0d1117',
-            border: '1px solid rgba(99,102,241,0.2)',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 4px 16px rgba(99,102,241,0.2)',
+            borderRadius: '20px', width: 300, overflow: 'hidden',
+            bgcolor: 'white',
+            border: '1px solid rgba(0,0,0,0.08)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.14), 0 4px 16px rgba(0,0,0,0.08)',
           },
         }}
       >
+        {/* Header banner */}
         <Box sx={{
-          p: 2.5,
-          background: 'linear-gradient(135deg, #07071a, #1a1042)',
-          display: 'flex', alignItems: 'center', gap: 2,
+          height: 60,
+          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%)',
+          position: 'relative',
         }}>
+          <Box sx={{
+            position: 'absolute', inset: 0, pointerEvents: 'none',
+            backgroundImage: `
+              linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)
+            `,
+            backgroundSize: '20px 20px',
+          }} />
+        </Box>
+
+        {/* Avatar row */}
+        <Box sx={{ px: 2.5, pb: 0, mt: '-28px', display: 'flex', alignItems: 'flex-end', gap: 1.5, mb: 1.5 }}>
           <Avatar src={user?.avatar_url} sx={{
-            width: 48, height: 48, fontSize: 18, fontWeight: 800,
+            width: 56, height: 56, fontSize: 20, fontWeight: 800,
             background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            border: '2px solid rgba(255,255,255,0.2)',
+            border: '3px solid white',
+            boxShadow: '0 4px 16px rgba(99,102,241,0.35)',
+            flexShrink: 0,
           }}>{initials}</Avatar>
-          <Box sx={{ minWidth: 0 }}>
-            <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 14 }} noWrap>
-              {user?.full_name || 'No name'}
-            </Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }} noWrap>
-              {user?.email}
-            </Typography>
+          <Box sx={{ pb: 0.5, minWidth: 0 }}>
+            <Box sx={{
+              display: 'inline-flex', px: 1, py: 0.3, borderRadius: 4, mb: 0.3,
+              bgcolor: isAdmin ? '#f5f3ff' : isSubscribed ? '#fffbeb' : '#f1f5f9',
+              border: `1px solid ${isAdmin ? '#ddd6fe' : isSubscribed ? '#fde68a' : '#e2e8f0'}`,
+            }}>
+              <Typography sx={{
+                fontSize: 10, fontWeight: 800, letterSpacing: 0.3,
+                color: isAdmin ? '#7c3aed' : isSubscribed ? '#d97706' : '#64748b',
+              }}>
+                {isAdmin ? '⚡ Admin' : isSubscribed ? '⭐ Supporter' : 'Free Plan'}
+              </Typography>
+            </Box>
           </Box>
         </Box>
 
-        <Box sx={{ p: 1.5 }}>
-          <Box sx={{ px: 1, py: 1.5, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Row label="Status" value={isAdmin ? '⚡ Admin' : isSubscribed ? '⭐ Supporter' : `Free (${jobsUsed}/${freeLimit} used)`} />
+        <Box sx={{ px: 2.5, pb: 0.5 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#0c0c0c', letterSpacing: -0.3 }} noWrap>
+            {user?.full_name || 'No name'}
+          </Typography>
+          <Typography sx={{ color: '#64748b', fontSize: 12 }} noWrap>
+            {user?.email}
+          </Typography>
+        </Box>
+
+        <Box sx={{ px: 2, py: 1.5 }}>
+          <Box sx={{
+            bgcolor: '#f8fafc', borderRadius: '12px', p: 1.5,
+            border: '1px solid #f1f5f9', mb: 1.5,
+          }}>
+            <Row label="Status"    value={isAdmin ? '⚡ Admin' : isSubscribed ? '⭐ Supporter' : `Free (${jobsUsed}/${freeLimit} used)`} />
             <Row label="Jobs used" value={String(jobsUsed)} />
           </Box>
-          <Divider sx={{ my: 0.5, borderColor: 'rgba(255,255,255,0.06)' }} />
-          <Box sx={{ display: 'flex', gap: 1, p: 0.5, pt: 1 }}>
+
+          <Box sx={{ display: 'flex', gap: 1 }}>
             {!isSubscribed && !isAdmin && (
               <Button size="small" variant="outlined" fullWidth
                 onClick={() => { setAnchorEl(null); navigate('/pricing'); }}
-                sx={{ borderRadius: 2, fontSize: 11, fontWeight: 700,
-                  borderColor: 'rgba(251,191,36,0.4)', color: '#fbbf24',
-                  '&:hover': { bgcolor: 'rgba(245,158,11,0.1)', borderColor: '#fbbf24' } }}>
+                sx={{
+                  borderRadius: '10px', fontSize: 11, fontWeight: 700, py: 0.9,
+                  borderColor: '#fde68a', color: '#d97706', bgcolor: '#fffbeb',
+                  '&:hover': { bgcolor: '#fef3c7', borderColor: '#fbbf24' },
+                }}>
                 ☕ Donate $10
               </Button>
             )}
             <Button size="small" variant="outlined" fullWidth
               onClick={() => { setAnchorEl(null); logout().then(() => navigate('/login')); }}
-              sx={{ borderRadius: 2, fontSize: 11, fontWeight: 700,
-                borderColor: 'rgba(239,68,68,0.4)', color: '#f87171',
-                '&:hover': { bgcolor: 'rgba(239,68,68,0.08)', borderColor: '#ef4444' } }}>
+              sx={{
+                borderRadius: '10px', fontSize: 11, fontWeight: 700, py: 0.9,
+                borderColor: '#fecaca', color: '#dc2626', bgcolor: '#fef2f2',
+                '&:hover': { bgcolor: '#fee2e2', borderColor: '#f87171' },
+              }}>
               Sign out
             </Button>
           </Box>

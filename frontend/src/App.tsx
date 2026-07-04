@@ -20,6 +20,7 @@ import JobsPage from './pages/JobsPage';
 import LandingPage from './pages/LandingPage';
 import PricingPage from './pages/PricingPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
+import ContactPage from './pages/ContactPage';
 
 const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000;
 
@@ -264,6 +265,7 @@ export default function App() {
                   <Route path="jobs/new" element={<NewJobPage />} />
                   <Route path="jobs/:jobId" element={<JobDetailPage />} />
                   <Route path="settings" element={<SettingsPage />} />
+                  <Route path="contact" element={<ContactPage />} />
                 </Route>
 
                 <Route path="*" element={<Navigate to="/" replace />} />
