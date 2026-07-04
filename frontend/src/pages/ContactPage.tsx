@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Typography } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import LogoIcon from '../components/LogoIcon';
 
 const LINKS = [
   {
@@ -52,6 +54,7 @@ const SKILLS = [
 
 export default function ContactPage() {
   const [copied, setCopied] = useState(false);
+  const navigate = useNavigate();
 
   const copyEmail = () => {
     navigator.clipboard.writeText('nikhil1996shelke@gmail.com');
@@ -60,7 +63,7 @@ export default function ContactPage() {
   };
 
   return (
-    <Box>
+    <Box sx={{ bgcolor: '#e8e2d8', minHeight: '100vh' }}>
       <style>{`
         @keyframes fadeSlideUp {
           from { opacity: 0; transform: translateY(20px); }
@@ -78,12 +81,58 @@ export default function ContactPage() {
         .bar-fill { animation: barFill 1.2s cubic-bezier(0.22,1,0.36,1) 0.4s both; }
       `}</style>
 
+      {/* ── Public nav ── */}
+      <Box sx={{
+        position: 'sticky', top: 0, zIndex: 100,
+        bgcolor: 'rgba(232,226,216,0.92)', backdropFilter: 'blur(18px)',
+        borderBottom: '1px solid rgba(0,0,0,0.07)',
+        px: { xs: 3, md: 6 }, py: 1.8,
+        display: 'flex', alignItems: 'center', gap: 2,
+      }}>
+        <Box
+          onClick={() => navigate('/')}
+          sx={{ display: 'flex', alignItems: 'center', gap: 1.2, cursor: 'pointer' }}
+        >
+          <LogoIcon size={30} borderRadius={8} />
+          <Typography sx={{ fontWeight: 800, fontSize: 14, color: '#0c0c0c' }}>
+            MultiPDF<span style={{ color: '#6366f1' }}>ToExcel</span>
+          </Typography>
+        </Box>
+        <Box sx={{ flex: 1 }} />
+        <Box
+          onClick={() => navigate('/')}
+          sx={{
+            display: 'flex', alignItems: 'center', gap: 0.8,
+            px: 2, py: 0.8, borderRadius: 8, cursor: 'pointer',
+            bgcolor: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.08)',
+            fontSize: 13, fontWeight: 600, color: '#374151',
+            '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' }, transition: 'all 0.15s',
+          }}
+        >
+          ← Back
+        </Box>
+        <Box
+          onClick={() => navigate('/login')}
+          sx={{
+            px: 2.5, py: 0.9, borderRadius: 10,
+            bgcolor: '#0c0c0c', color: 'white',
+            fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            '&:hover': { bgcolor: '#2a2a2a' }, transition: 'all 0.15s',
+          }}
+        >
+          Sign In
+        </Box>
+      </Box>
+
+      {/* ── Page content ── */}
+      <Box sx={{ px: { xs: 3, md: 8 }, py: { xs: 5, md: 8 }, maxWidth: 1100, mx: 'auto' }}>
+
       {/* Header */}
-      <Box sx={{ mb: 4 }}>
+      <Box sx={{ mb: 5 }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, color: '#6366f1', mb: 1 }}>
           GET IN TOUCH
         </Typography>
-        <Typography variant="h5" fontWeight={900} sx={{ color: '#0c0c0c', letterSpacing: -0.5 }}>
+        <Typography sx={{ fontSize: { xs: 28, md: 40 }, fontWeight: 900, color: '#0c0c0c', letterSpacing: -1 }}>
           Contact
         </Typography>
       </Box>
@@ -276,6 +325,8 @@ export default function ContactPage() {
         </Box>
 
       </Box>
-    </Box>
+
+      </Box> {/* end page content */}
+    </Box> {/* end page wrapper */}
   );
 }

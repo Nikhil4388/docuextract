@@ -257,6 +257,7 @@ export default function App() {
                 <Route path="/auth/callback" element={<AuthCallbackPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/payment/success" element={<PaymentSuccessPage />} />
+                <Route path="/contact" element={<ContactPage />} />
 
                 <Route path="/" element={<RequireAuth><AppLayout /></RequireAuth>}>
                   <Route path="dashboard" element={<DashboardPage />} />
@@ -265,7 +266,6 @@ export default function App() {
                   <Route path="jobs/new" element={<NewJobPage />} />
                   <Route path="jobs/:jobId" element={<JobDetailPage />} />
                   <Route path="settings" element={<SettingsPage />} />
-                  <Route path="contact" element={<ContactPage />} />
                 </Route>
 
                 <Route path="*" element={<Navigate to="/" replace />} />
