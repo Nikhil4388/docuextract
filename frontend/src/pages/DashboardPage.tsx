@@ -189,30 +189,36 @@ export default function DashboardPage() {
           { label: 'Success Rate', value: `${stats.successRate}%`, icon: '🎯', from: '#f59e0b', to: '#fbbf24', delay: '0.15s' },
         ].map((c) => (
           <Box key={c.label} className="dash-card" sx={{
-            bgcolor: 'white', borderRadius: '20px', p: 3,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 8px 32px rgba(99,102,241,0.08)',
-            border: '1px solid rgba(255,255,255,0.8)',
+            background: 'rgba(13,17,23,0.9)',
+            borderRadius: '20px', p: 3,
+            boxShadow: `0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px ${c.from}22`,
+            border: `1px solid ${c.from}30`,
             animationDelay: c.delay,
             position: 'relative', overflow: 'hidden',
             cursor: 'default',
-            transition: 'box-shadow 0.2s ease',
-            '&:hover': { boxShadow: '0 4px 16px rgba(0,0,0,0.06), 0 16px 48px rgba(99,102,241,0.14)' },
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              boxShadow: `0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px ${c.from}55, 0 0 30px ${c.from}18`,
+              transform: 'translateY(-3px)',
+            },
           }}>
             {/* Color bar */}
             <Box sx={{
-              position: 'absolute', top: 0, left: 0, right: 0, height: 3, borderRadius: '20px 20px 0 0',
+              position: 'absolute', top: 0, left: 0, right: 0, height: 2, borderRadius: '20px 20px 0 0',
               background: `linear-gradient(90deg, ${c.from}, ${c.to})`,
+              boxShadow: `0 0 12px ${c.from}80`,
             }} />
             {/* Background glow */}
             <Box sx={{
-              position: 'absolute', right: -20, top: -20, width: 100, height: 100, borderRadius: '50%',
-              background: `radial-gradient(circle, ${c.from}18 0%, transparent 70%)`,
+              position: 'absolute', right: -20, top: -20, width: 120, height: 120, borderRadius: '50%',
+              background: `radial-gradient(circle, ${c.from}20 0%, transparent 70%)`,
+              pointerEvents: 'none',
             }} />
             <Typography sx={{ fontSize: 28, mb: 1.5 }}>{c.icon}</Typography>
-            <Typography sx={{ fontSize: 32, fontWeight: 900, color: '#0f172a', lineHeight: 1, mb: 0.5 }}>
-              {isLoading ? <Skeleton width={60} /> : c.value}
+            <Typography sx={{ fontSize: 32, fontWeight: 900, color: '#f1f5f9', lineHeight: 1, mb: 0.5 }}>
+              {isLoading ? <Skeleton width={60} sx={{ bgcolor: 'rgba(255,255,255,0.08)' }} /> : c.value}
             </Typography>
-            <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 1 }}>
               {c.label}
             </Typography>
           </Box>
@@ -224,24 +230,25 @@ export default function DashboardPage() {
 
         {/* Recent Jobs */}
         <Box sx={{
-          bgcolor: 'white', borderRadius: '20px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 8px 32px rgba(99,102,241,0.07)',
-          border: '1px solid rgba(255,255,255,0.8)',
+          background: 'rgba(13,17,23,0.9)',
+          borderRadius: '20px',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+          border: '1px solid rgba(99,102,241,0.15)',
           overflow: 'hidden',
         }}>
           <Box sx={{
             px: 3, py: 2.5,
-            borderBottom: '1px solid #f1f5f9',
+            borderBottom: '1px solid rgba(255,255,255,0.05)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
             <Box>
-              <Typography sx={{ fontWeight: 800, fontSize: 16, color: '#0f172a' }}>Recent Jobs</Typography>
-              <Typography sx={{ fontSize: 12, color: '#94a3b8', mt: 0.2 }}>Your latest extraction runs</Typography>
+              <Typography sx={{ fontWeight: 800, fontSize: 16, color: '#f1f5f9' }}>Recent Jobs</Typography>
+              <Typography sx={{ fontSize: 12, color: '#64748b', mt: 0.2 }}>Your latest extraction runs</Typography>
             </Box>
             <Box onClick={() => navigate('/jobs')} sx={{
               display: 'flex', alignItems: 'center', gap: 0.5,
-              color: '#6366f1', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-              '&:hover': { color: '#4f46e5' },
+              color: '#818cf8', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              '&:hover': { color: '#a5b4fc' },
             }}>
               View all
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -252,26 +259,28 @@ export default function DashboardPage() {
 
           {isLoading
             ? Array.from({ length: 4 }).map((_, i) => (
-                <Box key={i} sx={{ px: 3, py: 2.5, borderBottom: '1px solid #f8fafc', display: 'flex', gap: 2, alignItems: 'center' }}>
-                  <Skeleton variant="circular" width={44} height={44} />
+                <Box key={i} sx={{ px: 3, py: 2.5, borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', gap: 2, alignItems: 'center' }}>
+                  <Skeleton variant="circular" width={44} height={44} sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
                   <Box sx={{ flex: 1 }}>
-                    <Skeleton width="45%" height={16} />
-                    <Skeleton width="28%" height={12} sx={{ mt: 0.5 }} />
+                    <Skeleton width="45%" height={16} sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+                    <Skeleton width="28%" height={12} sx={{ mt: 0.5, bgcolor: 'rgba(255,255,255,0.04)' }} />
                   </Box>
-                  <Skeleton width={70} height={24} sx={{ borderRadius: 3 }} />
+                  <Skeleton width={70} height={24} sx={{ borderRadius: 3, bgcolor: 'rgba(255,255,255,0.06)' }} />
                 </Box>
               ))
             : recentJobs.length === 0
             ? (
               <Box sx={{ py: 10, textAlign: 'center' }}>
                 <Typography sx={{ fontSize: 48, mb: 2 }}>📭</Typography>
-                <Typography sx={{ fontWeight: 700, color: '#334155', mb: 0.5 }}>No jobs yet</Typography>
-                <Typography sx={{ color: '#94a3b8', fontSize: 13, mb: 3 }}>Create your first extraction to get started</Typography>
+                <Typography sx={{ fontWeight: 700, color: '#e2e8f0', mb: 0.5 }}>No jobs yet</Typography>
+                <Typography sx={{ color: '#64748b', fontSize: 13, mb: 3 }}>Create your first extraction to get started</Typography>
                 <Box onClick={() => navigate('/jobs/new')} sx={{
                   display: 'inline-flex', alignItems: 'center', gap: 1,
                   px: 3, py: 1.2, borderRadius: 3, cursor: 'pointer',
                   background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                  '&:hover': { opacity: 0.9 },
+                  '&:hover': { opacity: 0.9, transform: 'translateY(-1px)' },
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 4px 16px rgba(99,102,241,0.4)',
                 }}>
                   <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 13 }}>+ New Job</Typography>
                 </Box>
@@ -281,42 +290,44 @@ export default function DashboardPage() {
               <Box key={job.id} onClick={() => navigate(`/jobs/${job.id}`)}
                 sx={{
                   px: 3, py: 2.5, cursor: 'pointer',
-                  borderBottom: idx < recentJobs.length - 1 ? '1px solid #f8fafc' : 'none',
+                  borderBottom: idx < recentJobs.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
                   display: 'flex', alignItems: 'center', gap: 2.5,
-                  '&:hover': { bgcolor: '#fafbff' },
+                  '&:hover': { bgcolor: 'rgba(99,102,241,0.06)' },
                   transition: 'background 0.12s',
                 }}>
                 <Avatar sx={{
                   width: 44, height: 44, fontSize: 15, fontWeight: 800, flexShrink: 0,
                   background: `linear-gradient(135deg, ${['#6366f1','#10b981','#3b82f6','#f59e0b','#8b5cf6'][idx % 5]}, ${['#8b5cf6','#34d399','#60a5fa','#fbbf24','#a78bfa'][idx % 5]})`,
+                  boxShadow: `0 0 16px ${['rgba(99,102,241,0.4)','rgba(16,185,129,0.4)','rgba(59,130,246,0.4)','rgba(245,158,11,0.4)','rgba(139,92,246,0.4)'][idx % 5]}`,
                 }}>
                   {job.name?.[0]?.toUpperCase()}
                 </Avatar>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }} noWrap>{job.name}</Typography>
+                  <Typography sx={{ fontWeight: 700, fontSize: 14, color: '#f1f5f9' }} noWrap>{job.name}</Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.3 }}>
                     {job.total_files > 0 && (
-                      <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>
+                      <Typography sx={{ fontSize: 12, color: '#64748b' }}>
                         {job.processed_files}/{job.total_files} files
                       </Typography>
                     )}
-                    {job.total_files > 0 && <Box sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: '#cbd5e1' }} />}
-                    <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>{timeAgo(job.created_at)}</Typography>
+                    {job.total_files > 0 && <Box sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: '#334155' }} />}
+                    <Typography sx={{ fontSize: 12, color: '#64748b' }}>{timeAgo(job.created_at)}</Typography>
                   </Box>
                   {job.status === 'processing' && job.total_files > 0 && (
-                    <Box sx={{ mt: 0.8, height: 3, bgcolor: '#f1f5f9', borderRadius: 2, overflow: 'hidden' }}>
+                    <Box sx={{ mt: 0.8, height: 3, bgcolor: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
                       <Box sx={{
                         height: '100%', borderRadius: 2,
                         width: `${(job.processed_files / job.total_files) * 100}%`,
                         background: 'linear-gradient(90deg, #6366f1, #06b6d4)',
+                        boxShadow: '0 0 8px rgba(99,102,241,0.6)',
                         transition: 'width 0.5s ease',
                       }} />
                     </Box>
                   )}
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: statusDot(job.status) }} />
-                  <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: statusDot(job.status), boxShadow: `0 0 6px ${statusDot(job.status)}` }} />
+                  <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>
                     {statusLabel(job.status)}
                   </Typography>
                 </Box>
@@ -329,31 +340,32 @@ export default function DashboardPage() {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {/* Success donut */}
           <Box sx={{
-            bgcolor: 'white', borderRadius: '20px', p: 3,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 8px 32px rgba(99,102,241,0.07)',
-            border: '1px solid rgba(255,255,255,0.8)',
+            background: 'rgba(13,17,23,0.9)',
+            borderRadius: '20px', p: 3,
+            boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+            border: '1px solid rgba(16,185,129,0.15)',
           }}>
-            <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#0f172a', mb: 0.5 }}>Success Rate</Typography>
-            <Typography sx={{ fontSize: 12, color: '#94a3b8', mb: 3 }}>Across all completed jobs</Typography>
+            <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#f1f5f9', mb: 0.5 }}>Success Rate</Typography>
+            <Typography sx={{ fontSize: 12, color: '#64748b', mb: 3 }}>Across all completed jobs</Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
               <Box sx={{
                 width: 88, height: 88, borderRadius: '50%', flexShrink: 0,
                 background: `conic-gradient(
                   #10b981 0deg ${stats.successRate * 3.6}deg,
-                  #f0fdf4 ${stats.successRate * 3.6}deg 360deg
+                  rgba(255,255,255,0.06) ${stats.successRate * 3.6}deg 360deg
                 )`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: 'inset 0 0 0 12px white',
+                boxShadow: 'inset 0 0 0 12px #0d1117, 0 0 20px rgba(16,185,129,0.3)',
               }}>
-                <Typography sx={{ fontSize: 16, fontWeight: 900, color: '#10b981' }}>
+                <Typography sx={{ fontSize: 14, fontWeight: 900, color: '#10b981' }}>
                   {isLoading ? '—' : `${stats.successRate}%`}
                 </Typography>
               </Box>
               <Box>
-                <Typography sx={{ fontSize: 32, fontWeight: 900, color: '#10b981', lineHeight: 1 }}>
+                <Typography sx={{ fontSize: 32, fontWeight: 900, color: '#10b981', lineHeight: 1, textShadow: '0 0 20px rgba(16,185,129,0.5)' }}>
                   {isLoading ? '—' : `${stats.successRate}%`}
                 </Typography>
-                <Typography sx={{ fontSize: 12, color: '#94a3b8', mt: 0.5 }}>
+                <Typography sx={{ fontSize: 12, color: '#64748b', mt: 0.5 }}>
                   {stats.completed} of {stats.completed + stats.failed} done
                 </Typography>
               </Box>
@@ -362,11 +374,12 @@ export default function DashboardPage() {
 
           {/* Quick actions */}
           <Box sx={{
-            bgcolor: 'white', borderRadius: '20px', p: 3, flex: 1,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 8px 32px rgba(99,102,241,0.07)',
-            border: '1px solid rgba(255,255,255,0.8)',
+            background: 'rgba(13,17,23,0.9)',
+            borderRadius: '20px', p: 3, flex: 1,
+            boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+            border: '1px solid rgba(99,102,241,0.15)',
           }}>
-            <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#0f172a', mb: 2 }}>Quick Actions</Typography>
+            <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#f1f5f9', mb: 2 }}>Quick Actions</Typography>
             {[
               { label: 'New Extraction Job', sub: 'Upload PDFs and extract data', path: '/jobs/new',   icon: '🚀', color: '#6366f1' },
               { label: 'Manage Templates',   sub: 'Create or edit column templates', path: '/templates', icon: '📋', color: '#8b5cf6' },
@@ -375,21 +388,28 @@ export default function DashboardPage() {
               <Box key={a.path} onClick={() => navigate(a.path)} sx={{
                 display: 'flex', alignItems: 'center', gap: 2,
                 p: 1.5, mb: 1, borderRadius: 2.5, cursor: 'pointer',
-                '&:hover': { bgcolor: '#f8faff', '& .arrow': { opacity: 1, transform: 'translateX(2px)' } },
-                transition: 'all 0.15s ease',
+                border: '1px solid transparent',
+                '&:hover': {
+                  bgcolor: `${a.color}10`,
+                  border: `1px solid ${a.color}30`,
+                  '& .arrow': { opacity: 1, transform: 'translateX(3px)' },
+                },
+                transition: 'all 0.18s ease',
               }}>
                 <Box sx={{
                   width: 40, height: 40, borderRadius: 2.5, fontSize: 18,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  bgcolor: `${a.color}12`, flexShrink: 0,
+                  background: `${a.color}18`,
+                  border: `1px solid ${a.color}30`,
+                  flexShrink: 0,
                 }}>{a.icon}</Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{a.label}</Typography>
-                  <Typography sx={{ fontSize: 11, color: '#94a3b8' }}>{a.sub}</Typography>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#e2e8f0' }}>{a.label}</Typography>
+                  <Typography sx={{ fontSize: 11, color: '#64748b' }}>{a.sub}</Typography>
                 </Box>
                 <Box className="arrow" sx={{
-                  opacity: 0.3, transition: 'all 0.15s ease',
-                  color: '#94a3b8', fontSize: 16,
+                  opacity: 0.25, transition: 'all 0.18s ease',
+                  color: '#94a3b8', fontSize: 18,
                 }}>›</Box>
               </Box>
             ))}

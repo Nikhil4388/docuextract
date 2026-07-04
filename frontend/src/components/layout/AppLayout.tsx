@@ -68,7 +68,7 @@ export default function AppLayout() {
   const currentPage = NAV.find((n) => location.pathname.startsWith(n.path))?.label ?? '';
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f4f5ff' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#010409' }}>
       <style>{`
         @keyframes sidebarGlow {
           0%, 100% { box-shadow: 4px 0 40px rgba(99,102,241,0.08); }
@@ -248,8 +248,9 @@ export default function AppLayout() {
         PaperProps={{
           sx: {
             borderRadius: 3, width: 280, overflow: 'hidden',
-            border: '1px solid rgba(0,0,0,0.07)',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 4px 16px rgba(99,102,241,0.1)',
+            background: '#0d1117',
+            border: '1px solid rgba(99,102,241,0.2)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 4px 16px rgba(99,102,241,0.2)',
           },
         }}
       >
@@ -278,22 +279,22 @@ export default function AppLayout() {
             <Row label="Status" value={isAdmin ? '⚡ Admin' : isSubscribed ? '⭐ Supporter' : `Free (${jobsUsed}/${freeLimit} used)`} />
             <Row label="Jobs used" value={String(jobsUsed)} />
           </Box>
-          <Divider sx={{ my: 0.5 }} />
+          <Divider sx={{ my: 0.5, borderColor: 'rgba(255,255,255,0.06)' }} />
           <Box sx={{ display: 'flex', gap: 1, p: 0.5, pt: 1 }}>
             {!isSubscribed && !isAdmin && (
               <Button size="small" variant="outlined" fullWidth
                 onClick={() => { setAnchorEl(null); navigate('/pricing'); }}
                 sx={{ borderRadius: 2, fontSize: 11, fontWeight: 700,
-                  borderColor: '#f59e0b', color: '#d97706',
-                  '&:hover': { bgcolor: '#fef3c7', borderColor: '#d97706' } }}>
+                  borderColor: 'rgba(251,191,36,0.4)', color: '#fbbf24',
+                  '&:hover': { bgcolor: 'rgba(245,158,11,0.1)', borderColor: '#fbbf24' } }}>
                 ☕ Donate $10
               </Button>
             )}
             <Button size="small" variant="outlined" fullWidth
               onClick={() => { setAnchorEl(null); logout().then(() => navigate('/login')); }}
               sx={{ borderRadius: 2, fontSize: 11, fontWeight: 700,
-                borderColor: '#fecaca', color: '#ef4444',
-                '&:hover': { bgcolor: '#fef2f2', borderColor: '#ef4444' } }}>
+                borderColor: 'rgba(239,68,68,0.4)', color: '#f87171',
+                '&:hover': { bgcolor: 'rgba(239,68,68,0.08)', borderColor: '#ef4444' } }}>
               Sign out
             </Button>
           </Box>
@@ -307,9 +308,10 @@ export default function AppLayout() {
         left: sidebarOpen && !isMobile ? DRAWER_WIDTH : 0,
         right: 0,
         height: 64,
-        bgcolor: 'rgba(244,245,255,0.85)',
-        backdropFilter: 'blur(16px)',
-        borderBottom: '1px solid rgba(99,102,241,0.08)',
+        background: 'rgba(7,7,26,0.75)',
+        backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(99,102,241,0.12)',
+        boxShadow: '0 1px 0 rgba(99,102,241,0.08), 0 4px 24px rgba(0,0,0,0.3)',
         display: 'flex', alignItems: 'center', px: 3, gap: 2,
         transition: 'left 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
@@ -317,15 +319,15 @@ export default function AppLayout() {
         <Box onClick={() => setSidebarOpen((v) => !v)} sx={{
           width: 36, height: 36, borderRadius: 2, cursor: 'pointer',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
-          '&:hover': { bgcolor: 'rgba(99,102,241,0.08)' }, transition: 'all 0.15s',
+          '&:hover': { bgcolor: 'rgba(99,102,241,0.12)' }, transition: 'all 0.15s',
         }}>
           {[0,1,2].map((i) => (
-            <Box key={i} sx={{ width: 18, height: 1.5, bgcolor: '#64748b', borderRadius: 1 }} />
+            <Box key={i} sx={{ width: 18, height: 1.5, bgcolor: 'rgba(255,255,255,0.45)', borderRadius: 1 }} />
           ))}
         </Box>
 
         {/* Page title */}
-        <Typography sx={{ fontWeight: 700, fontSize: 15, color: '#1e1b4b', letterSpacing: -0.2 }}>
+        <Typography sx={{ fontWeight: 700, fontSize: 15, color: '#f1f5f9', letterSpacing: -0.2 }}>
           {currentPage}
         </Typography>
 
@@ -335,19 +337,19 @@ export default function AppLayout() {
         {isAdmin && (
           <Box sx={{
             px: 1.5, py: 0.5, borderRadius: 6,
-            background: 'linear-gradient(135deg, #ede9fe, #ddd6fe)',
-            border: '1px solid #c4b5fd',
+            background: 'rgba(139,92,246,0.15)',
+            border: '1px solid rgba(196,181,253,0.3)',
           }}>
-            <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#5b21b6' }}>⚡ Admin</Typography>
+            <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#ddd6fe' }}>⚡ Admin</Typography>
           </Box>
         )}
         {isSubscribed && (
           <Box sx={{
             px: 1.5, py: 0.5, borderRadius: 6,
-            background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
-            border: '1px solid #fcd34d',
+            background: 'rgba(245,158,11,0.15)',
+            border: '1px solid rgba(251,191,36,0.3)',
           }}>
-            <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#92400e' }}>⭐ Supporter</Typography>
+            <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#fde68a' }}>⭐ Supporter</Typography>
           </Box>
         )}
 
@@ -357,7 +359,7 @@ export default function AppLayout() {
             sx={{
               width: 36, height: 36, fontSize: 13, fontWeight: 800, cursor: 'pointer',
               background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              '&:hover': { boxShadow: '0 0 0 3px rgba(99,102,241,0.25)', transform: 'scale(1.05)' },
+              '&:hover': { boxShadow: '0 0 0 3px rgba(99,102,241,0.35), 0 0 20px rgba(99,102,241,0.3)', transform: 'scale(1.05)' },
               transition: 'all 0.2s ease',
             }}>
             {initials}
@@ -373,7 +375,12 @@ export default function AppLayout() {
         minHeight: 'calc(100vh - 64px)',
         transition: 'margin 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
         p: { xs: 2.5, md: 4 },
-        bgcolor: '#f4f5ff',
+        bgcolor: '#010409',
+        backgroundImage: `
+          linear-gradient(rgba(99,102,241,0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(99,102,241,0.025) 1px, transparent 1px)
+        `,
+        backgroundSize: '48px 48px',
       }}>
         <Outlet />
       </Box>
@@ -384,8 +391,8 @@ export default function AppLayout() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 0.5 }}>
-      <Typography sx={{ fontSize: 12, color: '#94a3b8', width: 72, flexShrink: 0 }}>{label}</Typography>
-      <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>{value}</Typography>
+      <Typography sx={{ fontSize: 12, color: '#64748b', width: 72, flexShrink: 0 }}>{label}</Typography>
+      <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0' }}>{value}</Typography>
     </Box>
   );
 }
