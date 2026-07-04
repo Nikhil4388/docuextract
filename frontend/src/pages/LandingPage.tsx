@@ -622,15 +622,14 @@ export default function LandingPage() {
         </Typography>
         <Box sx={{ display: 'flex', gap: 3 }}>
           {[
-            { label: 'Privacy',  href: '#' },
-            { label: 'Terms',    href: '#' },
-            { label: 'Contact',  href: '/contact' },
+            { label: 'Privacy', action: () => {} },
+            { label: 'Terms',   action: () => {} },
+            { label: 'Contact', action: () => navigate('/contact') },
           ].map((l) => (
             <Typography
               key={l.label}
-              component="a"
-              href={l.href}
-              sx={{ fontSize: 12.5, color: '#94a3b8', cursor: 'pointer', textDecoration: 'none', '&:hover': { color: '#6366f1' }, transition: 'color 0.15s' }}
+              onClick={l.action}
+              sx={{ fontSize: 12.5, color: '#94a3b8', cursor: 'pointer', '&:hover': { color: '#6366f1' }, transition: 'color 0.15s' }}
             >{l.label}</Typography>
           ))}
         </Box>
