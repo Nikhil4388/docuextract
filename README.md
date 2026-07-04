@@ -39,32 +39,33 @@ No OCR setup. No templates to train. No code to write. Just upload and extract.
 
 ## ◈ SYSTEM ARCHITECTURE
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    CLIENT  (Browser)                            │
-│   React 18 · TypeScript · MUI · TanStack Query · Vite          │
-│   Hosted: Vercel Edge Network (Global CDN)                      │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │  HTTPS / JWT Bearer Token
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    API GATEWAY  (Railway)                        │
-│   FastAPI · Uvicorn · Python 3.11                               │
-│   Auth: JWT access/refresh + Google OAuth 2.0                  │
-│   Security: bcrypt · rate limiting · CSP · CORS · HSTS         │
-└────────┬─────────────────┬────────────────────┬────────────────┘
-         │                 │                    │
-         ▼                 ▼                    ▼
-┌──────────────┐  ┌─────────────────┐  ┌──────────────────┐
-│  PostgreSQL  │  │  Celery Worker  │  │   File Storage   │
-│  (Supabase)  │  │  + Redis Broker │  │   AWS S3 / GDrive│
-│              │  │                 │  │   / Dropbox      │
-│  Users       │  │  ┌───────────┐  │  │                  │
-│  Jobs        │  │  │  Claude   │  │  │  PDF Upload      │
-│  Templates   │  │  │ Sonnet4.6 │  │  │  Temp Processing │
-│  Results     │  │  │  50x↕️    │  │  │  Auto-cleanup    │
-└──────────────┘  │  └───────────┘  │  └──────────────────┘
-                  └─────────────────┘
+> 🔮 **[Open Interactive Architecture Diagram](./architecture.html)** — full dark-mode diagram with all layers, encryption points, and parallel processing details.
+
+```mermaid
+flowchart TD
+    A["🖥️ Frontend\nReact 18 + TypeScript\nVercel Edge CDN"] -->|"HTTPS · TLS 1.3 · JWT Bearer"| B
+
+    B["⚙️ API Gateway\nFastAPI + Uvicorn · Railway · Docker\nRate Limiting · CSP · CORS · HSTS"]
+
+    B --> C["🔐 Auth Service\nGoogle OAuth 2.0\nbcrypt 12 rounds\nJWT HS256"]
+    B --> D["⚡ Celery + Redis\nJob Engine\n50× Parallel Claude calls"]
+    B --> E["🗄️ File Storage\nAWS S3 · Google Drive\nDropbox · SSE-S3"]
+
+    D --> F["🤖 Claude Sonnet 4.6\nPDF text + Vision OCR\nJSON extraction schema"]
+    D --> G["🛢️ PostgreSQL\nSupabase · SQLAlchemy\nAES-encrypted creds"]
+    D --> H["📡 Redis Broker\nUpstash · TLS\nCelery task queue"]
+
+    F --> I["📊 Excel Export\n.xlsx · openpyxl\nConfidence scores"]
+
+    style A fill:#1e1b4b,stroke:#818cf8,color:#f1f5f9
+    style B fill:#0c2233,stroke:#38bdf8,color:#f1f5f9
+    style C fill:#2d1f07,stroke:#fbbf24,color:#f1f5f9
+    style D fill:#1e0f3a,stroke:#c4b5fd,color:#f1f5f9
+    style E fill:#052e16,stroke:#34d399,color:#f1f5f9
+    style F fill:#1e0f3a,stroke:#c4b5fd,color:#f1f5f9
+    style G fill:#052e16,stroke:#34d399,color:#f1f5f9
+    style H fill:#3b0a0a,stroke:#fca5a5,color:#f1f5f9
+    style I fill:#052e16,stroke:#34d399,color:#f1f5f9
 ```
 
 ---

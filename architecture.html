@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MultiPDFToExcel — System Architecture</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #010409;
+    font-family: 'Courier New', monospace;
+    color: #f1f5f9;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(99,102,241,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,102,241,0.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: 0; pointer-events: none;
+  }
+  .canvas { position: relative; z-index: 1; padding: 28px; max-width: 1200px; margin: 0 auto; }
+
+  .header { text-align: center; margin-bottom: 28px; }
+  .header h1 {
+    font-size: 22px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase;
+    background: linear-gradient(135deg, #818cf8, #c4b5fd, #38bdf8);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    margin-bottom: 6px;
+  }
+  .header p { font-size: 11px; color: #94a3b8; letter-spacing: 3px; text-transform: uppercase; }
+
+  .stats-bar {
+    display: flex; border: 1px solid rgba(99,102,241,0.25); border-radius: 10px;
+    overflow: hidden; margin-bottom: 18px; background: rgba(15,23,42,0.8);
+  }
+  .stat { flex: 1; padding: 9px 10px; text-align: center; border-right: 1px solid rgba(99,102,241,0.15); }
+  .stat:last-child { border-right: none; }
+  .stat-val { font-size: 15px; font-weight: 900; background: linear-gradient(135deg,#818cf8,#38bdf8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .stat-lbl { font-size: 8px; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+  .node {
+    border-radius: 12px; padding: 14px 16px; position: relative;
+    backdrop-filter: blur(12px);
+    transition: box-shadow 0.3s ease, transform 0.2s ease; cursor: default;
+  }
+  .node:hover { transform: translateY(-2px); }
+  .node-title {
+    font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 8px; color: #f8fafc;
+  }
+  .node-icon { font-size: 16px; }
+  .node-detail { font-size: 10px; color: #cbd5e1; line-height: 1.9; }
+  .node-detail strong { color: #f1f5f9; font-weight: 700; }
+
+  .node-indigo { background: rgba(99,102,241,0.1); border: 1px solid rgba(129,140,248,0.4); }
+  .node-cyan   { background: rgba(6,182,212,0.1);  border: 1px solid rgba(56,189,248,0.4); }
+  .node-violet { background: rgba(139,92,246,0.1); border: 1px solid rgba(196,181,253,0.4); }
+  .node-green  { background: rgba(16,185,129,0.1); border: 1px solid rgba(52,211,153,0.4); }
+  .node-amber  { background: rgba(245,158,11,0.1); border: 1px solid rgba(251,191,36,0.4); }
+  .node-red    { background: rgba(239,68,68,0.1);  border: 1px solid rgba(252,165,165,0.4); }
+  .node-slate  { background: rgba(51,65,85,0.3);   border: 1px solid rgba(100,116,139,0.4); }
+
+  .node-indigo:hover { box-shadow: 0 0 35px rgba(129,140,248,0.3); }
+  .node-cyan:hover   { box-shadow: 0 0 35px rgba(56,189,248,0.3); }
+  .node-violet:hover { box-shadow: 0 0 35px rgba(196,181,253,0.3); }
+  .node-green:hover  { box-shadow: 0 0 35px rgba(52,211,153,0.3); }
+  .node-amber:hover  { box-shadow: 0 0 35px rgba(251,191,36,0.3); }
+  .node-red:hover    { box-shadow: 0 0 35px rgba(252,165,165,0.3); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px;
+    font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+  }
+  .badge-green  { background: rgba(16,185,129,0.2); border: 1px solid rgba(52,211,153,0.5); color: #6ee7b7; }
+  .badge-blue   { background: rgba(6,182,212,0.2);  border: 1px solid rgba(56,189,248,0.5); color: #7dd3fc; }
+  .badge-purple { background: rgba(139,92,246,0.2); border: 1px solid rgba(196,181,253,0.5); color: #ddd6fe; }
+  .dot { width:6px; height:6px; border-radius:50%; animation: pulse 2s ease infinite; }
+  .dot-green  { background: #34d399; box-shadow: 0 0 8px #34d399; }
+  .dot-blue   { background: #38bdf8; box-shadow: 0 0 8px #38bdf8; }
+  .dot-purple { background: #c4b5fd; box-shadow: 0 0 8px #c4b5fd; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+  .enc-tag {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 9px; color: #fde68a;
+    background: rgba(245,158,11,0.15); border: 1px solid rgba(251,191,36,0.4);
+    border-radius: 4px; padding: 2px 6px; margin: 2px 0; font-weight: 800;
+  }
+
+  .row { display: flex; gap: 14px; }
+  .col-1 { flex: 1; }
+  .col-2 { flex: 2; }
+
+  .arrow-down { display: flex; flex-direction: column; align-items: center; margin: 5px 0; }
+  .arrow-line { width: 2px; height: 16px; background: linear-gradient(180deg, rgba(129,140,248,0.7), rgba(56,189,248,0.7)); position: relative; }
+  .arrow-line::after { content: '▼'; position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%); font-size: 10px; color: #818cf8; }
+  .arrow-label { font-size: 9px; color: #94a3b8; letter-spacing: 1.5px; margin-top: 16px; text-transform: uppercase; font-weight: 700; }
+
+  .parallel-header {
+    text-align: center; font-size: 10px; color: #ddd6fe; letter-spacing: 2px; font-weight: 800;
+    text-transform: uppercase; margin-bottom: 10px; border: 1px dashed rgba(196,181,253,0.4);
+    padding: 5px 10px; border-radius: 6px; background: rgba(139,92,246,0.08);
+  }
+  .parallel-container { display: flex; gap: 8px; }
+
+  .flow-h { position:relative; height:2px; background: rgba(99,102,241,0.12); border-radius:1px; overflow:hidden; margin: 6px 0; }
+  .flow-h::after { content:''; position:absolute; top:0; left:0; width:30%; height:100%; background: linear-gradient(90deg,transparent,#818cf8,#38bdf8,transparent); animation: flowRight 1.5s linear infinite; }
+  @keyframes flowRight { from{left:0%} to{left:100%} }
+
+  .section-label { font-size: 9px; letter-spacing: 3px; color: #64748b; text-transform: uppercase; text-align: center; margin-bottom: 6px; font-weight: 700; }
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(129,140,248,0.35), rgba(56,189,248,0.35), transparent); margin: 11px 0; }
+
+  .legend {
+    display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-top: 18px;
+    padding: 12px; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; background: rgba(15,23,42,0.6);
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 9px; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  @media(max-width:700px){ .parallel-container,.row { flex-direction:column; } }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="header">
+    <h1>⬡ MultiPDFToExcel — System Architecture</h1>
+    <p>AI · Parallel Processing · End-to-End Encrypted · Production Grade</p>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-val">50×</div><div class="stat-lbl">Parallel AI</div></div>
+    <div class="stat"><div class="stat-val">&lt;10s</div><div class="stat-lbl">10 PDFs</div></div>
+    <div class="stat"><div class="stat-val">95%+</div><div class="stat-lbl">Accuracy</div></div>
+    <div class="stat"><div class="stat-val">AES-256</div><div class="stat-lbl">Encryption</div></div>
+    <div class="stat"><div class="stat-val">JWT</div><div class="stat-lbl">Auth</div></div>
+    <div class="stat"><div class="stat-val">bcrypt</div><div class="stat-lbl">Passwords</div></div>
+  </div>
+
+  <div class="section-label">▸ Layer 1 — Client</div>
+  <div class="node node-indigo" style="margin-bottom:0">
+    <div class="node-title">
+      <span class="node-icon">🖥️</span>Frontend — React 18 + TypeScript
+      <span class="badge badge-green" style="margin-left:auto"><span class="dot dot-green"></span>Vercel Edge CDN</span>
+    </div>
+    <div class="row">
+      <div class="col-1"><div class="node-detail"><strong>UI Stack</strong><br>MUI v5 · Zustand · TanStack Query<br>React Router v6 · Axios</div></div>
+      <div class="col-1"><div class="node-detail"><strong>Token Strategy</strong><br>Access token → JS memory only<br>Refresh token → localStorage<br><span class="enc-tag">🔐 Never in URL / cookie</span></div></div>
+      <div class="col-1"><div class="node-detail"><strong>Security Headers</strong><br>HSTS · CSP · X-Frame-Options<br>Permissions-Policy · Referrer-Policy<br><span class="enc-tag">🔒 Source maps disabled in prod</span></div></div>
+      <div class="col-1"><div class="node-detail"><strong>Auth Flow</strong><br>Google OAuth 2.0<br>Silent token refresh via interceptor<br>Auto-logout (60 min idle)</div></div>
+    </div>
+  </div>
+
+  <div class="arrow-down"><div class="arrow-line"></div><div class="arrow-label">HTTPS · TLS 1.3 · JWT Bearer · Rate Limited</div></div>
+  <div class="flow-h"></div>
+
+  <div class="section-label">▸ Layer 2 — API Gateway</div>
+  <div class="node node-cyan" style="margin-bottom:0">
+    <div class="node-title">
+      <span class="node-icon">⚙️</span>FastAPI + Uvicorn — Python 3.11
+      <span class="badge badge-blue" style="margin-left:auto"><span class="dot dot-blue"></span>Railway · Docker</span>
+    </div>
+    <div class="row">
+      <div class="col-1"><div class="node-detail"><strong>Rate Limiting</strong><br>Auth routes → 10 req/min<br>API routes → 120 req/min<br>Sliding window per IP<br>429 + Retry-After header</div></div>
+      <div class="col-1"><div class="node-detail"><strong>Security Middleware</strong><br>HSTS · CSP headers<br>X-Frame-Options: DENY<br>Server banner removed<br><span class="enc-tag">🔒 CORS whitelist only</span></div></div>
+      <div class="col-1"><div class="node-detail"><strong>JWT Auth</strong><br>Access token: 60 min exp<br>Refresh token: 30 day exp<br>HTTPBearer dependency<br><span class="enc-tag">🔑 HS256 signed</span></div></div>
+      <div class="col-1"><div class="node-detail"><strong>PDF Validation</strong><br>Magic bytes: must start %PDF-<br>Filename sanitization<br>File size limit enforced<br>No path traversal</div></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-label">▸ Layer 3 — Services</div>
+  <div class="row">
+    <div class="col-1">
+      <div class="node node-amber" style="height:100%">
+        <div class="node-title"><span class="node-icon">🔐</span>Auth Service</div>
+        <div class="node-detail"><strong>Google OAuth 2.0</strong><br>PKCE flow · Userinfo API<br><br><strong>Password Auth</strong><br><span class="enc-tag">🔒 bcrypt 12 rounds</span><br>Auto-rehash on upgrade<br><br><strong>Token Signing</strong><br>SECRET_KEY (env only)<br>JWT sub = user UUID</div>
+      </div>
+    </div>
+    <div class="col-2">
+      <div class="node node-violet" style="height:100%">
+        <div class="node-title"><span class="node-icon">⚡</span>Job Engine — Celery + Redis Broker</div>
+        <div class="parallel-header">⟳ PARALLEL EXTRACTION — UP TO 50 SIMULTANEOUS CLAUDE API CALLS</div>
+        <div class="parallel-container">
+          <div class="node node-violet" style="flex:1;padding:10px"><div style="font-size:9px;color:#ddd6fe;font-weight:800;letter-spacing:1px;margin-bottom:6px">PDF₁</div><div class="node-detail">Extract text<br>Vision OCR<br>→ Claude ✓</div></div>
+          <div class="node node-violet" style="flex:1;padding:10px"><div style="font-size:9px;color:#ddd6fe;font-weight:800;letter-spacing:1px;margin-bottom:6px">PDF₂</div><div class="node-detail">Extract text<br>Vision OCR<br>→ Claude ✓</div></div>
+          <div class="node node-violet" style="flex:1;padding:10px"><div style="font-size:9px;color:#ddd6fe;font-weight:800;letter-spacing:1px;margin-bottom:6px">PDF₃</div><div class="node-detail">Extract text<br>Vision OCR<br>→ Claude ✓</div></div>
+          <div class="node node-slate" style="flex:1;padding:10px;display:flex;align-items:center;justify-content:center"><div style="text-align:center;font-size:11px;color:#94a3b8">…up to<br><strong style="font-size:16px;color:#c4b5fd">50</strong><br>lanes</div></div>
+        </div>
+        <div style="margin-top:8px" class="node-detail"><strong>Resilience:</strong> pool_pre_ping · pool_recycle=300 · 3× retry on DB drop<br><strong>Session:</strong> Fresh DB session per operation (no shared state)<br><strong>Creds:</strong> <span class="enc-tag">🔒 AES-256-GCM encrypted at rest</span></div>
+      </div>
+    </div>
+    <div class="col-1">
+      <div class="node node-green" style="height:100%">
+        <div class="node-title"><span class="node-icon">🗄️</span>File Storage</div>
+        <div class="node-detail"><strong>AWS S3</strong><br>Multipart upload<br>Parallel download<br><span class="enc-tag">🔒 SSE-S3 at rest</span><br><br><strong>Google Drive</strong><br>OAuth service account<br><br><strong>Dropbox</strong><br>API v2 adapter<br><br><strong>Lifecycle</strong><br>Temp files cleaned after job</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-label">▸ Layer 4 — AI Engine &amp; Data</div>
+  <div class="row">
+    <div class="col-2">
+      <div class="node node-violet">
+        <div class="node-title"><span class="node-icon">🤖</span>Claude Sonnet 4.6 — Anthropic API<span class="badge badge-purple" style="margin-left:auto"><span class="dot dot-purple"></span>Live</span></div>
+        <div class="row">
+          <div class="col-1"><div class="node-detail"><strong>Input Modes</strong><br>Native PDF text (fast path)<br>Base64 image (scanned PDFs)<br>Up to 5 pages per call<br>8,000 token text cap</div></div>
+          <div class="col-1"><div class="node-detail"><strong>Output Schema</strong><br>extracted_data: {col→val}<br>confidence_scores: {col→0-1}<br>JSON-only system prompt<br>max_tokens: 2,000</div></div>
+          <div class="col-1"><div class="node-detail"><strong>Error Handling</strong><br>RateLimitError → 10s backoff<br>BadRequestError → billing check<br>Credit low → status_message<br>CLAUDE_MAX_CONCURRENT=50</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-1">
+      <div class="node node-green">
+        <div class="node-title"><span class="node-icon">🛢️</span>PostgreSQL — Supabase</div>
+        <div class="node-detail"><strong>Tables</strong><br>users · extraction_jobs<br>extraction_results · templates<br><br><strong>ORM</strong><br>SQLAlchemy asyncpg<br>Alembic migrations<br><br><span class="enc-tag">🔒 TLS in transit</span><br><span class="enc-tag">🔒 Creds AES-encrypted</span></div>
+      </div>
+    </div>
+    <div class="col-1">
+      <div class="node node-red">
+        <div class="node-title"><span class="node-icon">📡</span>Redis — Upstash</div>
+        <div class="node-detail"><strong>Role</strong><br>Celery message broker<br>Task queue: extraction<br><br><strong>Message</strong><br>{job_id: uuid}<br>Worker picks up async<br><br><span class="enc-tag">🔒 TLS connection</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-label">▸ Layer 5 — Output &amp; Roadmap</div>
+  <div class="row">
+    <div class="col-1"><div class="node node-green"><div class="node-title"><span class="node-icon">📊</span>Excel Export (.xlsx)</div><div class="node-detail">openpyxl · all rows in one sheet<br>Per-file confidence scores<br>Processing time per file</div></div></div>
+    <div class="col-1"><div class="node node-indigo"><div class="node-title"><span class="node-icon">🔎</span>Search &amp; Filter</div><div class="node-detail">Server-side search on results<br>DataGrid pagination<br>Up to 1,000 rows returned</div></div></div>
+    <div class="col-1"><div class="node node-amber"><div class="node-title"><span class="node-icon">⏱️</span>Live Progress</div><div class="node-detail">Poll every 3s while processing<br>status_message per stage<br>processed_files counter</div></div></div>
+    <div class="col-1"><div class="node node-violet"><div class="node-title"><span class="node-icon">🔮</span>Roadmap</div><div class="node-detail">Webhooks (job complete)<br>API key (headless access)<br>Table structure extraction<br>Team workspaces</div></div></div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#818cf8;box-shadow:0 0 6px #818cf8"></div>Frontend / UI</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#38bdf8;box-shadow:0 0 6px #38bdf8"></div>API Gateway</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c4b5fd;box-shadow:0 0 6px #c4b5fd"></div>AI / Celery Worker</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#34d399;box-shadow:0 0 6px #34d399"></div>Storage / DB</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fca5a5;box-shadow:0 0 6px #fca5a5"></div>Message Broker</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fde68a;box-shadow:0 0 6px #fde68a"></div>Encryption Layer</div>
+    <div class="legend-item" style="color:#64748b">🔒 encrypted at rest &nbsp;|&nbsp; 🔐 in transit &nbsp;|&nbsp; 🔑 signed token</div>
+  </div>
+
+</div>
+</body>
+</html>
