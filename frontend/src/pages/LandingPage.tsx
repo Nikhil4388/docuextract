@@ -621,8 +621,17 @@ export default function LandingPage() {
           © 2025 MultiPDFToExcel. All rights reserved.
         </Typography>
         <Box sx={{ display: 'flex', gap: 3 }}>
-          {['Privacy', 'Terms', 'Contact'].map((l) => (
-            <Typography key={l} sx={{ fontSize: 12.5, color: '#94a3b8', cursor: 'pointer', '&:hover': { color: '#6366f1' }, transition: 'color 0.15s' }}>{l}</Typography>
+          {[
+            { label: 'Privacy',  href: '#' },
+            { label: 'Terms',    href: '#' },
+            { label: 'Contact',  href: '/contact' },
+          ].map((l) => (
+            <Typography
+              key={l.label}
+              component="a"
+              href={l.href}
+              sx={{ fontSize: 12.5, color: '#94a3b8', cursor: 'pointer', textDecoration: 'none', '&:hover': { color: '#6366f1' }, transition: 'color 0.15s' }}
+            >{l.label}</Typography>
           ))}
         </Box>
       </Box>

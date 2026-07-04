@@ -14,7 +14,6 @@ const NAV = [
   { label: 'Jobs',      path: '/jobs',      icon: '◉', emoji: '🚀' },
   { label: 'Templates', path: '/templates', icon: '◧', emoji: '📋' },
   { label: 'Settings',  path: '/settings',  icon: '◎', emoji: '⚙️' },
-  { label: 'Contact',   path: '/contact',   icon: '◎', emoji: '✉️' },
 ];
 
 // SVG icons for nav
