@@ -107,9 +107,6 @@ function useParticleNetwork(canvasRef: React.RefObject<HTMLCanvasElement>) {
           const d  = Math.sqrt(dx * dx + dy * dy);
           if (d < MAX_DIST) {
             const a = (1 - d / MAX_DIST) * 0.28;
-            const grad = ctx.createLinearGradient(pts[i].x, pts[i].y, pts[j].x, pts[j].y);
-            grad.addColorStop(0, pts[i].color.replace(')', `,${a})`).replace('rgb', 'rgba').replace('#', '').padStart(0));
-            // simpler: just use indigo with alpha
             ctx.beginPath();
             ctx.moveTo(pts[i].x, pts[i].y);
             ctx.lineTo(pts[j].x, pts[j].y);
