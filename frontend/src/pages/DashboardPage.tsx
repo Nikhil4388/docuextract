@@ -232,13 +232,13 @@ export default function DashboardPage() {
         <Box sx={{
           background: 'white',
           borderRadius: '20px',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-          border: '1px solid rgba(99,102,241,0.15)',
+          boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
+          border: '1px solid rgba(0,0,0,0.07)',
           overflow: 'hidden',
         }}>
           <Box sx={{
             px: 3, py: 2.5,
-            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            borderBottom: '1px solid rgba(0,0,0,0.07)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
             <Box>
@@ -259,7 +259,7 @@ export default function DashboardPage() {
 
           {isLoading
             ? Array.from({ length: 4 }).map((_, i) => (
-                <Box key={i} sx={{ px: 3, py: 2.5, borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', gap: 2, alignItems: 'center' }}>
+                <Box key={i} sx={{ px: 3, py: 2.5, borderBottom: '1px solid rgba(0,0,0,0.06)', display: 'flex', gap: 2, alignItems: 'center' }}>
                   <Skeleton variant="circular" width={44} height={44} sx={{ bgcolor: 'rgba(0,0,0,0.06)' }} />
                   <Box sx={{ flex: 1 }}>
                     <Skeleton width="45%" height={16} sx={{ bgcolor: 'rgba(0,0,0,0.06)' }} />
@@ -290,7 +290,7 @@ export default function DashboardPage() {
               <Box key={job.id} onClick={() => navigate(`/jobs/${job.id}`)}
                 sx={{
                   px: 3, py: 2.5, cursor: 'pointer',
-                  borderBottom: idx < recentJobs.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                  borderBottom: idx < recentJobs.length - 1 ? '1px solid rgba(0,0,0,0.06)' : 'none',
                   display: 'flex', alignItems: 'center', gap: 2.5,
                   '&:hover': { bgcolor: 'rgba(99,102,241,0.06)' },
                   transition: 'background 0.12s',
@@ -342,8 +342,8 @@ export default function DashboardPage() {
           <Box sx={{
             background: 'white',
             borderRadius: '20px', p: 3,
-            boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-            border: '1px solid rgba(16,185,129,0.15)',
+            boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
+            border: '1px solid rgba(16,185,129,0.12)',
           }}>
             <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#0c0c0c', mb: 0.5 }}>Success Rate</Typography>
             <Typography sx={{ fontSize: 12, color: '#64748b', mb: 3 }}>Across all completed jobs</Typography>
@@ -352,7 +352,7 @@ export default function DashboardPage() {
                 width: 88, height: 88, borderRadius: '50%', flexShrink: 0,
                 background: `conic-gradient(
                   #10b981 0deg ${stats.successRate * 3.6}deg,
-                  rgba(255,255,255,0.06) ${stats.successRate * 3.6}deg 360deg
+                  rgba(0,0,0,0.08) ${stats.successRate * 3.6}deg 360deg
                 )`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: 'inset 0 0 0 12px #ffffff, 0 0 20px rgba(16,185,129,0.3)',
@@ -376,8 +376,8 @@ export default function DashboardPage() {
           <Box sx={{
             background: 'white',
             borderRadius: '20px', p: 3, flex: 1,
-            boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-            border: '1px solid rgba(99,102,241,0.15)',
+            boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
+            border: '1px solid rgba(99,102,241,0.12)',
           }}>
             <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#0c0c0c', mb: 2 }}>Quick Actions</Typography>
             {[

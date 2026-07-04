@@ -1,186 +1,209 @@
 import { Box, Button, Typography } from '@mui/material';
 import LogoIcon from '../components/LogoIcon';
 
-const DOTS = Array.from({ length: 40 }, (_, i) => ({
-  id: i,
-  size: Math.random() * 3 + 1,
-  x: Math.random() * 100,
-  y: Math.random() * 100,
-  delay: Math.random() * 8,
-  duration: 4 + Math.random() * 6,
-}));
-
 export default function LoginPage() {
   const handleGoogleLogin = () => {
     window.location.href = `${import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1'}/auth/google`;
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', bgcolor: '#07071a', overflow: 'hidden', position: 'relative' }}>
+    <Box sx={{
+      minHeight: '100vh',
+      bgcolor: '#e8e2d8',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      p: { xs: 1.5, md: 3 },
+    }}>
       <style>{`
-        @keyframes floatDot {
-          0%, 100% { transform: translateY(0px) scale(1); opacity: 0.3; }
-          50% { transform: translateY(-30px) scale(1.2); opacity: 0.7; }
-        }
-        @keyframes gradientShift {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        @keyframes glowPulse {
-          0%, 100% { box-shadow: 0 0 40px rgba(99,102,241,0.3); }
-          50% { box-shadow: 0 0 80px rgba(139,92,246,0.5), 0 0 120px rgba(99,102,241,0.2); }
-        }
         @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(24px); }
+          from { opacity: 0; transform: translateY(28px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        @keyframes borderGlow {
-          0%, 100% { border-color: rgba(99,102,241,0.3); }
-          50% { border-color: rgba(139,92,246,0.7); }
+        @keyframes shimmer {
+          0%, 100% { background-position: 0% 50%; }
+          50%       { background-position: 100% 50%; }
         }
-        @keyframes rotateSlow {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(360deg); }
+        @keyframes blink {
+          0%, 100% { opacity: 1; box-shadow: 0 0 8px #10b981; }
+          50%       { opacity: 0.4; box-shadow: 0 0 3px #10b981; }
+        }
+        @keyframes floatCard {
+          0%, 100% { transform: translateY(0px) rotate(-1deg); }
+          50%       { transform: translateY(-10px) rotate(0.5deg); }
+        }
+        .login-wrap { animation: fadeUp 0.65s cubic-bezier(0.22,1,0.36,1) both; }
+        .google-btn {
+          transition: all 0.22s cubic-bezier(0.34,1.56,0.64,1) !important;
+        }
+        .google-btn:hover {
+          transform: translateY(-2px) !important;
+          box-shadow: 0 16px 40px rgba(0,0,0,0.25) !important;
+          background-color: #1c1c1c !important;
         }
       `}</style>
 
-      {/* Floating dots */}
-      {DOTS.map((d) => (
-        <Box key={d.id} sx={{
-          position: 'absolute', left: `${d.x}%`, top: `${d.y}%`,
-          width: d.size, height: d.size, borderRadius: '50%',
-          bgcolor: d.id % 3 === 0 ? '#6366f1' : d.id % 3 === 1 ? '#8b5cf6' : '#06b6d4',
-          animation: `floatDot ${d.duration}s ease-in-out ${d.delay}s infinite`,
-          pointerEvents: 'none',
-        }} />
-      ))}
-
-      {/* Big glow orbs */}
-      <Box sx={{ position: 'absolute', width: 700, height: 700, borderRadius: '50%', top: -200, left: -200,
-        background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 65%)', pointerEvents: 'none' }} />
-      <Box sx={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', bottom: -150, right: 100,
-        background: 'radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 65%)', pointerEvents: 'none' }} />
-      <Box sx={{ position: 'absolute', width: 400, height: 400, borderRadius: '50%', top: '30%', right: '30%',
-        background: 'radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 65%)', pointerEvents: 'none' }} />
-
-      {/* Grid overlay */}
-      <Box sx={{
-        position: 'absolute', inset: 0, pointerEvents: 'none',
-        backgroundImage: `
-          linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px)
-        `,
-        backgroundSize: '60px 60px',
-      }} />
-
-      {/* LEFT — brand panel */}
-      <Box sx={{
-        flex: 1, display: { xs: 'none', md: 'flex' },
-        flexDirection: 'column', justifyContent: 'center', px: { md: 8, lg: 12 },
-        position: 'relative', zIndex: 1,
-        animation: 'fadeUp 0.8s ease forwards',
+      {/* Outer frame */}
+      <Box className="login-wrap" sx={{
+        width: '100%',
+        maxWidth: 980,
+        bgcolor: '#0c0c0c',
+        borderRadius: { xs: '20px', md: '28px' },
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: { xs: 'column', md: 'row' },
+        minHeight: { xs: 'auto', md: 580 },
+        boxShadow: '0 60px 140px rgba(0,0,0,0.55), 0 12px 40px rgba(0,0,0,0.3)',
       }}>
-        {/* Badge */}
+
+        {/* ── LEFT: Dark brand panel ── */}
         <Box sx={{
-          display: 'inline-flex', alignItems: 'center', gap: 1, mb: 4,
-          bgcolor: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
-          borderRadius: 6, px: 2, py: 0.7, width: 'fit-content',
-          animation: 'borderGlow 3s ease infinite',
+          flex: 1,
+          display: { xs: 'none', md: 'flex' },
+          flexDirection: 'column',
+          justifyContent: 'center',
+          px: 6, py: 7,
+          position: 'relative',
+          overflow: 'hidden',
+          bgcolor: '#0c0c0c',
         }}>
-          <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: '#10b981',
-            boxShadow: '0 0 8px #10b981', animation: 'glowPulse 2s ease infinite' }} />
-          <Typography sx={{ color: '#a5b4fc', fontSize: 12, fontWeight: 600, letterSpacing: 0.5 }}>
-            AI-POWERED EXTRACTION ENGINE
+          {/* Orbs */}
+          <Box sx={{
+            position: 'absolute', width: 420, height: 420, borderRadius: '50%',
+            top: -150, left: -100,
+            background: 'radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 65%)',
+            pointerEvents: 'none',
+          }} />
+          <Box sx={{
+            position: 'absolute', width: 260, height: 260, borderRadius: '50%',
+            bottom: -70, right: -40,
+            background: 'radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 65%)',
+            pointerEvents: 'none',
+          }} />
+
+          {/* Floating PDF card decorations */}
+          <Box sx={{
+            position: 'absolute', right: 40, top: 80,
+            width: 90, height: 118, borderRadius: '12px',
+            bgcolor: '#c4b5fd', opacity: 0.12,
+            animation: 'floatCard 6s ease-in-out infinite',
+            transform: 'rotate(-8deg)',
+          }} />
+          <Box sx={{
+            position: 'absolute', right: 60, top: 100,
+            width: 90, height: 118, borderRadius: '12px',
+            bgcolor: '#818cf8', opacity: 0.1,
+            animation: 'floatCard 6s ease-in-out 2s infinite',
+            transform: 'rotate(-3deg)',
+          }} />
+
+          {/* Brand */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 7 }}>
+            <LogoIcon size={36} borderRadius={10} />
+            <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 16, letterSpacing: -0.3 }}>
+              MultiPDF<span style={{ color: '#818cf8' }}>ToExcel</span>
+            </Typography>
+          </Box>
+
+          {/* Live badge */}
+          <Box sx={{
+            display: 'inline-flex', alignItems: 'center', gap: 1, mb: 4,
+            bgcolor: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)',
+            borderRadius: 10, px: 2, py: 0.8, width: 'fit-content',
+          }}>
+            <Box sx={{
+              width: 7, height: 7, borderRadius: '50%', bgcolor: '#10b981',
+              animation: 'blink 2.5s ease infinite',
+            }} />
+            <Typography sx={{ color: '#6ee7b7', fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>
+              AI ENGINE LIVE
+            </Typography>
+          </Box>
+
+          {/* Headline */}
+          <Typography sx={{
+            fontSize: { md: 40, lg: 50 }, fontWeight: 900, lineHeight: 1.07, mb: 3,
+            letterSpacing: -1.5,
+            background: 'linear-gradient(135deg, #ffffff 0%, #c4b5fd 40%, #818cf8 70%, #38bdf8 100%)',
+            backgroundSize: '200% 200%',
+            animation: 'shimmer 7s ease infinite',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+          }}>
+            Extract data<br />from any PDF<br />in seconds.
           </Typography>
-        </Box>
 
-        <Typography sx={{
-          fontSize: { md: 44, lg: 56 }, fontWeight: 900, lineHeight: 1.05, mb: 3,
-          background: 'linear-gradient(135deg, #ffffff 0%, #c4b5fd 40%, #818cf8 70%, #06b6d4 100%)',
-          backgroundSize: '200% 200%',
-          animation: 'gradientShift 6s ease infinite',
-          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-        }}>
-          Extract data<br />from any PDF<br />in seconds.
-        </Typography>
+          <Typography sx={{
+            color: 'rgba(255,255,255,0.35)', fontSize: 15, lineHeight: 1.8, mb: 6, maxWidth: 380,
+          }}>
+            Upload hundreds of PDFs. AI reads every page — scanned or digital —
+            and outputs a clean, structured Excel file instantly.
+          </Typography>
 
-        <Typography sx={{ color: 'rgba(255,255,255,0.45)', fontSize: 17, lineHeight: 1.7, mb: 5, maxWidth: 460 }}>
-          Upload hundreds of PDFs. AI reads every page — scanned or digital —
-          and outputs a clean, structured Excel file instantly.
-        </Typography>
-
-        {/* Stats row */}
-        <Box sx={{ display: 'flex', gap: 4 }}>
-          {[
-            { value: '10x', label: 'Faster than manual' },
-            { value: '95%+', label: 'Accuracy rate' },
-            { value: '< 10s', label: 'Per 10 files' },
-          ].map((s) => (
-            <Box key={s.label}>
-              <Typography sx={{
-                fontSize: 28, fontWeight: 900,
-                background: 'linear-gradient(135deg, #818cf8, #06b6d4)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-              }}>{s.value}</Typography>
-              <Typography sx={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, fontWeight: 500 }}>{s.label}</Typography>
-            </Box>
-          ))}
-        </Box>
-      </Box>
-
-      {/* RIGHT — login card */}
-      <Box sx={{
-        width: { xs: '100%', md: 500 },
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        p: 3, position: 'relative', zIndex: 1,
-        animation: 'fadeUp 0.8s ease 0.2s both',
-      }}>
-        <Box sx={{
-          width: '100%', maxWidth: 420,
-          bgcolor: 'rgba(15,15,35,0.8)',
-          backdropFilter: 'blur(40px)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 5, p: { xs: 4, sm: 5 },
-          boxShadow: '0 32px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06)',
-          animation: 'glowPulse 6s ease infinite',
-        }}>
-          {/* Logo */}
-          <Box sx={{ textAlign: 'center', mb: 5 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2.5 }}>
-              <Box sx={{ boxShadow: '0 12px 32px rgba(99,102,241,0.55)', borderRadius: '18px' }}>
-                <LogoIcon size={64} borderRadius={18} />
+          {/* Stats row */}
+          <Box sx={{ display: 'flex', gap: 5 }}>
+            {[
+              { v: '100x',  l: 'Faster than manual' },
+              { v: '95%+',  l: 'Extraction accuracy' },
+              { v: '< 10s', l: 'Per 10 files' },
+            ].map((s) => (
+              <Box key={s.l}>
+                <Typography sx={{
+                  fontSize: 22, fontWeight: 900,
+                  background: 'linear-gradient(135deg, #a5b4fc, #38bdf8)',
+                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+                }}>{s.v}</Typography>
+                <Typography sx={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, fontWeight: 500, mt: 0.2 }}>{s.l}</Typography>
               </Box>
-            </Box>
-            <Typography sx={{ color: 'white', fontWeight: 900, fontSize: 24, letterSpacing: -0.5 }}>
-              MultiPDFToExcel
-            </Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, mt: 0.5 }}>
-              AI-Powered Document Intelligence
+            ))}
+          </Box>
+        </Box>
+
+        {/* ── RIGHT: Cream login panel ── */}
+        <Box sx={{
+          width: { xs: '100%', md: 420 },
+          bgcolor: '#e8e2d8',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          px: { xs: 3.5, md: 5.5 },
+          py: { xs: 5, md: 7 },
+        }}>
+          {/* Mobile brand */}
+          <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1.5, mb: 5 }}>
+            <LogoIcon size={32} borderRadius={8} />
+            <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#0c0c0c' }}>
+              MultiPDF<span style={{ color: '#6366f1' }}>ToExcel</span>
             </Typography>
           </Box>
 
-          {/* Divider with text */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-            <Box sx={{ flex: 1, height: 1, bgcolor: 'rgba(255,255,255,0.08)' }} />
-            <Typography sx={{ color: 'rgba(255,255,255,0.25)', fontSize: 12 }}>Sign in to continue</Typography>
-            <Box sx={{ flex: 1, height: 1, bgcolor: 'rgba(255,255,255,0.08)' }} />
-          </Box>
+          <Typography sx={{
+            fontSize: 30, fontWeight: 900, color: '#0c0c0c',
+            letterSpacing: -0.8, mb: 1, lineHeight: 1.2,
+          }}>
+            Welcome back
+          </Typography>
+          <Typography sx={{ fontSize: 14, color: '#64748b', mb: 7, lineHeight: 1.65 }}>
+            Sign in to access your extraction workspace.
+          </Typography>
 
-          {/* Google Button */}
-          <Button fullWidth size="large" onClick={handleGoogleLogin}
+          {/* Google button */}
+          <Button
+            fullWidth
+            className="google-btn"
+            onClick={handleGoogleLogin}
             sx={{
-              py: 1.8, borderRadius: 3, fontSize: 15, fontWeight: 700,
-              bgcolor: '#161b2e', color: '#f1f5f9', gap: 1.5, border: '1px solid rgba(255,255,255,0.12)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-              '&:hover': {
-                bgcolor: 'rgba(255,255,255,0.95)',
-                transform: 'translateY(-2px)',
-                boxShadow: '0 16px 40px rgba(0,0,0,0.4)',
-              },
-              transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
-            }}>
+              py: 2,
+              borderRadius: '14px',
+              bgcolor: '#0c0c0c',
+              color: 'white',
+              fontWeight: 700,
+              fontSize: 15,
+              gap: 1.5,
+              mb: 4,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
+              '&:hover': { bgcolor: '#1c1c1c' },
+            }}
+          >
             <svg width="20" height="20" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
               <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -191,18 +214,24 @@ export default function LoginPage() {
           </Button>
 
           {/* Feature pills */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 3, justifyContent: 'center' }}>
-            {['🔒 Secure', '⚡ Fast', '🎯 Accurate'].map((f) => (
-              <Box key={f} sx={{
-                bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 4, px: 1.5, py: 0.5,
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.2, justifyContent: 'center', mb: 6 }}>
+            {[
+              { icon: '🔒', label: 'Secure' },
+              { icon: '⚡', label: 'Fast' },
+              { icon: '🎯', label: 'Accurate' },
+            ].map((f) => (
+              <Box key={f.label} sx={{
+                display: 'flex', alignItems: 'center', gap: 0.7,
+                bgcolor: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.09)',
+                borderRadius: 10, px: 1.5, py: 0.6,
               }}>
-                <Typography sx={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: 600 }}>{f}</Typography>
+                <Typography sx={{ fontSize: 12 }}>{f.icon}</Typography>
+                <Typography sx={{ color: '#374151', fontSize: 11, fontWeight: 600 }}>{f.label}</Typography>
               </Box>
             ))}
           </Box>
 
-          <Typography sx={{ color: 'rgba(255,255,255,0.2)', fontSize: 11, textAlign: 'center', mt: 3 }}>
+          <Typography sx={{ color: 'rgba(0,0,0,0.28)', fontSize: 11, textAlign: 'center', lineHeight: 1.7 }}>
             By signing in you agree to our Terms of Service
           </Typography>
         </Box>
