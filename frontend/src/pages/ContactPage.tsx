@@ -326,7 +326,7 @@ export default function ContactPage() {
 
       </Box>
 
-      </Box> {/* end page content */}
-    </Box> {/* end page wrapper */}
+      </Box>
+    </Box>
   );
 }
