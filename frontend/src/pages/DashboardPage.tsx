@@ -189,16 +189,16 @@ export default function DashboardPage() {
           { label: 'Success Rate', value: `${stats.successRate}%`, icon: '🎯', from: '#f59e0b', to: '#fbbf24', delay: '0.15s' },
         ].map((c) => (
           <Box key={c.label} className="dash-card" sx={{
-            background: 'rgba(13,17,23,0.9)',
+            background: 'white',
             borderRadius: '20px', p: 3,
-            boxShadow: `0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px ${c.from}22`,
-            border: `1px solid ${c.from}30`,
+            boxShadow: `0 4px 20px ${c.from}12, 0 1px 4px rgba(0,0,0,0.06)`,
+            border: `1px solid ${c.from}25`,
             animationDelay: c.delay,
             position: 'relative', overflow: 'hidden',
             cursor: 'default',
             transition: 'all 0.2s ease',
             '&:hover': {
-              boxShadow: `0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px ${c.from}55, 0 0 30px ${c.from}18`,
+              boxShadow: `0 8px 32px ${c.from}22, 0 0 0 1px ${c.from}40`,
               transform: 'translateY(-3px)',
             },
           }}>
@@ -215,8 +215,8 @@ export default function DashboardPage() {
               pointerEvents: 'none',
             }} />
             <Typography sx={{ fontSize: 28, mb: 1.5 }}>{c.icon}</Typography>
-            <Typography sx={{ fontSize: 32, fontWeight: 900, color: '#f1f5f9', lineHeight: 1, mb: 0.5 }}>
-              {isLoading ? <Skeleton width={60} sx={{ bgcolor: 'rgba(255,255,255,0.08)' }} /> : c.value}
+            <Typography sx={{ fontSize: 32, fontWeight: 900, color: '#0c0c0c', lineHeight: 1, mb: 0.5 }}>
+              {isLoading ? <Skeleton width={60} sx={{ bgcolor: 'rgba(0,0,0,0.06)' }} /> : c.value}
             </Typography>
             <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 1 }}>
               {c.label}
@@ -230,7 +230,7 @@ export default function DashboardPage() {
 
         {/* Recent Jobs */}
         <Box sx={{
-          background: 'rgba(13,17,23,0.9)',
+          background: 'white',
           borderRadius: '20px',
           boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
           border: '1px solid rgba(99,102,241,0.15)',
@@ -242,7 +242,7 @@ export default function DashboardPage() {
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
             <Box>
-              <Typography sx={{ fontWeight: 800, fontSize: 16, color: '#f1f5f9' }}>Recent Jobs</Typography>
+              <Typography sx={{ fontWeight: 800, fontSize: 16, color: '#0c0c0c' }}>Recent Jobs</Typography>
               <Typography sx={{ fontSize: 12, color: '#64748b', mt: 0.2 }}>Your latest extraction runs</Typography>
             </Box>
             <Box onClick={() => navigate('/jobs')} sx={{
@@ -260,19 +260,19 @@ export default function DashboardPage() {
           {isLoading
             ? Array.from({ length: 4 }).map((_, i) => (
                 <Box key={i} sx={{ px: 3, py: 2.5, borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', gap: 2, alignItems: 'center' }}>
-                  <Skeleton variant="circular" width={44} height={44} sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+                  <Skeleton variant="circular" width={44} height={44} sx={{ bgcolor: 'rgba(0,0,0,0.06)' }} />
                   <Box sx={{ flex: 1 }}>
-                    <Skeleton width="45%" height={16} sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
-                    <Skeleton width="28%" height={12} sx={{ mt: 0.5, bgcolor: 'rgba(255,255,255,0.04)' }} />
+                    <Skeleton width="45%" height={16} sx={{ bgcolor: 'rgba(0,0,0,0.06)' }} />
+                    <Skeleton width="28%" height={12} sx={{ mt: 0.5, bgcolor: 'rgba(0,0,0,0.04)' }} />
                   </Box>
-                  <Skeleton width={70} height={24} sx={{ borderRadius: 3, bgcolor: 'rgba(255,255,255,0.06)' }} />
+                  <Skeleton width={70} height={24} sx={{ borderRadius: 3, bgcolor: 'rgba(0,0,0,0.06)' }} />
                 </Box>
               ))
             : recentJobs.length === 0
             ? (
               <Box sx={{ py: 10, textAlign: 'center' }}>
                 <Typography sx={{ fontSize: 48, mb: 2 }}>📭</Typography>
-                <Typography sx={{ fontWeight: 700, color: '#e2e8f0', mb: 0.5 }}>No jobs yet</Typography>
+                <Typography sx={{ fontWeight: 700, color: '#1e293b', mb: 0.5 }}>No jobs yet</Typography>
                 <Typography sx={{ color: '#64748b', fontSize: 13, mb: 3 }}>Create your first extraction to get started</Typography>
                 <Box onClick={() => navigate('/jobs/new')} sx={{
                   display: 'inline-flex', alignItems: 'center', gap: 1,
@@ -303,7 +303,7 @@ export default function DashboardPage() {
                   {job.name?.[0]?.toUpperCase()}
                 </Avatar>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: 14, color: '#f1f5f9' }} noWrap>{job.name}</Typography>
+                  <Typography sx={{ fontWeight: 700, fontSize: 14, color: '#0c0c0c' }} noWrap>{job.name}</Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.3 }}>
                     {job.total_files > 0 && (
                       <Typography sx={{ fontSize: 12, color: '#64748b' }}>
@@ -314,7 +314,7 @@ export default function DashboardPage() {
                     <Typography sx={{ fontSize: 12, color: '#64748b' }}>{timeAgo(job.created_at)}</Typography>
                   </Box>
                   {job.status === 'processing' && job.total_files > 0 && (
-                    <Box sx={{ mt: 0.8, height: 3, bgcolor: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                    <Box sx={{ mt: 0.8, height: 3, bgcolor: 'rgba(0,0,0,0.06)', borderRadius: 2, overflow: 'hidden' }}>
                       <Box sx={{
                         height: '100%', borderRadius: 2,
                         width: `${(job.processed_files / job.total_files) * 100}%`,
@@ -327,7 +327,7 @@ export default function DashboardPage() {
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
                   <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: statusDot(job.status), boxShadow: `0 0 6px ${statusDot(job.status)}` }} />
-                  <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>
+                  <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>
                     {statusLabel(job.status)}
                   </Typography>
                 </Box>
@@ -340,12 +340,12 @@ export default function DashboardPage() {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {/* Success donut */}
           <Box sx={{
-            background: 'rgba(13,17,23,0.9)',
+            background: 'white',
             borderRadius: '20px', p: 3,
             boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
             border: '1px solid rgba(16,185,129,0.15)',
           }}>
-            <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#f1f5f9', mb: 0.5 }}>Success Rate</Typography>
+            <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#0c0c0c', mb: 0.5 }}>Success Rate</Typography>
             <Typography sx={{ fontSize: 12, color: '#64748b', mb: 3 }}>Across all completed jobs</Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
               <Box sx={{
@@ -355,7 +355,7 @@ export default function DashboardPage() {
                   rgba(255,255,255,0.06) ${stats.successRate * 3.6}deg 360deg
                 )`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: 'inset 0 0 0 12px #0d1117, 0 0 20px rgba(16,185,129,0.3)',
+                boxShadow: 'inset 0 0 0 12px #ffffff, 0 0 20px rgba(16,185,129,0.3)',
               }}>
                 <Typography sx={{ fontSize: 14, fontWeight: 900, color: '#10b981' }}>
                   {isLoading ? '—' : `${stats.successRate}%`}
@@ -374,12 +374,12 @@ export default function DashboardPage() {
 
           {/* Quick actions */}
           <Box sx={{
-            background: 'rgba(13,17,23,0.9)',
+            background: 'white',
             borderRadius: '20px', p: 3, flex: 1,
             boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
             border: '1px solid rgba(99,102,241,0.15)',
           }}>
-            <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#f1f5f9', mb: 2 }}>Quick Actions</Typography>
+            <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#0c0c0c', mb: 2 }}>Quick Actions</Typography>
             {[
               { label: 'New Extraction Job', sub: 'Upload PDFs and extract data', path: '/jobs/new',   icon: '🚀', color: '#6366f1' },
               { label: 'Manage Templates',   sub: 'Create or edit column templates', path: '/templates', icon: '📋', color: '#8b5cf6' },
@@ -404,12 +404,12 @@ export default function DashboardPage() {
                   flexShrink: 0,
                 }}>{a.icon}</Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#e2e8f0' }}>{a.label}</Typography>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{a.label}</Typography>
                   <Typography sx={{ fontSize: 11, color: '#64748b' }}>{a.sub}</Typography>
                 </Box>
                 <Box className="arrow" sx={{
                   opacity: 0.25, transition: 'all 0.18s ease',
-                  color: '#94a3b8', fontSize: 18,
+                  color: '#64748b', fontSize: 18,
                 }}>›</Box>
               </Box>
             ))}

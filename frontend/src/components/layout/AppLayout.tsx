@@ -68,7 +68,7 @@ export default function AppLayout() {
   const currentPage = NAV.find((n) => location.pathname.startsWith(n.path))?.label ?? '';
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#010409' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#e8e2d8' }}>
       <style>{`
         @keyframes sidebarGlow {
           0%, 100% { box-shadow: 4px 0 40px rgba(99,102,241,0.08); }
@@ -83,7 +83,7 @@ export default function AppLayout() {
       {/* ── Overlay for mobile ── */}
       {isMobile && sidebarOpen && (
         <Box onClick={() => setSidebarOpen(false)}
-          sx={{ position: 'fixed', inset: 0, bgcolor: 'rgba(7,7,26,0.6)', zIndex: 1199, backdropFilter: 'blur(4px)' }} />
+          sx={{ position: 'fixed', inset: 0, bgcolor: 'rgba(0,0,0,0.45)', zIndex: 1199, backdropFilter: 'blur(4px)' }} />
       )}
 
       {/* ── SIDEBAR ── */}
@@ -308,10 +308,10 @@ export default function AppLayout() {
         left: sidebarOpen && !isMobile ? DRAWER_WIDTH : 0,
         right: 0,
         height: 64,
-        background: 'rgba(7,7,26,0.75)',
+        background: 'rgba(232,226,216,0.92)',
         backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(99,102,241,0.12)',
-        boxShadow: '0 1px 0 rgba(99,102,241,0.08), 0 4px 24px rgba(0,0,0,0.3)',
+        borderBottom: '1px solid rgba(0,0,0,0.08)',
+        boxShadow: '0 1px 0 rgba(0,0,0,0.06), 0 4px 24px rgba(0,0,0,0.06)',
         display: 'flex', alignItems: 'center', px: 3, gap: 2,
         transition: 'left 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
@@ -319,15 +319,15 @@ export default function AppLayout() {
         <Box onClick={() => setSidebarOpen((v) => !v)} sx={{
           width: 36, height: 36, borderRadius: 2, cursor: 'pointer',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
-          '&:hover': { bgcolor: 'rgba(99,102,241,0.12)' }, transition: 'all 0.15s',
+          '&:hover': { bgcolor: 'rgba(0,0,0,0.07)' }, transition: 'all 0.15s',
         }}>
           {[0,1,2].map((i) => (
-            <Box key={i} sx={{ width: 18, height: 1.5, bgcolor: 'rgba(255,255,255,0.45)', borderRadius: 1 }} />
+            <Box key={i} sx={{ width: 18, height: 1.5, bgcolor: 'rgba(0,0,0,0.5)', borderRadius: 1 }} />
           ))}
         </Box>
 
         {/* Page title */}
-        <Typography sx={{ fontWeight: 700, fontSize: 15, color: '#f1f5f9', letterSpacing: -0.2 }}>
+        <Typography sx={{ fontWeight: 700, fontSize: 15, color: '#0c0c0c', letterSpacing: -0.2 }}>
           {currentPage}
         </Typography>
 
@@ -375,12 +375,7 @@ export default function AppLayout() {
         minHeight: 'calc(100vh - 64px)',
         transition: 'margin 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
         p: { xs: 2.5, md: 4 },
-        bgcolor: '#010409',
-        backgroundImage: `
-          linear-gradient(rgba(99,102,241,0.025) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(99,102,241,0.025) 1px, transparent 1px)
-        `,
-        backgroundSize: '48px 48px',
+        bgcolor: '#e8e2d8',
       }}>
         <Outlet />
       </Box>
@@ -392,7 +387,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 0.5 }}>
       <Typography sx={{ fontSize: 12, color: '#64748b', width: 72, flexShrink: 0 }}>{label}</Typography>
-      <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0' }}>{value}</Typography>
+      <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{value}</Typography>
     </Box>
   );
 }

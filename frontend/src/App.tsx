@@ -29,16 +29,16 @@ const qc = new QueryClient({
 
 const theme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: 'light',
     primary:    { main: '#6366f1' },
     secondary:  { main: '#8b5cf6' },
-    background: { default: '#010409', paper: '#0d1117' },
+    background: { default: '#e8e2d8', paper: '#ffffff' },
     success:    { main: '#10b981' },
     error:      { main: '#ef4444' },
     info:       { main: '#06b6d4' },
     warning:    { main: '#f59e0b' },
-    text:       { primary: '#f1f5f9', secondary: '#94a3b8' },
-    divider:    'rgba(255,255,255,0.06)',
+    text:       { primary: '#0c0c0c', secondary: '#64748b' },
+    divider:    'rgba(0,0,0,0.08)',
   },
   typography: {
     fontFamily: '"Inter", "SF Pro Display", "Roboto", sans-serif',
@@ -52,12 +52,12 @@ const theme = createTheme({
       styleOverrides: `
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         * { box-sizing: border-box; }
-        body { background: #010409 !important; }
+        body { background: #e8e2d8 !important; color: #0c0c0c; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
-        ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.35); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.6); }
-        ::selection { background: rgba(99,102,241,0.3); color: white; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.04); }
+        ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.55); }
+        ::selection { background: rgba(99,102,241,0.2); color: #0c0c0c; }
       `,
     },
     MuiButton: {
@@ -71,10 +71,11 @@ const theme = createTheme({
         },
         containedPrimary: {
           background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+          color: 'white',
           '&:hover': {
             background: 'linear-gradient(135deg, #5254cc 0%, #7c3aed 100%)',
             transform: 'translateY(-1px)',
-            boxShadow: '0 8px 24px rgba(99,102,241,0.5)',
+            boxShadow: '0 8px 24px rgba(99,102,241,0.4)',
           },
           transition: 'all 0.2s ease',
         },
@@ -84,9 +85,9 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundImage: 'none',
-          background: '#0d1117',
-          border: '1px solid rgba(255,255,255,0.06)',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.3)',
+          backgroundColor: '#ffffff',
+          border: '1px solid rgba(0,0,0,0.07)',
+          boxShadow: '0 2px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)',
         },
       },
     },
@@ -97,8 +98,8 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           '& .MuiOutlinedInput-root': {
-            background: 'rgba(255,255,255,0.03)',
-            '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' },
+            background: 'rgba(255,255,255,0.8)',
+            '& fieldset': { borderColor: 'rgba(0,0,0,0.12)' },
             '&:hover fieldset': { borderColor: '#818cf8' },
             '&.Mui-focused fieldset': { borderColor: '#6366f1', borderWidth: 2 },
           },
@@ -108,21 +109,21 @@ const theme = createTheme({
     },
     MuiTableCell: {
       styleOverrides: {
-        root: { borderColor: 'rgba(255,255,255,0.06)' },
-        head: { background: '#0a0f1a', color: '#94a3b8', fontWeight: 700 },
+        root: { borderColor: 'rgba(0,0,0,0.07)' },
+        head: { background: '#f5ede0', color: '#374151', fontWeight: 700 },
       },
     },
     MuiDivider: {
-      styleOverrides: { root: { borderColor: 'rgba(255,255,255,0.06)' } },
+      styleOverrides: { root: { borderColor: 'rgba(0,0,0,0.08)' } },
     },
     MuiDataGrid: {
       styleOverrides: {
         root: {
           border: 'none',
-          '& .MuiDataGrid-columnHeaders': { background: '#0a0f1a', borderBottom: '1px solid rgba(255,255,255,0.06)' },
-          '& .MuiDataGrid-row:hover': { background: 'rgba(99,102,241,0.06)' },
-          '& .MuiDataGrid-cell': { borderColor: 'rgba(255,255,255,0.04)' },
-          '& .MuiDataGrid-footerContainer': { borderTop: '1px solid rgba(255,255,255,0.06)' },
+          '& .MuiDataGrid-columnHeaders': { background: '#f5ede0', borderBottom: '1px solid rgba(0,0,0,0.08)' },
+          '& .MuiDataGrid-row:hover': { background: 'rgba(99,102,241,0.04)' },
+          '& .MuiDataGrid-cell': { borderColor: 'rgba(0,0,0,0.05)' },
+          '& .MuiDataGrid-footerContainer': { borderTop: '1px solid rgba(0,0,0,0.08)' },
         },
       },
     },
