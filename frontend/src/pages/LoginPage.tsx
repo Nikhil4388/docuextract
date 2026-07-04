@@ -171,7 +171,7 @@ export default function LoginPage() {
           <Button fullWidth size="large" onClick={handleGoogleLogin}
             sx={{
               py: 1.8, borderRadius: 3, fontSize: 15, fontWeight: 700,
-              bgcolor: 'white', color: '#1a1a2e', gap: 1.5,
+              bgcolor: '#161b2e', color: '#f1f5f9', gap: 1.5, border: '1px solid rgba(255,255,255,0.12)',
               border: '1px solid rgba(255,255,255,0.1)',
               boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
               '&:hover': {

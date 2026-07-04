@@ -93,7 +93,7 @@ export default function JobDetailPage() {
           return (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <svg width={40} height={40} style={{ transform: 'rotate(-90deg)' }}>
-                <circle cx={cx} cy={cy} r={r} fill="none" stroke="#e5e7eb" strokeWidth={stroke} />
+                <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={stroke} />
                 <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={stroke}
                   strokeDasharray={`${dash} ${circumference}`} strokeLinecap="round" />
               </svg>
@@ -181,7 +181,7 @@ export default function JobDetailPage() {
       {/* Results Table */}
       {(job.status === 'completed' || job.status === 'failed') && (
         <Paper sx={{ borderRadius: 3, overflow: 'hidden' }}>
-          <Box sx={{ p: 2, borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ p: 2, borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 2 }}>
             <Typography variant="h6" fontWeight={600} sx={{ flex: 1 }}>Extracted Data</Typography>
             <TextField
               size="small"
@@ -207,7 +207,7 @@ export default function JobDetailPage() {
             disableRowSelectionOnClick
             sx={{
               border: 'none',
-              '& .MuiDataGrid-columnHeaders': { bgcolor: '#f8f9fa' },
+              '& .MuiDataGrid-columnHeaders': { bgcolor: '#0a0f1a' },
             }}
           />
         </Paper>

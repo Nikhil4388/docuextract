@@ -9,12 +9,12 @@ import { useAuthStore } from '../store/authStore';
 const STATUS_TABS = ['all', 'pending', 'processing', 'completed', 'failed'] as const;
 
 const STATUS_STYLE: Record<string, { dot: string; bg: string; text: string; label: string }> = {
-  all:        { dot: '#6366f1', bg: '#ede9fe', text: '#5b21b6', label: 'All' },
-  pending:    { dot: '#f59e0b', bg: '#fef3c7', text: '#92400e', label: 'Pending' },
-  processing: { dot: '#3b82f6', bg: '#dbeafe', text: '#1e40af', label: 'Processing' },
-  completed:  { dot: '#10b981', bg: '#d1fae5', text: '#065f46', label: 'Completed' },
-  failed:     { dot: '#ef4444', bg: '#fee2e2', text: '#991b1b', label: 'Failed' },
-  cancelled:  { dot: '#94a3b8', bg: '#f1f5f9', text: '#475569', label: 'Cancelled' },
+  all:        { dot: '#818cf8', bg: 'rgba(99,102,241,0.15)',  text: '#a5b4fc', label: 'All' },
+  pending:    { dot: '#fbbf24', bg: 'rgba(245,158,11,0.15)',  text: '#fcd34d', label: 'Pending' },
+  processing: { dot: '#60a5fa', bg: 'rgba(59,130,246,0.15)',  text: '#93c5fd', label: 'Processing' },
+  completed:  { dot: '#34d399', bg: 'rgba(16,185,129,0.15)',  text: '#6ee7b7', label: 'Completed' },
+  failed:     { dot: '#f87171', bg: 'rgba(239,68,68,0.15)',   text: '#fca5a5', label: 'Failed' },
+  cancelled:  { dot: '#94a3b8', bg: 'rgba(148,163,184,0.1)', text: '#94a3b8', label: 'Cancelled' },
 };
 
 function timeAgo(d: string) {
@@ -121,7 +121,7 @@ export default function JobsPage() {
       {/* HEADER */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
         <Box>
-          <Typography sx={{ fontSize: 22, fontWeight: 900, color: '#0f172a', letterSpacing: -0.3 }}>
+          <Typography sx={{ fontSize: 22, fontWeight: 900, color: '#f1f5f9', letterSpacing: -0.3 }}>
             Extraction Jobs
           </Typography>
           <Typography sx={{ fontSize: 13, color: '#94a3b8', mt: 0.2 }}>
@@ -132,8 +132,8 @@ export default function JobsPage() {
         <Box onClick={() => refetch()} sx={{
           width: 40, height: 40, borderRadius: 2.5, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          bgcolor: 'white', border: '1px solid #e2e8f0', color: '#64748b',
-          '&:hover': { bgcolor: '#f8faff', borderColor: '#c7d2fe', color: '#6366f1' },
+          bgcolor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8',
+          '&:hover': { bgcolor: 'rgba(99,102,241,0.1)', borderColor: 'rgba(99,102,241,0.4)', color: '#a5b4fc' },
           transition: 'all 0.15s ease',
           boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
         }}>
@@ -175,7 +175,7 @@ export default function JobsPage() {
                 </svg>
               </InputAdornment>
             ),
-            sx: { bgcolor: 'white', borderRadius: 2.5, fontSize: 14, '& fieldset': { borderColor: '#e2e8f0' } },
+            sx: { bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 2.5, fontSize: 14, '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' } },
           }}
           sx={{ width: 240 }}
         />
@@ -188,9 +188,9 @@ export default function JobsPage() {
               <Box key={tab} onClick={() => setActiveTab(tab)} sx={{
                 display: 'flex', alignItems: 'center', gap: 0.8,
                 px: 2, py: 0.7, borderRadius: 6, cursor: 'pointer',
-                bgcolor: isActive ? s.bg : 'white',
-                border: `1px solid ${isActive ? s.dot + '50' : '#e2e8f0'}`,
-                boxShadow: isActive ? `0 2px 8px ${s.dot}25` : '0 1px 3px rgba(0,0,0,0.04)',
+                bgcolor: isActive ? s.bg : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${isActive ? s.dot + '60' : 'rgba(255,255,255,0.08)'}`,
+                boxShadow: isActive ? `0 2px 8px ${s.dot}40` : 'none',
                 transition: 'all 0.15s ease',
                 '&:hover': { bgcolor: s.bg, borderColor: s.dot + '40' },
               }}>
@@ -200,7 +200,7 @@ export default function JobsPage() {
                 </Typography>
                 {counts[tab] !== undefined && (
                   <Box sx={{
-                    px: 0.8, borderRadius: 4, bgcolor: isActive ? s.dot + '20' : '#f1f5f9',
+                    px: 0.8, borderRadius: 4, bgcolor: isActive ? s.dot + '25' : 'rgba(255,255,255,0.07)',
                     display: 'inline-flex', alignItems: 'center',
                   }}>
                     <Typography sx={{ fontSize: 11, fontWeight: 700, color: isActive ? s.text : '#94a3b8', lineHeight: '18px' }}>
@@ -228,9 +228,9 @@ export default function JobsPage() {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {Array.from({ length: 5 }).map((_, i) => (
             <Box key={i} sx={{
-              bgcolor: 'white', borderRadius: '16px', p: 2.5,
+              bgcolor: '#0d1117', borderRadius: '16px', p: 2.5,
               display: 'flex', gap: 2, alignItems: 'center',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              border: '1px solid rgba(255,255,255,0.06)',
             }}>
               <Skeleton variant="circular" width={48} height={48} />
               <Box sx={{ flex: 1 }}>
@@ -243,11 +243,11 @@ export default function JobsPage() {
         </Box>
       ) : filtered.length === 0 ? (
         <Box sx={{
-          bgcolor: 'white', borderRadius: '20px', py: 12, textAlign: 'center',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.04)', border: '1px solid #f1f5f9',
+          bgcolor: '#0d1117', borderRadius: '20px', py: 12, textAlign: 'center',
+          border: '1px solid rgba(255,255,255,0.06)',
         }}>
           <Typography sx={{ fontSize: 56, mb: 2 }}>{jobs?.length === 0 ? '🚀' : '🔍'}</Typography>
-          <Typography sx={{ fontWeight: 800, color: '#1e293b', fontSize: 18, mb: 1 }}>
+          <Typography sx={{ fontWeight: 800, color: '#f1f5f9', fontSize: 18, mb: 1 }}>
             {jobs?.length === 0 ? 'No jobs yet' : 'No matches found'}
           </Typography>
           <Typography sx={{ color: '#94a3b8', fontSize: 14, mb: 3 }}>
@@ -281,14 +281,13 @@ export default function JobsPage() {
                 onClick={() => navigate(`/jobs/${job.id}`)}
                 sx={{
                   animationDelay: `${Math.min(idx * 0.04, 0.3)}s`,
-                  bgcolor: 'white', borderRadius: '16px',
+                  bgcolor: '#0d1117', borderRadius: '16px',
                   p: 2.5, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', gap: 2.5,
-                  border: '1px solid #f1f5f9',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                  border: '1px solid rgba(255,255,255,0.06)',
                   '&:hover': {
-                    borderColor: '#c7d2fe',
-                    boxShadow: '0 8px 32px rgba(99,102,241,0.12)',
+                    borderColor: 'rgba(99,102,241,0.4)',
+                    boxShadow: '0 8px 32px rgba(99,102,241,0.2)',
                     transform: 'translateY(-2px)',
                   },
                   transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -303,7 +302,7 @@ export default function JobsPage() {
                 </Avatar>
 
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: 15, color: '#0f172a', mb: 0.3 }} noWrap>
+                  <Typography sx={{ fontWeight: 700, fontSize: 15, color: '#f1f5f9', mb: 0.3 }} noWrap>
                     {job.name}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -319,7 +318,7 @@ export default function JobsPage() {
                   </Box>
                   {job.status === 'processing' && job.total_files > 0 && (
                     <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Box sx={{ flex: 1, height: 4, bgcolor: '#f1f5f9', borderRadius: 2, overflow: 'hidden' }}>
+                      <Box sx={{ flex: 1, height: 4, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}>
                         <Box sx={{
                           height: '100%', borderRadius: 2,
                           width: `${pct}%`,
@@ -347,7 +346,7 @@ export default function JobsPage() {
                   </Box>
                 </Box>
 
-                <Box sx={{ color: '#cbd5e1', flexShrink: 0, fontSize: 20, lineHeight: 1 }}>›</Box>
+                <Box sx={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0, fontSize: 20, lineHeight: 1 }}>›</Box>
               </Box>
             );
           })}

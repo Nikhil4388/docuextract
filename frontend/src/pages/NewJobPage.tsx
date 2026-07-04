@@ -40,11 +40,11 @@ export default function NewJobPage() {
       <Box sx={{ maxWidth: 500, mx: 'auto', mt: 8, px: 2 }}>
         <Box sx={{
           p: 5, borderRadius: '24px', textAlign: 'center',
-          bgcolor: 'white', border: '1px solid #fde68a',
+          bgcolor: '#0d1117', border: '1px solid rgba(245,158,11,0.35)',
           boxShadow: '0 8px 32px rgba(245,158,11,0.15)',
         }}>
           <Typography sx={{ fontSize: 64, mb: 2 }}>🔒</Typography>
-          <Typography sx={{ fontSize: 22, fontWeight: 900, color: '#0f172a', mb: 1 }}>
+          <Typography sx={{ fontSize: 22, fontWeight: 900, color: '#f1f5f9', mb: 1 }}>
             {hitFreeLimit ? 'Free limit reached' : 'Limit reached'}
           </Typography>
           <Typography sx={{ color: '#64748b', mb: 1 }}>
@@ -168,7 +168,7 @@ export default function NewJobPage() {
           <Box sx={{ color: '#e2e8f0' }}>/</Box>
           <Typography sx={{ fontSize: 13, color: '#6366f1', fontWeight: 600 }}>New Job</Typography>
         </Box>
-        <Typography sx={{ fontSize: 24, fontWeight: 900, color: '#0f172a', letterSpacing: -0.3 }}>
+        <Typography sx={{ fontSize: 24, fontWeight: 900, color: '#f1f5f9', letterSpacing: -0.3 }}>
           New Extraction Job
         </Typography>
         <Typography sx={{ fontSize: 14, color: '#94a3b8', mt: 0.5 }}>
@@ -185,8 +185,8 @@ export default function NewJobPage() {
             <Box key={s.id} onClick={() => done && setStep(i)} sx={{
               display: 'flex', alignItems: 'center', gap: 1.5,
               px: 2, py: 1.2, borderRadius: 3, flex: 1, minWidth: 120,
-              bgcolor: active ? 'white' : done ? '#f0fdf4' : '#f8fafc',
-              border: `1.5px solid ${active ? '#6366f1' : done ? '#86efac' : '#e2e8f0'}`,
+              bgcolor: active ? '#161b27' : done ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.03)',
+              border: `1.5px solid ${active ? '#6366f1' : done ? '#10b981' : 'rgba(255,255,255,0.1)'}`,
               boxShadow: active ? '0 4px 16px rgba(99,102,241,0.2)' : 'none',
               cursor: done ? 'pointer' : 'default',
               transition: 'all 0.2s ease',
@@ -195,14 +195,14 @@ export default function NewJobPage() {
                 width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: done ? 14 : 15,
-                bgcolor: active ? '#6366f1' : done ? '#10b981' : '#f1f5f9',
+                bgcolor: active ? '#6366f1' : done ? '#10b981' : 'rgba(255,255,255,0.1)',
               }}>
                 {done ? '✓' : <span style={{ fontSize: 15 }}>{s.icon}</span>}
               </Box>
               <Box sx={{ minWidth: 0 }}>
                 <Typography sx={{
                   fontSize: 13, fontWeight: 700,
-                  color: active ? '#4f46e5' : done ? '#065f46' : '#64748b',
+                  color: active ? '#a5b4fc' : done ? '#6ee7b7' : '#64748b',
                 }} noWrap>
                   {s.label}
                 </Typography>
@@ -215,9 +215,9 @@ export default function NewJobPage() {
 
       {/* Content card */}
       <Box sx={{
-        bgcolor: 'white', borderRadius: '20px', p: 4,
+        bgcolor: '#0d1117', borderRadius: '20px', p: 4,
         boxShadow: '0 4px 20px rgba(99,102,241,0.08), 0 2px 8px rgba(0,0,0,0.04)',
-        border: '1px solid rgba(255,255,255,0.8)',
+        border: '1px solid rgba(255,255,255,0.08)',
       }}>
         {error && (
           <Alert severity="error" onClose={() => setError(null)}
@@ -228,7 +228,7 @@ export default function NewJobPage() {
           {/* STEP 0: Details */}
           {step === 0 && (
             <Box>
-              <Typography sx={{ fontSize: 18, fontWeight: 800, color: '#0f172a', mb: 0.5 }}>Job Details</Typography>
+              <Typography sx={{ fontSize: 18, fontWeight: 800, color: '#f1f5f9', mb: 0.5 }}>Job Details</Typography>
               <Typography sx={{ fontSize: 14, color: '#94a3b8', mb: 3 }}>Give this job a name and choose which columns to extract</Typography>
               <TextField
                 label="Job Name" fullWidth value={jobName}
@@ -264,7 +264,7 @@ export default function NewJobPage() {
           {/* STEP 1: Upload */}
           {step === 1 && (
             <Box>
-              <Typography sx={{ fontSize: 18, fontWeight: 800, color: '#0f172a', mb: 0.5 }}>Upload PDFs</Typography>
+              <Typography sx={{ fontSize: 18, fontWeight: 800, color: '#f1f5f9', mb: 0.5 }}>Upload PDFs</Typography>
               <Typography sx={{ fontSize: 14, color: '#94a3b8', mb: 3 }}>
                 Drag and drop or click to select PDF files for extraction
               </Typography>
@@ -277,7 +277,7 @@ export default function NewJobPage() {
                 sx={{
                   border: `2px dashed ${dragOver ? '#6366f1' : uploadedFiles.length > 0 ? '#10b981' : '#c7d2fe'}`,
                   borderRadius: 4, p: 5, textAlign: 'center',
-                  bgcolor: dragOver ? 'rgba(99,102,241,0.04)' : uploadedFiles.length > 0 ? 'rgba(16,185,129,0.03)' : '#fafbff',
+                  bgcolor: dragOver ? 'rgba(99,102,241,0.08)' : uploadedFiles.length > 0 ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.03)',
                   transition: 'all 0.2s ease',
                   cursor: 'pointer',
                   mb: 3,
@@ -289,14 +289,14 @@ export default function NewJobPage() {
                 </Typography>
                 {uploadedFiles.length > 0 ? (
                   <>
-                    <Typography sx={{ fontSize: 18, fontWeight: 800, color: '#065f46', mb: 0.5 }}>
+                    <Typography sx={{ fontSize: 18, fontWeight: 800, color: '#6ee7b7', mb: 0.5 }}>
                       {uploadedFiles.length} file{uploadedFiles.length !== 1 ? 's' : ''} selected
                     </Typography>
                     <Typography sx={{ fontSize: 13, color: '#94a3b8' }}>Click to add more PDFs</Typography>
                   </>
                 ) : (
                   <>
-                    <Typography sx={{ fontSize: 16, fontWeight: 700, color: '#334155', mb: 0.5 }}>
+                    <Typography sx={{ fontSize: 16, fontWeight: 700, color: '#e2e8f0', mb: 0.5 }}>
                       Drop PDFs here or click to browse
                     </Typography>
                     <Typography sx={{ fontSize: 13, color: '#94a3b8' }}>
@@ -314,14 +314,14 @@ export default function NewJobPage() {
               {uploadedFiles.length > 0 && (
                 <Box sx={{
                   maxHeight: 200, overflowY: 'auto',
-                  bgcolor: '#f8fafc', borderRadius: 3, p: 2,
-                  border: '1px solid #e2e8f0',
+                  bgcolor: 'rgba(255,255,255,0.04)', borderRadius: 3, p: 2,
+                  border: '1px solid rgba(255,255,255,0.08)',
                 }}>
                   {uploadedFiles.slice(0, 20).map((f, i) => (
                     <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.8,
-                      borderBottom: i < uploadedFiles.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                      borderBottom: i < uploadedFiles.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
                       <Typography sx={{ fontSize: 14 }}>📄</Typography>
-                      <Typography sx={{ fontSize: 13, color: '#334155', flex: 1 }} noWrap>{f.name}</Typography>
+                      <Typography sx={{ fontSize: 13, color: '#e2e8f0', flex: 1 }} noWrap>{f.name}</Typography>
                       <Typography sx={{ fontSize: 11, color: '#94a3b8', flexShrink: 0 }}>
                         {(f.size / 1024).toFixed(0)} KB
                       </Typography>
@@ -340,14 +340,14 @@ export default function NewJobPage() {
               )}
 
               {uploading && (
-                <Box sx={{ mt: 2, p: 2.5, bgcolor: '#f0f9ff', borderRadius: 3, border: '1px solid #bae6fd' }}>
+                <Box sx={{ mt: 2, p: 2.5, bgcolor: 'rgba(6,182,212,0.07)', borderRadius: 3, border: '1px solid rgba(6,182,212,0.2)' }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#0369a1' }}>Uploading files…</Typography>
-                    <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#0369a1' }}>{uploadProgress}%</Typography>
+                    <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#67e8f9' }}>Uploading files…</Typography>
+                    <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#67e8f9' }}>{uploadProgress}%</Typography>
                   </Box>
                   <LinearProgress variant="determinate" value={uploadProgress}
                     sx={{ height: 6, borderRadius: 3,
-                      bgcolor: '#bae6fd',
+                      bgcolor: 'rgba(6,182,212,0.2)',
                       '& .MuiLinearProgress-bar': { background: 'linear-gradient(90deg, #3b82f6, #06b6d4)', borderRadius: 3 } }} />
                 </Box>
               )}
@@ -357,7 +357,7 @@ export default function NewJobPage() {
           {/* STEP 2: Model */}
           {step === 2 && (
             <Box>
-              <Typography sx={{ fontSize: 18, fontWeight: 800, color: '#0f172a', mb: 0.5 }}>AI Model</Typography>
+              <Typography sx={{ fontSize: 18, fontWeight: 800, color: '#f1f5f9', mb: 0.5 }}>AI Model</Typography>
               <Typography sx={{ fontSize: 14, color: '#94a3b8', mb: 3 }}>
                 Choose the Claude model — faster models work great for most jobs
               </Typography>
@@ -369,7 +369,7 @@ export default function NewJobPage() {
                     sx={{
                       p: 2.5, borderRadius: 3, cursor: 'pointer',
                       border: `1.5px solid ${llmModel === m.value ? m.color : '#e2e8f0'}`,
-                      bgcolor: llmModel === m.value ? `${m.color}08` : 'white',
+                      bgcolor: llmModel === m.value ? `${m.color}14` : 'rgba(255,255,255,0.03)',
                       display: 'flex', alignItems: 'center', gap: 2.5,
                       boxShadow: llmModel === m.value ? `0 4px 16px ${m.color}25` : '0 1px 4px rgba(0,0,0,0.04)',
                       transition: 'all 0.2s ease',
@@ -388,7 +388,7 @@ export default function NewJobPage() {
                     </Box>
                     <Box sx={{ flex: 1 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.3 }}>
-                        <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#1e293b' }}>{m.label}</Typography>
+                        <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9' }}>{m.label}</Typography>
                         <Box sx={{ px: 1, py: 0.3, borderRadius: 4, bgcolor: m.color + '15' }}>
                           <Typography sx={{ fontSize: 10, fontWeight: 700, color: m.color }}>{m.tag}</Typography>
                         </Box>
@@ -403,11 +403,11 @@ export default function NewJobPage() {
                 control={<Switch checked={useUserApiKey} onChange={(e) => setUseUserApiKey(e.target.checked)} />}
                 label={
                   <Box>
-                    <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Use my own API key</Typography>
+                    <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0' }}>Use my own API key</Typography>
                     <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>Configure in Settings → API Keys</Typography>
                   </Box>
                 }
-                sx={{ mx: 0, px: 2, py: 1.5, borderRadius: 3, border: '1px solid #f1f5f9',
+                sx={{ mx: 0, px: 2, py: 1.5, borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)',
                   width: '100%', '&:hover': { bgcolor: '#fafbff' }, transition: 'all 0.15s' }}
               />
             </Box>
@@ -416,7 +416,7 @@ export default function NewJobPage() {
           {/* STEP 3: Review */}
           {step === 3 && (
             <Box>
-              <Typography sx={{ fontSize: 18, fontWeight: 800, color: '#0f172a', mb: 0.5 }}>Ready to Launch</Typography>
+              <Typography sx={{ fontSize: 18, fontWeight: 800, color: '#f1f5f9', mb: 0.5 }}>Ready to Launch</Typography>
               <Typography sx={{ fontSize: 14, color: '#94a3b8', mb: 3 }}>Review your configuration before starting extraction</Typography>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 4 }}>
@@ -429,11 +429,11 @@ export default function NewJobPage() {
                 ].map((row) => (
                   <Box key={row.label} sx={{
                     display: 'flex', alignItems: 'center', gap: 2,
-                    p: 2, bgcolor: '#f8fafc', borderRadius: 2.5, border: '1px solid #f1f5f9',
+                    p: 2, bgcolor: 'rgba(255,255,255,0.04)', borderRadius: 2.5, border: '1px solid rgba(255,255,255,0.06)',
                   }}>
                     <Typography sx={{ fontSize: 20, flexShrink: 0 }}>{row.icon}</Typography>
                     <Typography sx={{ color: '#64748b', fontSize: 13, width: 100, flexShrink: 0 }}>{row.label}</Typography>
-                    <Typography sx={{ fontWeight: 600, fontSize: 13, color: '#1e293b', flex: 1 }}>{row.value}</Typography>
+                    <Typography sx={{ fontWeight: 600, fontSize: 13, color: '#e2e8f0', flex: 1 }}>{row.value}</Typography>
                   </Box>
                 ))}
               </Box>
@@ -453,11 +453,11 @@ export default function NewJobPage() {
         </Box>
 
         {/* Navigation */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 4, pt: 3, borderTop: '1px solid #f1f5f9' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 4, pt: 3, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <Box onClick={() => step === 0 ? navigate('/jobs') : setStep((s) => s - 1)} sx={{
             px: 3, py: 1.2, borderRadius: 3, cursor: 'pointer',
-            bgcolor: '#f8fafc', border: '1px solid #e2e8f0', color: '#475569',
-            '&:hover': { bgcolor: '#f1f5f9', color: '#334155' },
+            bgcolor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8',
+            '&:hover': { bgcolor: 'rgba(255,255,255,0.08)', color: '#cbd5e1' },
             transition: 'all 0.15s',
           }}>
             <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
@@ -470,7 +470,7 @@ export default function NewJobPage() {
               px: 4, py: 1.2, borderRadius: 3, cursor: canNext[step] ? 'pointer' : 'not-allowed',
               background: canNext[step]
                 ? 'linear-gradient(135deg, #6366f1, #8b5cf6)'
-                : '#e2e8f0',
+                : 'rgba(255,255,255,0.1)',
               boxShadow: canNext[step] ? '0 4px 16px rgba(99,102,241,0.35)' : 'none',
               '&:hover': canNext[step] ? { opacity: 0.9, transform: 'translateY(-1px)' } : {},
               transition: 'all 0.2s ease',
