@@ -198,7 +198,7 @@ export default function AppLayout() {
               <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, mb: 1.5, lineHeight: 1.5 }}>
                 Donate $10 → 20 jobs unlocked
               </Typography>
-              <Box onClick={() => window.open('https://ko-fi.com/multipdfstoexcel', '_blank')} sx={{
+              <Box onClick={() => window.open('https://ko-fi.com/docuextract_ashen_vercel', '_blank')} sx={{
                 py: 0.8, textAlign: 'center', borderRadius: 2, cursor: 'pointer',
                 background: 'linear-gradient(135deg, #f59e0b, #d97706)',
                 '&:hover': { opacity: 0.9, transform: 'translateY(-1px)' },
@@ -322,7 +322,7 @@ export default function AppLayout() {
           <Box sx={{ display: 'flex', gap: 1 }}>
             {!isSubscribed && !isAdmin && (
               <Button size="small" variant="outlined" fullWidth
-                onClick={() => { setAnchorEl(null); window.open('https://ko-fi.com/multipdfstoexcel', '_blank'); }}
+                onClick={() => { setAnchorEl(null); window.open('https://ko-fi.com/docuextract_ashen_vercel', '_blank'); }}
                 sx={{
                   borderRadius: '10px', fontSize: 11, fontWeight: 700, py: 0.9,
                   borderColor: '#fde68a', color: '#d97706', bgcolor: '#fffbeb',

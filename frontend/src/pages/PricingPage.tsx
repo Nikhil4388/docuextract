@@ -7,7 +7,7 @@ import { CheckCircle, Star, ArrowBack, Favorite, Coffee, OpenInNew } from '@mui/
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
-const KOFI_USERNAME = 'multipdfstoexcel';
+const KOFI_USERNAME = 'docuextract_ashen_vercel';
 
 const ALL_FEATURES = [
   '2 free extraction jobs to try',
