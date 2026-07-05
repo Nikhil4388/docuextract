@@ -272,11 +272,12 @@ async def kofi_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         # Store the unlock for when they sign up (future enhancement)
         return {"received": True, "unlocked": False, "reason": "user_not_found"}
 
-    if not user.is_subscribed:
-        user.is_subscribed = True
-        user.stripe_subscription_id = f"kofi_{data.get('kofi_transaction_id', 'manual')}"
-        await db.commit()
-        logger.info("kofi_user_unlocked", email=email, user_id=str(user.id), amount=amount)
+    # Always reset jobs_used so donor gets a full 20-job balance (handles repeat donors too)
+    user.is_subscribed = True
+    user.jobs_used = 0
+    user.stripe_subscription_id = f"kofi_{data.get('kofi_transaction_id', 'manual')}"
+    await db.commit()
+    logger.info("kofi_user_unlocked", email=email, user_id=str(user.id), amount=amount)
 
     return {"received": True, "unlocked": True}
 

@@ -106,7 +106,7 @@ export default function JobsPage() {
                 : 'Donate again to top up your job balance.'}
             </Typography>
           </Box>
-          <Box onClick={() => navigate('/pricing')} sx={{
+          <Box onClick={() => window.open('https://ko-fi.com/multipdfstoexcel', '_blank')} sx={{
             px: 3, py: 1.2, borderRadius: 3, cursor: 'pointer', flexShrink: 0,
             background: 'linear-gradient(135deg, #f59e0b, #d97706)',
             boxShadow: '0 4px 12px rgba(245,158,11,0.35)',
