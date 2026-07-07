@@ -540,6 +540,62 @@ export default function LandingPage() {
         </Box>
       </Box>
 
+      {/* ── REAL STORY ── */}
+      <Box id="story" sx={{ px: { xs: 3, md: 8, lg: 12 }, pb: { xs: 10, md: 14 }, maxWidth: 1200, mx: 'auto' }}>
+        <Box className="reveal" sx={{ mb: { xs: 6, md: 8 }, textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 2.5, color: '#6366f1', mb: 2 }}>
+            A TRUE STORY
+          </Typography>
+          <Typography sx={{
+            fontSize: { xs: 32, md: 48 }, fontWeight: 900, color: '#0c0c0c',
+            letterSpacing: -1.5, lineHeight: 1.1, mb: 2,
+          }}>
+            The Friday Night Rescue.
+          </Typography>
+          <Typography sx={{ fontSize: 16, color: '#64748b', maxWidth: 560, mx: 'auto', lineHeight: 1.75 }}>
+            Mark had 400 invoices, a canceled weekend, and no way out —
+            until he found DocuExtract. Watch what happened next.
+          </Typography>
+        </Box>
+
+        <Box sx={{
+          borderRadius: '24px',
+          overflow: 'hidden',
+          border: '1px solid rgba(0,0,0,0.08)',
+          boxShadow: '0 8px 48px rgba(99,102,241,0.12)',
+          bgcolor: '#04060e',
+          position: 'relative',
+        }}>
+          <Box sx={{
+            position: 'relative',
+            width: '100%',
+            paddingTop: { xs: '75%', md: '62%' },
+          }}>
+            <Box
+              component="iframe"
+              src="/friday-rescue.html"
+              title="The Friday Night Rescue — DocuExtract Story"
+              scrolling="no"
+              sx={{
+                position: 'absolute',
+                top: 0, left: 0,
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                borderRadius: '24px',
+              }}
+            />
+          </Box>
+        </Box>
+
+        <Box sx={{ textAlign: 'center', mt: 4 }}>
+          <Typography sx={{ fontSize: 14, color: '#94a3b8' }}>
+            That job used to take 12 hours. DocuExtract finished it in{' '}
+            <Box component="span" sx={{ color: '#6366f1', fontWeight: 700 }}>2 minutes</Box>.
+          </Typography>
+        </Box>
+      </Box>
+
       {/* ── FAQ ── */}
       <Box id="faq" sx={{ px: { xs: 3, md: 8, lg: 12 }, pb: { xs: 10, md: 14 }, maxWidth: 860, mx: 'auto' }}>
         <Box ref={addRef(3)} className="reveal" sx={{ mb: { xs: 6, md: 8 }, textAlign: 'center' }}>
