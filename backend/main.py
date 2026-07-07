@@ -73,6 +73,10 @@ def create_app() -> FastAPI:
     app.include_router(jobs.router,      prefix=prefix)
     app.include_router(payments.router,  prefix=prefix)
 
+    # Ko-fi sends webhooks to /api/payments/kofi-webhook (no /v1/).
+    # Register the payments router at /api too so both paths work.
+    app.include_router(payments.router,  prefix="/api")
+
     # ── Startup ───────────────────────────────────────────────────────────────
     @app.on_event("startup")
     async def startup_tasks():
