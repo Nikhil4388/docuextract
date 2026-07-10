@@ -36,6 +36,8 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "https://docuextract.app",
         "https://docuextract-ashen.vercel.app",
+        "https://multipdfstoexcel.com",
+        "https://www.multipdfstoexcel.com",
     ]
 
     # ── OAuth ────────────────────────────────────────────────────────────────
