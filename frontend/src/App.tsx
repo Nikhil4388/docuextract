@@ -23,6 +23,7 @@ import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import ContactPage from './pages/ContactPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000;
 
@@ -272,7 +273,7 @@ export default function App() {
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
 
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </InactivityGuard>
           </BrowserRouter>
