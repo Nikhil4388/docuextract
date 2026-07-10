@@ -674,12 +674,12 @@ export default function LandingPage() {
           <Typography sx={{ fontWeight: 700, fontSize: 13.5, color: '#374151' }}>MultiPDFToExcel</Typography>
         </Box>
         <Typography sx={{ fontSize: 12.5, color: '#94a3b8' }}>
-          © 2025 MultiPDFToExcel. All rights reserved.
+          © 2026 MultiPDFToExcel. All rights reserved.
         </Typography>
         <Box sx={{ display: 'flex', gap: 3 }}>
           {[
-            { label: 'Privacy', action: () => {} },
-            { label: 'Terms',   action: () => {} },
+            { label: 'Privacy', action: () => navigate('/privacy') },
+            { label: 'Terms',   action: () => navigate('/terms') },
             { label: 'Contact', action: () => navigate('/contact') },
           ].map((l) => (
             <Typography

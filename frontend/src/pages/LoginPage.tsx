@@ -1,7 +1,9 @@
 import { Box, Button, Typography } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import LogoIcon from '../components/LogoIcon';
 
 export default function LoginPage() {
+  const navigate = useNavigate();
   const handleGoogleLogin = () => {
     window.location.href = `${import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1'}/auth/google`;
   };
@@ -232,7 +234,10 @@ export default function LoginPage() {
           </Box>
 
           <Typography sx={{ color: 'rgba(0,0,0,0.28)', fontSize: 11, textAlign: 'center', lineHeight: 1.7 }}>
-            By signing in you agree to our Terms of Service
+            By signing in you agree to our{' '}
+            <Box component="span" onClick={() => navigate('/terms')} sx={{ color: '#6366f1', cursor: 'pointer', fontWeight: 600 }}>Terms of Service</Box>
+            {' '}and{' '}
+            <Box component="span" onClick={() => navigate('/privacy')} sx={{ color: '#6366f1', cursor: 'pointer', fontWeight: 600 }}>Privacy Policy</Box>
           </Typography>
         </Box>
       </Box>
