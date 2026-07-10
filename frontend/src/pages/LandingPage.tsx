@@ -544,17 +544,17 @@ export default function LandingPage() {
       <Box id="story" sx={{ px: { xs: 3, md: 8, lg: 12 }, pb: { xs: 10, md: 14 }, maxWidth: 1200, mx: 'auto' }}>
         <Box ref={addRef(6)} className="reveal" sx={{ mb: { xs: 6, md: 8 }, textAlign: 'center' }}>
           <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 2.5, color: '#6366f1', mb: 2 }}>
-            A TRUE STORY
+            SEE IT IN ACTION
           </Typography>
           <Typography sx={{
             fontSize: { xs: 32, md: 48 }, fontWeight: 900, color: '#0c0c0c',
             letterSpacing: -1.5, lineHeight: 1.1, mb: 2,
           }}>
-            The Friday Night Rescue.
+            Any PDF. One perfect spreadsheet.
           </Typography>
           <Typography sx={{ fontSize: 16, color: '#64748b', maxWidth: 560, mx: 'auto', lineHeight: 1.75 }}>
-            Mark had 400 invoices, a canceled weekend, and no way out —
-            until he found DocuExtract. Watch what happened next.
+            Watch how MultiPDFToExcel turns hundreds of PDFs into clean,
+            structured Excel data — in minutes, not hours.
           </Typography>
         </Box>
 
@@ -590,8 +590,9 @@ export default function LandingPage() {
 
         <Box sx={{ textAlign: 'center', mt: 4 }}>
           <Typography sx={{ fontSize: 14, color: '#94a3b8' }}>
-            That job used to take 12 hours. DocuExtract finished it in{' '}
-            <Box component="span" sx={{ color: '#6366f1', fontWeight: 700 }}>2 minutes</Box>.
+            400 PDFs processed in{' '}
+            <Box component="span" sx={{ color: '#6366f1', fontWeight: 700 }}>under 2 minutes</Box>
+            {' '}— what used to take an entire day.
           </Typography>
         </Box>
       </Box>
