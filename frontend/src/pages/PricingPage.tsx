@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import {
   Box, Button, Typography, Container, Paper, Chip,
-  List, ListItem, ListItemIcon, ListItemText,
+  List, ListItem, ListItemIcon, ListItemText, CircularProgress,
 } from '@mui/material';
-import { CheckCircle, Star, ArrowBack, Favorite, Coffee, OpenInNew } from '@mui/icons-material';
+import { CheckCircle, Star, ArrowBack, Favorite, Coffee, OpenInNew, Login } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import api from '../services/api';
 
 const KOFI_USERNAME = 'docuextract_ashen_vercel';
 
 const ALL_FEATURES = [
-  '2 free extraction jobs to try',
+  'Unlimited PDF extractions',
   'Upload multiple PDFs at once',
   'Custom extraction templates',
   'Excel / CSV export',
@@ -23,12 +24,60 @@ const AMOUNTS = [10, 15, 20];
 
 export default function PricingPage() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, fetchMe } = useAuthStore();
   const [selected, setSelected] = useState(10);
+  const [checking, setChecking] = useState(false);
+  const [checkMsg, setCheckMsg] = useState('');
 
   const handleDonate = () => {
-    window.open(`https://ko-fi.com/${KOFI_USERNAME}`, '_blank');
+    // Pass amount as a hint in the URL (Ko-fi reads it on some flows)
+    window.open(`https://ko-fi.com/${KOFI_USERNAME}?amount=${selected}`, '_blank');
   };
+
+  const handleRefreshAccess = async () => {
+    setChecking(true);
+    setCheckMsg('');
+    try {
+      await fetchMe();
+      // Re-read from store after fetchMe updates it
+      const { data } = await api.get('/users/me');
+      if (data.is_subscribed) {
+        setCheckMsg('✅ Access unlocked! Redirecting...');
+        setTimeout(() => navigate('/jobs/new'), 1500);
+      } else {
+        setCheckMsg('No donation found yet. Make sure you used the same email as your account.');
+      }
+    } catch {
+      setCheckMsg('Could not check status — please try again.');
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  // Not logged in — prompt sign-in before they can donate
+  if (!user) {
+    return (
+      <Box sx={{ minHeight: '100vh', bgcolor: '#f8f9fa', display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2 }}>
+        <Paper sx={{ p: 5, borderRadius: 4, textAlign: 'center', maxWidth: 420, width: '100%' }}>
+          <Coffee sx={{ fontSize: 48, color: '#d97706', mb: 2 }} />
+          <Typography variant="h5" fontWeight={800} mb={1}>Sign in first</Typography>
+          <Typography color="text.secondary" fontSize={15} mb={3}>
+            You need to be signed in so we know which account to unlock after your donation.
+          </Typography>
+          <Button
+            fullWidth variant="contained" size="large" startIcon={<Login />}
+            onClick={() => navigate('/login', { state: { from: '/pricing' } })}
+            sx={{ borderRadius: 2, py: 1.5, fontWeight: 700, bgcolor: '#667eea', '&:hover': { bgcolor: '#5a6fd8' } }}
+          >
+            Sign in with Google
+          </Button>
+          <Button fullWidth onClick={() => navigate(-1)} sx={{ mt: 1.5, color: 'text.secondary' }}>
+            Go back
+          </Button>
+        </Paper>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{
@@ -163,10 +212,17 @@ export default function PricingPage() {
               Your account unlocks automatically once we receive your donation. Use the same email you signed up with on Ko-fi.
             </Typography>
             <Button fullWidth size="small" variant="outlined"
-              onClick={() => window.location.reload()}
+              onClick={handleRefreshAccess}
+              disabled={checking}
+              startIcon={checking ? <CircularProgress size={14} /> : null}
               sx={{ borderRadius: 2, borderColor: '#22c55e', color: '#16a34a', fontSize: 12 }}>
-              Refresh to Check Access
+              {checking ? 'Checking...' : 'Refresh to Check Access'}
             </Button>
+            {checkMsg && (
+              <Typography fontSize={12} mt={1} color={checkMsg.startsWith('✅') ? '#15803d' : '#b45309'} fontWeight={600}>
+                {checkMsg}
+              </Typography>
+            )}
           </Box>
         </Paper>
 
@@ -174,7 +230,7 @@ export default function PricingPage() {
         <Box mt={6}>
           <Typography variant="h5" fontWeight={700} textAlign="center" mb={3}>Questions</Typography>
           {[
-            { q: 'Is it really free?', a: 'Yes, 100% free. All features including unlimited extractions are free to use.' },
+            { q: 'Is it really free?', a: 'Yes. You get unlimited extractions for free. Donations help cover server costs and are always optional.' },
             { q: 'Why is it free?', a: "We're just getting started and want people to use it. Donations from supporters help cover server costs." },
             { q: 'Will it stay free?', a: 'We plan to keep a generous free tier always. If we ever add a paid plan, existing users will get notice in advance.' },
             { q: 'How do I support?', a: 'Click the button above, pick an amount, and pay via PayPal. No Ko-fi account needed — just your PayPal or card.' },
