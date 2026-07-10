@@ -26,17 +26,55 @@ console.log(
 // ── Disable right-click context menu ────────────────────────────────────────
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-// ── Disable common keyboard shortcuts for DevTools (best-effort) ─────────────
+// ── Disable drag on images ───────────────────────────────────────────────────
+document.addEventListener('dragstart', (e) => {
+  if ((e.target as HTMLElement).tagName === 'IMG') e.preventDefault();
+});
+
+// ── Disable common keyboard shortcuts (best-effort) ──────────────────────────
 document.addEventListener('keydown', (e) => {
+  const ctrl = e.ctrlKey || e.metaKey;
   // F12
   if (e.key === 'F12') { e.preventDefault(); return; }
-  // Ctrl+Shift+I / Cmd+Opt+I
-  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'I') { e.preventDefault(); return; }
-  // Ctrl+Shift+J
-  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'J') { e.preventDefault(); return; }
-  // Ctrl+U (view source)
-  if ((e.ctrlKey || e.metaKey) && e.key === 'u') { e.preventDefault(); return; }
+  // Ctrl+Shift+I / Cmd+Opt+I — DevTools
+  if (ctrl && e.shiftKey && (e.key === 'I' || e.key === 'i')) { e.preventDefault(); return; }
+  // Ctrl+Shift+J — Console
+  if (ctrl && e.shiftKey && (e.key === 'J' || e.key === 'j')) { e.preventDefault(); return; }
+  // Ctrl+Shift+C — Inspect element
+  if (ctrl && e.shiftKey && (e.key === 'C' || e.key === 'c')) { e.preventDefault(); return; }
+  // Ctrl+Shift+K — Firefox console
+  if (ctrl && e.shiftKey && (e.key === 'K' || e.key === 'k')) { e.preventDefault(); return; }
+  // Ctrl+U — View source
+  if (ctrl && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); return; }
+  // Ctrl+S — Save page
+  if (ctrl && (e.key === 's' || e.key === 'S')) { e.preventDefault(); return; }
+  // Ctrl+P — Print (exposes DOM)
+  if (ctrl && (e.key === 'p' || e.key === 'P')) { e.preventDefault(); return; }
 });
+
+// ── CSS: disable text selection outside inputs ───────────────────────────────
+const selectionStyle = document.createElement('style');
+selectionStyle.textContent = `
+  body { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+  input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
+  ::selection { background: transparent; }
+`;
+document.head.appendChild(selectionStyle);
+
+// ── DevTools size-based detection (best-effort) ──────────────────────────────
+(function detectDevtools() {
+  const threshold = 160;
+  const check = () => {
+    if (
+      window.outerWidth - window.innerWidth > threshold ||
+      window.outerHeight - window.innerHeight > threshold
+    ) {
+      document.body.innerHTML = '';
+      location.reload();
+    }
+  };
+  setInterval(check, 1000);
+})();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
