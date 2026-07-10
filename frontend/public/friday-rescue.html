@@ -498,30 +498,91 @@
 <script>
 /* ======================= STORY ======================= */
 const scenes = [
-  {id:'s1', dur:10000, vo:"It was six PM, on the last Friday of the month. The office had emptied out. The city lights were coming on. And Mark sat alone... staring at a folder of four hundred PDF invoices."},
-  {id:'s2', dur:11500, vo:"His mission? Copy the vendor, invoice number, date, and total, from every single document, into a spreadsheet. By seven thirty, his eyes were blurring. Forty-two down. Every PDF a different layout. Some were crooked, grainy scans, from vendors who still used fax machines."},
-  {id:'s3', dur:8500,  vo:"He did the math. Twelve more hours of copy and paste. At this rate... his weekend was effectively, cancelled."},
-  {id:'s4', dur:9500,  vo:"Desperate, Mark opened his browser, and searched for a lifeline. That was when he found it. DocuExtract."},
-  {id:'s5', dur:10000, vo:"No code. No templates. No complicated setup. He dragged fifty PDFs into the browser, and typed one simple request. Vendor. Invoice number. Date. And total."},
-  {id:'s6', dur:11500, vo:"He clicked process, and reached for his coffee. Before the mug touched the desk... the screen flashed a checkmark. Fifty invoices, in a perfect grid. Dates formatted. Totals exact. Even the blurry scan from the hardware supplier, read flawlessly."},
-  {id:'s7', dur:9500,  vo:"So he pushed his luck. All three hundred and fifty remaining invoices, uploaded at once. DocuExtract churned through the entire batch... in under two minutes."},
-  {id:'s8', dur:9500,  vo:"By eight PM, a job that should have taken twelve agonizing hours... was done. Mark switched off the lights, and walked out, to salvage his weekend."},
-  {id:'s9', dur:12000, vo:"DocuExtract. Any PDF, any layout, turned into one perfect spreadsheet, in minutes. Leave manual data entry where it belongs... in the past. Try DocuExtract free, today."},
+  {id:'s1', dur:11000, vo:"It was six P.M. — the last Friday of the month. The office had emptied out. The city lights were coming on. And Mark sat alone... staring at a folder... of four hundred PDF invoices."},
+  {id:'s2', dur:12500, vo:"His mission: copy the vendor name, invoice number, date, and total — from every single document — into a spreadsheet. By seven thirty, his eyes were blurring. Forty-two done. Three hundred and fifty-eight to go. Every PDF a different layout. Some of them — crooked, grainy scans from vendors who still used fax machines."},
+  {id:'s3', dur:9000,  vo:"He did the math. Twelve more hours. At this rate... his weekend was effectively... cancelled."},
+  {id:'s4', dur:10000, vo:"Desperate, Mark opened his browser and typed into the search bar. He needed a lifeline. And then... he found one. DocuExtract."},
+  {id:'s5', dur:10500, vo:"No code. No templates. No complicated setup. He dragged fifty PDFs straight into the browser — and typed one simple instruction. Vendor. Invoice number. Date. Total."},
+  {id:'s6', dur:12000, vo:"He clicked process — and reached for his coffee. Before the mug touched the desk... the screen flashed a checkmark. Fifty invoices. In a perfect grid. Dates formatted. Totals exact. Even the blurry, crooked scan from the hardware supplier — read flawlessly."},
+  {id:'s7', dur:10000, vo:"So he pushed his luck. All three hundred and fifty remaining invoices — uploaded at once. DocuExtract didn't even blink. The entire batch... done... in under two minutes."},
+  {id:'s8', dur:10000, vo:"Eight P.M. A job that should have taken twelve agonizing hours — finished before dark. Mark switched off the lights... picked up his jacket... and walked out to his weekend."},
+  {id:'s9', dur:13000, vo:"DocuExtract. Any PDF. Any layout. One perfect spreadsheet — in minutes. Leave manual data entry where it belongs... in the past. Start free today."},
 ];
 const total = scenes.reduce((a,s)=>a+s.dur,0);
 let timeouts = [];
 
-/* ======================= AUDIO ENGINE ======================= */
-let ctx, master, musicGain, sfxGain, noiseBuf, musicTimer = null, nextPhrase = 0;
+/* ======================= AUDIO ENGINE v2 — 3-Act Cinematic Score ======================= */
+let ctx, master, musicGain, sfxGain, reverbGain, noiseBuf;
+let musicTimer = null, nextPhrase = 0, currentAct = 0;
 let soundOn = true;
+
+// 3-act chord progressions
+// Act 1 (s1–s3): Tense, minor — Am / F / C / Em
+// Act 2 (s4–s7): Hopeful, building — C / G / Am / F
+// Act 3 (s8–s9): Triumphant — F / C / G / C
+const ACTS = [
+  { // tense — minor
+    phrases: [
+      { root: 110.00, chord: [110.00, 130.81, 164.81, 220.00], arp: [220.00, 261.63, 329.63, 440.00] },
+      { root:  87.31, chord: [ 87.31, 110.00, 130.81, 174.61], arp: [174.61, 220.00, 261.63, 349.23] },
+      { root: 130.81, chord: [130.81, 164.81, 196.00, 261.63], arp: [261.63, 329.63, 392.00, 523.25] },
+      { root:  82.41, chord: [ 82.41, 103.83, 123.47, 164.81], arp: [164.81, 207.65, 246.94, 329.63] },
+    ],
+    padGain: .032, arpGain: .022, bassGain: .04,
+  },
+  { // hopeful — major
+    phrases: [
+      { root: 130.81, chord: [130.81, 164.81, 196.00, 261.63], arp: [261.63, 329.63, 392.00, 523.25] },
+      { root:  98.00, chord: [ 98.00, 123.47, 146.83, 196.00], arp: [196.00, 246.94, 293.66, 392.00] },
+      { root: 110.00, chord: [110.00, 138.59, 164.81, 220.00], arp: [220.00, 277.18, 329.63, 440.00] },
+      { root:  87.31, chord: [ 87.31, 110.00, 130.81, 174.61], arp: [174.61, 220.00, 261.63, 349.23] },
+    ],
+    padGain: .040, arpGain: .030, bassGain: .05,
+  },
+  { // triumphant — full major
+    phrases: [
+      { root:  87.31, chord: [ 87.31, 110.00, 130.81, 174.61], arp: [174.61, 220.00, 261.63, 349.23, 440.00] },
+      { root: 130.81, chord: [130.81, 164.81, 196.00, 261.63], arp: [261.63, 329.63, 392.00, 523.25, 659.25] },
+      { root:  98.00, chord: [ 98.00, 123.47, 146.83, 196.00], arp: [196.00, 246.94, 293.66, 392.00, 493.88] },
+      { root: 130.81, chord: [130.81, 164.81, 196.00, 261.63], arp: [261.63, 329.63, 392.00, 523.25, 659.25] },
+    ],
+    padGain: .052, arpGain: .038, bassGain: .06,
+  },
+];
+const SCENE_ACT = {s1:0,s2:0,s3:0, s4:1,s5:1,s6:1,s7:1, s8:2,s9:2};
+let actPhraseIdx = [0,0,0];
 
 function initAudio(){
   if(ctx){ if(ctx.state==='suspended') ctx.resume(); return; }
   const AC = window.AudioContext || window.webkitAudioContext;
   ctx = new AC();
-  master = ctx.createGain(); master.gain.value = soundOn ? 1 : 0; master.connect(ctx.destination);
-  musicGain = ctx.createGain(); musicGain.gain.value = .3; musicGain.connect(master);
-  sfxGain = ctx.createGain(); sfxGain.gain.value = .6; sfxGain.connect(master);
+
+  // master bus
+  master = ctx.createGain(); master.gain.value = soundOn ? 1 : 0;
+  master.connect(ctx.destination);
+
+  // music bus (lower so voice is clear)
+  musicGain = ctx.createGain(); musicGain.gain.value = 0;
+  musicGain.connect(master);
+
+  // sfx bus
+  sfxGain = ctx.createGain(); sfxGain.gain.value = .65;
+  sfxGain.connect(master);
+
+  // reverb for warmth
+  const convolver = ctx.createConvolver();
+  const irLen = Math.floor(ctx.sampleRate * 1.4);
+  const ir = ctx.createBuffer(2, irLen, ctx.sampleRate);
+  for(let ch=0;ch<2;ch++){
+    const d = ir.getChannelData(ch);
+    for(let i=0;i<irLen;i++) d[i] = (Math.random()*2-1) * Math.pow(1-i/irLen, 2.8);
+  }
+  convolver.buffer = ir;
+  reverbGain = ctx.createGain(); reverbGain.gain.value = .18;
+  convolver.connect(reverbGain); reverbGain.connect(master);
+  musicGain._reverb = convolver;
+
+  // noise buffer
   noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
   const d = noiseBuf.getChannelData(0);
   for(let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
@@ -531,139 +592,258 @@ function tone(freq, t, dur, {type='triangle', gain=.1, dest=null}={}){
   const o = ctx.createOscillator(); o.type = type; o.frequency.value = freq;
   const g = ctx.createGain();
   g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(gain, t + .03);
+  g.gain.linearRampToValueAtTime(gain, t + .04);
   g.gain.exponentialRampToValueAtTime(.0001, t + dur);
   o.connect(g); g.connect(dest || musicGain);
+  if(musicGain._reverb) { const dr = ctx.createGain(); dr.gain.value=.12; o.connect(dr); dr.connect(musicGain._reverb); }
   o.start(t); o.stop(t + dur + .1);
 }
 
-function pad(freq, t, dur, gain=.045){
-  [ -6, 0, 6 ].forEach(dt => {
-    const o = ctx.createOscillator(); o.type='sawtooth'; o.frequency.value = freq; o.detune.value = dt;
-    const f = ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.setValueAtTime(500, t);
-    f.frequency.linearRampToValueAtTime(1100, t + dur*.5);
-    f.frequency.linearRampToValueAtTime(450, t + dur);
+function pad(freq, t, dur, gain, detunes=[-8,0,8]){
+  detunes.forEach(dt => {
+    const o = ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=freq; o.detune.value=dt;
+    const f = ctx.createBiquadFilter(); f.type='lowpass';
+    f.frequency.setValueAtTime(400, t);
+    f.frequency.linearRampToValueAtTime(1200, t+dur*.45);
+    f.frequency.linearRampToValueAtTime(380, t+dur);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(gain, t + dur*.3);
-    g.gain.linearRampToValueAtTime(0, t + dur);
+    g.gain.linearRampToValueAtTime(gain, t+dur*.25);
+    g.gain.linearRampToValueAtTime(0, t+dur);
     o.connect(f); f.connect(g); g.connect(musicGain);
-    o.start(t); o.stop(t + dur + .1);
+    if(musicGain._reverb){ const dr = ctx.createGain(); dr.gain.value=.2; f.connect(dr); dr.connect(musicGain._reverb); }
+    o.start(t); o.stop(t+dur+.1);
   });
 }
 
-function noiseSfx(t, dur, freq, gain, type='lowpass', sweepTo=null){
-  const src = ctx.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
-  const f = ctx.createBiquadFilter(); f.type = type; f.frequency.setValueAtTime(freq, t);
-  if(sweepTo) f.frequency.linearRampToValueAtTime(sweepTo, t + dur * .7);
+function bass(freq, t, dur, gain){
+  const o = ctx.createOscillator(); o.type='sine'; o.frequency.value=freq;
+  const sub = ctx.createOscillator(); sub.type='sine'; sub.frequency.value=freq*.5;
   const g = ctx.createGain();
   g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(gain, t + Math.min(.4, dur*.25));
-  g.gain.linearRampToValueAtTime(0, t + dur);
-  src.connect(f); f.connect(g); g.connect(sfxGain);
-  src.start(t); src.stop(t + dur + .1);
+  g.gain.linearRampToValueAtTime(gain, t+.08);
+  g.gain.exponentialRampToValueAtTime(.0001, t+dur);
+  const gs = ctx.createGain(); gs.gain.value = gain * .4;
+  [o,sub].forEach(s => { s.connect(g); s.start(t); s.stop(t+dur+.05); });
+  sub.connect(gs);
+  g.connect(musicGain); gs.connect(musicGain);
 }
 
-const PHRASE = 9.6;
-const PROG = [
-  { root:130.81, arp:[261.63, 329.63, 392.00, 523.25] },
-  { root:98.00,  arp:[196.00, 246.94, 392.00, 493.88] },
-  { root:110.00, arp:[220.00, 261.63, 329.63, 440.00] },
-  { root:87.31,  arp:[174.61, 261.63, 349.23, 523.25] },
-];
-let progIdx = 0;
+function noiseSfx(t, dur, freq, gain, type='lowpass', sweepTo=null){
+  const src = ctx.createBufferSource(); src.buffer=noiseBuf; src.loop=true;
+  const f = ctx.createBiquadFilter(); f.type=type; f.frequency.setValueAtTime(freq,t);
+  if(sweepTo) f.frequency.linearRampToValueAtTime(sweepTo, t+dur*.7);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(gain, t+Math.min(.35,dur*.2));
+  g.gain.linearRampToValueAtTime(0, t+dur);
+  src.connect(f); f.connect(g); g.connect(sfxGain);
+  src.start(t); src.stop(t+dur+.1);
+}
 
-function schedulePhrase(t0){
-  for(let half=0; half<2; half++){
-    const ch = PROG[progIdx % PROG.length]; progIdx++;
-    const t = t0 + half * PHRASE/2;
-    pad(ch.root, t, PHRASE/2 + .6);
-    pad(ch.root*2, t, PHRASE/2 + .6, .02);
-    for(let i=0;i<8;i++){
-      const f = ch.arp[i % ch.arp.length] * (i>=4 ? 2 : 1);
-      tone(f, t + i * (PHRASE/2/8), .5, {type:'sine', gain:.05});
-    }
+const PHRASE_DUR = 9.6;
+
+function scheduleActPhrase(act, t0){
+  const a = ACTS[act];
+  const ph = a.phrases[actPhraseIdx[act] % a.phrases.length]; actPhraseIdx[act]++;
+  const half = PHRASE_DUR / 2;
+
+  // bass pulse on beat 1 of each bar
+  for(let b=0; b<4; b++){
+    const bt = t0 + b * (PHRASE_DUR/4);
+    bass(ph.root, bt, .55, a.bassGain);
+  }
+
+  // lush pad chords
+  ph.chord.forEach((f,ci) => pad(f, t0, PHRASE_DUR+.8, a.padGain * (ci===0?.9:.65)));
+  ph.chord.forEach((f,ci) => pad(f, t0+half, PHRASE_DUR*.5+.8, a.padGain * .7 * (ci===0?.9:.65)));
+
+  // melodic arpeggio
+  const steps = 16;
+  for(let i=0;i<steps;i++){
+    const af = ph.arp[i % ph.arp.length] * (i>=steps/2 && act>=1 ? 2 : 1);
+    tone(af, t0 + i*(PHRASE_DUR/steps), .38, {type:'sine', gain: a.arpGain});
   }
 }
 
-function startMusic(){
-  stopMusic(); progIdx = 0;
-  nextPhrase = ctx.currentTime + .1;
-  schedulePhrase(nextPhrase);
-  nextPhrase += PHRASE;
+function startMusic(act){
+  stopMusic(); currentAct = act;
+  nextPhrase = ctx.currentTime + .15;
+  scheduleActPhrase(act, nextPhrase);
+  nextPhrase += PHRASE_DUR;
+  musicGain.gain.cancelScheduledValues(ctx.currentTime);
+  musicGain.gain.linearRampToValueAtTime(.26, ctx.currentTime + 1.2);
   musicTimer = setInterval(()=>{
-    if(nextPhrase - ctx.currentTime < 1.5){
-      schedulePhrase(nextPhrase);
-      nextPhrase += PHRASE;
+    if(nextPhrase - ctx.currentTime < 1.8){
+      scheduleActPhrase(currentAct, nextPhrase);
+      nextPhrase += PHRASE_DUR;
     }
-  }, 500);
+  }, 400);
 }
-function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer = null; } }
+
+function transitionToAct(newAct){
+  if(newAct === currentAct) return;
+  currentAct = newAct;
+  const t = ctx.currentTime;
+  musicGain.gain.linearRampToValueAtTime(.08, t+1.2);
+  setTimeout(()=>{
+    if(!musicTimer) return;
+    musicGain.gain.linearRampToValueAtTime(.26, ctx.currentTime+1.4);
+  }, 1400);
+}
+
+function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer=null; } }
 
 function blip(t, f, gain=.06, dur=.12){ tone(f, t, dur, {type:'sine', gain, dest:sfxGain}); }
 
 const SFX = {
-  s1(){ const t = ctx.currentTime; noiseSfx(t, 2.5, 300, .04, 'bandpass', 900); blip(t+.6, 880, .05); blip(t+.9, 1174.7, .05); },
-  s2(){ const t = ctx.currentTime; for(let i=0;i<12;i++) blip(t + .4 + i*.8, 1600, .03, .05); },
-  s3(){ const t = ctx.currentTime; [0,.5,1].forEach(d => { blip(t+.3+d, 660, .07, .25); blip(t+.3+d+.12, 550, .06, .25); }); },
-  s4(){ const t = ctx.currentTime; noiseSfx(t+2.4, 1.2, 800, .04, 'bandpass', 2400); [523.25, 659.25, 783.99, 1046.5].forEach((f,i)=> blip(t + 2.8 + i*.13, f, .06, .8)); },
-  s5(){ const t = ctx.currentTime; for(let i=0;i<6;i++) noiseSfx(t + .2 + i*.5, .5, 600, .05, 'bandpass', 2600); },
-  s6(){ const t = ctx.currentTime; blip(t+.35, 1046.5, .09, .6);
-        [1046.5, 1174.7, 1318.5, 1568, 1760].forEach((f,i)=> blip(t + .9 + i*.45, f, .05, .5)); },
-  s7(){ },
-  s8(){ const t = ctx.currentTime; noiseSfx(t+.4, 3, 200, .03, 'lowpass'); blip(t+.8, 783.99, .05, 1.2); blip(t+1.1, 987.77, .05, 1.2); },
-  s9(){ const t = ctx.currentTime + .4; [261.63, 329.63, 392, 523.25, 659.25].forEach(f => tone(f, t, 4, {type:'triangle', gain:.05, dest:sfxGain})); },
+  s1(){
+    const t = ctx.currentTime;
+    // cinematic low rumble sweep in
+    noiseSfx(t, 3.2, 80, .06, 'lowpass', 320);
+    // rising high whoosh
+    noiseSfx(t+.4, 1.8, 1200, .04, 'bandpass', 4000);
+    // two soft chime beats
+    blip(t+.7, 880, .05, .4); blip(t+1.0, 1174.7, .04, .4);
+  },
+  s2(){
+    const t = ctx.currentTime;
+    // rapid keyboard clicks — triplet rhythm
+    for(let i=0;i<18;i++){
+      const f = 1400 + Math.random()*400;
+      blip(t + .3 + i*.55, f, .025, .04);
+      blip(t + .3 + i*.55 + .1, f*1.08, .018, .03);
+    }
+    // frustrated sigh noise
+    noiseSfx(t+4.5, 1.4, 600, .035, 'bandpass', 200);
+  },
+  s3(){
+    const t = ctx.currentTime;
+    // alarm pulses — descending minor 3rds
+    [0,.48,.96].forEach(d=>{
+      blip(t+.3+d, 740, .08, .35); blip(t+.38+d, 622.25, .07, .3);
+    });
+    // dull low boom
+    noiseSfx(t+.1, 2.8, 120, .05, 'lowpass', 60);
+    // tension string stab
+    [220,277.18,329.63].forEach((f,i)=> tone(f, t+.25+i*.04, 1.8, {type:'sawtooth', gain:.022, dest:sfxGain}));
+  },
+  s4(){
+    const t = ctx.currentTime;
+    // typing search query
+    for(let i=0;i<8;i++) blip(t+.6+i*.22, 1600+Math.random()*200, .02, .06);
+    // scan beam
+    noiseSfx(t+2.2, 1.4, 900, .04, 'bandpass', 3200);
+    // discovery arpeggio — bright ascending
+    [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f,i)=> blip(t+2.9+i*.15, f, .06, .6));
+    // warm resolution chord
+    [523.25, 659.25, 783.99].forEach((f,i)=> tone(f, t+3.7+i*.05, 2.4, {type:'sine', gain:.04, dest:sfxGain}));
+  },
+  s5(){
+    const t = ctx.currentTime;
+    // drag whoosh x3
+    for(let i=0;i<3;i++) noiseSfx(t+.2+i*.8, .6, 500, .05, 'bandpass', 3000);
+    // file upload pings — staggered
+    for(let i=0;i<8;i++) blip(t+.5+i*.6, 1200+i*80, .035, .1);
+    // data stream rush
+    noiseSfx(t+3.5, 2.5, 2000, .04, 'highpass', 800);
+  },
+  s6(){
+    const t = ctx.currentTime;
+    // checkmark chime — clean three-note
+    [1046.5, 1318.5, 1568].forEach((f,i)=> blip(t+.4+i*.18, f, .09, .9));
+    // sparkle cascade
+    for(let i=0;i<10;i++) blip(t+.9+i*.28, 1800+Math.random()*600, .04, .18+Math.random()*.12);
+    // warm success pad
+    [523.25, 659.25, 783.99, 1046.5].forEach((f,i)=> tone(f, t+1.1+i*.04, 3.5, {type:'triangle', gain:.035, dest:sfxGain}));
+  },
+  s7(){
+    const t = ctx.currentTime;
+    // processing tick rhythm
+    for(let i=0;i<20;i++){
+      const spd = 1 - i*.028;
+      blip(t+.2+i*.38*spd, 1800, .025, .06);
+    }
+    // rising energy hum
+    noiseSfx(t+1, 5.5, 300, .03, 'bandpass', 1800);
+    // completion fanfare
+    [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f,i)=>
+      tone(f, t+6.8+i*.12, 2.2, {type:'triangle', gain:.05, dest:sfxGain}));
+  },
+  s8(){
+    const t = ctx.currentTime;
+    // peaceful outdoor ambient
+    noiseSfx(t+.5, 4.5, 180, .025, 'lowpass', 140);
+    // slow warm chords
+    [261.63, 329.63, 392].forEach((f,i)=> tone(f, t+.6+i*.06, 4.0, {type:'sine', gain:.04, dest:sfxGain}));
+    blip(t+1.2, 783.99, .04, 2.0); blip(t+1.7, 987.77, .04, 2.0);
+    // footstep-like thuds
+    for(let i=0;i<6;i++) noiseSfx(t+.8+i*.7, .12, 120, .05, 'lowpass', 80);
+  },
+  s9(){
+    const t = ctx.currentTime + .5;
+    // full victory fanfare
+    const FANFARE = [523.25, 659.25, 783.99, 1046.5];
+    FANFARE.forEach((f,i)=> tone(f, t+i*.06, 3.8, {type:'triangle', gain:.06, dest:sfxGain}));
+    // confetti pops
+    for(let i=0;i<14;i++){
+      const delay = .3 + i*.4 + Math.random()*.3;
+      blip(t+delay, 1200+Math.random()*1000, .04, .08+Math.random()*.08);
+    }
+    // warm sustain pad
+    [261.63,329.63,392,523.25].forEach((f,i)=>
+      tone(f, t+.4+i*.05, 8, {type:'sine', gain:.03, dest:sfxGain}));
+  },
 };
 
-/* ======================= HUMANIZED STORYTELLER ======================= */
+/* ======================= HUMANIZED NARRATOR ======================= */
 let voices = [], narrationId = 0;
 function loadVoices(){ voices = speechSynthesis.getVoices(); }
 if('speechSynthesis' in window){ loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
 
 function pickStorytellerVoice(){
-  // strongly prefer neural/natural voices — they sound far more human
   const tiers = [
     v => /natural/i.test(v.name),
-    v => /neural|premium|enhanced|online/i.test(v.name),
+    v => /neural|premium|enhanced/i.test(v.name),
     v => /google uk english male/i.test(v.name),
-    v => /daniel|alex/i.test(v.name),
-    v => /google (us|uk) english/i.test(v.name),
-    v => /samantha|aria|guy|jenny|ryan|libby/i.test(v.name),
+    v => /google us english/i.test(v.name),
+    v => /daniel|alex|guy|tony|andrew/i.test(v.name),
+    v => /samantha|aria|jenny|ryan|libby/i.test(v.name),
+    v => /google.*english/i.test(v.name),
   ];
   const en = voices.filter(v => /^en[-_]/i.test(v.lang));
   for(const test of tiers){ const v = en.find(test); if(v) return v; }
   return en[0] || null;
 }
 
-/* Speak sentence-by-sentence with varied pace, gentle pitch shifts and
-   real pauses — mimics a human storyteller instead of one flat read. */
 function narrate(text){
   if(!soundOn || !('speechSynthesis' in window)) return;
   speechSynthesis.cancel();
   const myId = ++narrationId;
-  const sentences = text.split(/(?<=[.!?…])\s+/).filter(s => s.trim());
+  // Split on sentence boundaries AND ellipsis pauses
+  const sentences = text.split(/(?<=[.!?])\s+|(?<=\.\.\.)\s*/).filter(s=>s.trim());
   const v = pickStorytellerVoice();
-  if(ctx) musicGain.gain.linearRampToValueAtTime(.12, ctx.currentTime + .3);
+  // Duck music while narrating
+  if(ctx) musicGain.gain.linearRampToValueAtTime(.10, ctx.currentTime + .4);
 
   let i = 0;
   function next(){
     if(myId !== narrationId) return;
     if(i >= sentences.length){
-      if(ctx) musicGain.gain.linearRampToValueAtTime(.3, ctx.currentTime + .9);
+      if(ctx) musicGain.gain.linearRampToValueAtTime(.26, ctx.currentTime + 1.1);
       return;
     }
     const s = sentences[i++];
     const u = new SpeechSynthesisUtterance(s);
     if(v) u.voice = v;
-    const words = s.split(/\s+/).length;
-    // short punchy sentences land slower & lower; long ones flow a bit quicker
-    u.rate  = words <= 4 ? .82 : (words <= 10 ? .9 : .96);
-    u.pitch = .95 + (i % 3) * .03 - (words <= 4 ? .06 : 0);
+    const words = s.replace(/[.!?…]+/g,'').trim().split(/\s+/).length;
+    const isDramatic = /\.\.\.|…/.test(s) || words <= 4;
+    u.rate   = isDramatic ? .80 : (words <= 8 ? .87 : .93);
+    u.pitch  = .92 + (i % 4) * .025 - (isDramatic ? .05 : 0);
     u.volume = 1;
-    u.onend = ()=>{
+    u.onend  = ()=>{
       if(myId !== narrationId) return;
-      // breathing room between sentences, longer after dramatic beats
-      const pause = /\.\.\.|…/.test(s) ? 550 : (words <= 4 ? 420 : 260);
+      const pause = isDramatic ? 600 : (words <= 5 ? 380 : 220);
       timeouts.push(setTimeout(next, pause));
     };
     u.onerror = ()=> next();
@@ -675,7 +855,7 @@ function narrate(text){
 function setSound(on){
   soundOn = on;
   document.getElementById('soundbtn').textContent = on ? '🔊 Sound on' : '🔇 Muted';
-  if(ctx) master.gain.linearRampToValueAtTime(on ? 1 : 0, ctx.currentTime + .15);
+  if(ctx) master.gain.linearRampToValueAtTime(on ? 1 : 0, ctx.currentTime + .18);
   if(!on && 'speechSynthesis' in window){ narrationId++; speechSynthesis.cancel(); }
 }
 
@@ -729,7 +909,7 @@ function animateNumber(el, from, to, ms){
 /* ======================= SEQUENCER ======================= */
 function play(){
   initAudio();
-  startMusic();
+  startMusic(0); // start with act 1 (tense)
   splitLetters(document.getElementById('titleLetters'));
   splitLetters(document.getElementById('logoLetters'));
   document.getElementById('playbtn').style.display='none';
@@ -748,17 +928,20 @@ function play(){
       el.classList.add('active');
       revealCaption(el);
       narrate(sc.vo);
+      // Act transition on discovery scene
+      const act = SCENE_ACT[sc.id] || 0;
+      if(soundOn && ctx) transitionToAct(act);
       if(soundOn && SFX[sc.id]) SFX[sc.id]();
       if(sc.id==='s1') staggerLetters(document.getElementById('titleLetters'), .045, .5);
       if(sc.id==='s9') staggerLetters(document.getElementById('logoLetters'), .06, .3);
-      if(sc.id==='s2') animateNumber(document.getElementById('doneCount'), 0, 42, 2500);
+      if(sc.id==='s2') animateNumber(document.getElementById('doneCount'), 0, 42, 2800);
       if(sc.id==='s7') countDown();
     }, t));
     t += sc.dur;
   });
   timeouts.push(setTimeout(()=>{
-    if(ctx) musicGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 3.5);
-    timeouts.push(setTimeout(stopMusic, 3700));
+    if(ctx) musicGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 4.2);
+    timeouts.push(setTimeout(stopMusic, 4500));
   }, total - 2000));
   const bar = document.getElementById('progress');
   bar.style.transition='none'; bar.style.width='0';
@@ -766,7 +949,6 @@ function play(){
     bar.style.transition = 'width '+total+'ms linear';
     bar.style.width='100%';
   });});
-  if(ctx) musicGain.gain.setValueAtTime(.3, ctx.currentTime);
 }
 
 function countDown(){
