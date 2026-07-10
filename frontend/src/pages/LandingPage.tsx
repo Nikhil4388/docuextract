@@ -542,7 +542,7 @@ export default function LandingPage() {
 
       {/* ── REAL STORY ── */}
       <Box id="story" sx={{ px: { xs: 3, md: 8, lg: 12 }, pb: { xs: 10, md: 14 }, maxWidth: 1200, mx: 'auto' }}>
-        <Box className="reveal" sx={{ mb: { xs: 6, md: 8 }, textAlign: 'center' }}>
+        <Box ref={addRef(6)} className="reveal" sx={{ mb: { xs: 6, md: 8 }, textAlign: 'center' }}>
           <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 2.5, color: '#6366f1', mb: 2 }}>
             A TRUE STORY
           </Typography>
