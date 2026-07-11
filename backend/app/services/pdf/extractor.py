@@ -68,8 +68,8 @@ class PDFExtractor:
         if not pages:
             return []
 
-        sample_text = "\n".join(p["text"] for p in pages[:3] if p["text"])[:5000]
-        page_images = [p["image_b64"] for p in pages[:3] if p.get("image_b64")]
+        sample_text = "\n".join(p["text"] for p in pages[:5] if p["text"])[:6000]
+        page_images = [p["image_b64"] for p in pages[:5] if p.get("image_b64")]
 
         from app.services.llm.claude_service import ClaudeService
         llm = ClaudeService()

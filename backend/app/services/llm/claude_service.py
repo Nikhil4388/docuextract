@@ -86,24 +86,41 @@ Return JSON with two keys:
         sample_text: str,
         page_images: Optional[List[str]] = None,
     ) -> List[Dict[str, Any]]:
-        system = """You are a document analysis expert. Analyze the document and suggest 8-15 specific, useful data extraction columns.
+        system = """You are an expert business document analyst. Your job is to suggest the most valuable data extraction columns for a spreadsheet.
 
-For each column return a JSON object with:
-- "name": snake_case column name (e.g. "full_name", "invoice_total")
-- "description": what this field represents
-- "data_type": one of "text", "number", "date", "boolean"
-- "extraction_hint": SPECIFIC instruction telling exactly where/how to find this value in the document (e.g. "Located at top of page after 'Employee Name:' label", "Sum of all line items in the TOTAL row at bottom of invoice")
+STEP 1 — IDENTIFY THE DOCUMENT TYPE:
+Determine what kind of document this is (Invoice, Contract, Trust Indenture, Insurance Policy, Employment Agreement, Purchase Order, Medical Record, etc.).
 
-Be specific and comprehensive. Cover ALL important fields visible in the document. Return a JSON array only — no explanation."""
+STEP 2 — SELECT ONLY BUSINESS-CRITICAL FIELDS:
+Choose 6–14 fields that a business analyst, accountant, lawyer, or manager would actually need in a spreadsheet for reporting, auditing, or decision-making.
+
+SKIP these — they have no analytical value:
+• Boilerplate legal recitals and "WHEREAS" clauses
+• Signature lines, witness names, notary seals
+• Page numbers, exhibit labels, section headings
+• Redundant fields that duplicate other columns
+• Administrative metadata of no business use
+
+STEP 3 — FORMAT RULES (strictly follow):
+• "name": Human-readable Title Case WITH spaces. Examples: "Company Name", "Invoice Total", "Agreement Date", "Bond Interest Rate". NEVER use snake_case or all-caps.
+• "description": One concise sentence explaining what this field means.
+• "data_type": Exactly one of "text", "number", "date", "boolean".
+• "extraction_hint": Precise location — WHERE in the document to find this value. Example: "First page after 'BETWEEN' keyword, before 'and' conjunction", "Labeled 'Total Amount Due' in the bottom-right of the itemized fee table", "Stated as 'dated the ___ day of ___' in the opening paragraph".
+
+Return ONLY a valid JSON array. No markdown, no explanation, no wrapping object."""
 
         # Build content: images for scanned, text for native PDFs
         content: List[Any] = []
         if page_images:
             content.append({
                 "type": "text",
-                "text": "Analyze this scanned document and suggest comprehensive extraction columns. Return a JSON array only."
+                "text": (
+                    "Analyze this scanned document and suggest the most business-valuable extraction columns.\n"
+                    "Focus on fields a business analyst or manager would need in a spreadsheet.\n"
+                    "Return a JSON array only — no markdown, no explanation."
+                )
             })
-            for img_b64 in page_images[:3]:
+            for img_b64 in page_images[:5]:
                 content.append({
                     "type": "image",
                     "source": {"type": "base64", "media_type": "image/png", "data": img_b64}
@@ -111,7 +128,12 @@ Be specific and comprehensive. Cover ALL important fields visible in the documen
         else:
             content.append({
                 "type": "text",
-                "text": f"Analyze this document and suggest comprehensive extraction columns. Return a JSON array only.\n\nDOCUMENT:\n{sample_text[:5000]}"
+                "text": (
+                    f"Analyze this document and suggest the most business-valuable extraction columns.\n"
+                    f"Focus on fields a business analyst or manager would need in a spreadsheet.\n"
+                    f"Return a JSON array only — no markdown, no explanation.\n\n"
+                    f"DOCUMENT:\n{sample_text[:6000]}"
+                )
             })
 
         message = self.client.messages.create(
