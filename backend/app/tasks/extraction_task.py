@@ -98,14 +98,25 @@ _DEPRECATED_MODELS = {
 }
 _DEFAULT_MODEL = "claude-sonnet-4-6"
 
-_SYSTEM_PROMPT = """You are a precise data extraction assistant.
-Return ONLY valid JSON with two keys:
-1. "extracted_data": {column_name: value} — use null ONLY if truly not found
-2. "confidence_scores": {column_name: 0.0-1.0}
+_SYSTEM_PROMPT = """You are an expert data extraction specialist for historical legal and financial documents (1880s–1940s).
 
-CONFIDENCE RULES: Score 1.0 for unambiguous labeled fields, 0.97-0.99 for clearly
-found values, 0.95-0.96 for high-confidence with minor ambiguity.
-Most structured document fields should score 0.95+. Do NOT lower scores artificially."""
+These documents often have OCR scanning artifacts — READ THROUGH THEM:
+• "l9l9", "l9l8", "l92O" etc. = 1919, 1918, 1920 (lowercase L mistaken for digit 1, O for 0)
+• "¬" at line end = hyphenation artifact, ignore it and join the word across lines
+• Garbled uppercase runs (e.g. "AgrPPttttfttt") = OCR error for "Agreement" etc. — use context
+• "$5O,OOO,OOO" → $50,000,000 (O vs 0 confusion)
+• Split numbers across lines should be read as one value
+
+EXTRACTION RULES:
+1. Return ONLY valid JSON: {"extracted_data": {...}, "confidence_scores": {...}}
+2. For fields with multiple values (serial maturity dates, multiple parties), join with " / "
+3. If a value has OCR noise but is CLEARLY inferable from context, extract it — score 0.85-0.94
+4. Use null ONLY if the field is genuinely absent from the entire document
+5. Score 0.97-1.0 for clean unambiguous values; 0.85-0.96 for OCR-inferred but confident values
+6. NEVER return null for a field you can reasonably infer from surrounding context
+
+Most fields in structured legal documents (trust indentures, bond agreements, contracts)
+ARE present — search the full text before returning null."""
 
 
 # ── Celery entry point ───────────────────────────────────────────────────────
@@ -244,39 +255,73 @@ async def _async_pipeline(job_id: str):
                 columns_desc = json.dumps(columns, indent=2)
                 t0 = time.time()
 
-                if use_vision:
-                    content = [
+                def _build_vision_content(cols_desc: str, imgs: list) -> list:
+                    return [
                         {"type": "text", "text": (
-                            f"Extract data from this scanned document.\n\n"
-                            f"COLUMNS:\n{columns_desc}\n\n"
-                            f"Return JSON only. Score clearly found fields 0.97+."
+                            f"Extract data from this scanned historical document.\n\n"
+                            f"COLUMNS:\n{cols_desc}\n\n"
+                            f"Return JSON only with 'extracted_data' and 'confidence_scores'."
                         )},
                         *[{"type": "image", "source": {
                             "type": "base64", "media_type": "image/png", "data": img,
-                        }} for img in page_images[:10]],
+                        }} for img in imgs[:10]],
                     ]
-                else:
-                    content = [{"type": "text", "text": (
-                        f"Extract data from this document.\n\n"
-                        f"COLUMNS:\n{columns_desc}\n\n"
-                        f"TEXT:\n{full_text[:12000]}\n\n"
-                        f"Return JSON only. Score clearly found fields 0.97+."
+
+                def _build_text_content(cols_desc: str, txt: str) -> list:
+                    return [{"type": "text", "text": (
+                        f"Extract data from this historical legal document "
+                        f"(OCR text — treat 'l9l9'=1919, '¬'=hyphen, garbled words as OCR errors).\n\n"
+                        f"COLUMNS:\n{cols_desc}\n\n"
+                        f"TEXT:\n{txt[:20000]}\n\n"
+                        f"Return JSON with 'extracted_data' and 'confidence_scores' only."
                     )}]
 
-                msg = await client.messages.create(
-                    model=model,
-                    max_tokens=4096,
-                    system=_SYSTEM_PROMPT,
-                    messages=[{"role": "user", "content": content}],
-                )
-                elapsed_ms = int((time.time() - t0) * 1000)
+                def _parse_llm_raw(raw: str) -> dict:
+                    raw = raw.strip()
+                    if raw.startswith("```"):
+                        raw = raw.split("```")[1]
+                        if raw.startswith("json"):
+                            raw = raw[4:]
+                    return json.loads(raw.strip())
 
-                raw = msg.content[0].text.strip()
-                if raw.startswith("```"):
-                    raw = raw.split("```")[1]
-                    if raw.startswith("json"):
-                        raw = raw[4:]
-                data = json.loads(raw.strip())
+                async def _call_llm(content: list) -> dict:
+                    m = await client.messages.create(
+                        model=model,
+                        max_tokens=4096,
+                        system=_SYSTEM_PROMPT,
+                        messages=[{"role": "user", "content": content}],
+                    )
+                    return _parse_llm_raw(m.content[0].text)
+
+                if use_vision:
+                    content = _build_vision_content(columns_desc, page_images)
+                else:
+                    content = _build_text_content(columns_desc, full_text)
+
+                data = await _call_llm(content)
+
+                # ── Vision fallback ──────────────────────────────────────────
+                # If text path returned mostly nulls (garbled OCR) and we have
+                # page images, retry immediately with Vision for better accuracy.
+                if not use_vision and page_images:
+                    extracted = data.get("extracted_data") or {}
+                    null_count = sum(1 for v in extracted.values() if v is None)
+                    if null_count > len(columns) * 0.6:
+                        print(
+                            f"[TASK] ⚠️  {fname}: text gave {null_count}/{len(columns)} nulls "
+                            f"— retrying with Vision",
+                            flush=True,
+                        )
+                        vision_data = await _call_llm(
+                            _build_vision_content(columns_desc, page_images)
+                        )
+                        # Use vision result only if it's better (fewer nulls)
+                        v_extracted = vision_data.get("extracted_data") or {}
+                        v_null = sum(1 for v in v_extracted.values() if v is None)
+                        if v_null < null_count:
+                            data = vision_data
+
+                elapsed_ms = int((time.time() - t0) * 1000)
 
                 async with lock:
                     progress["ok"] += 1

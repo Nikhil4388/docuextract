@@ -3,21 +3,21 @@ from typing import List, Dict, Any, Optional
 import anthropic
 from app.core.config import settings
 
-EXTRACTION_SYSTEM_PROMPT = """You are a precise data extraction assistant.
-Extract the requested fields from the document (text or image provided).
-Return ONLY valid JSON with two keys:
-1. "extracted_data": {column_name: value, ...} — use null ONLY if the field truly cannot be found anywhere in the document
-2. "confidence_scores": {column_name: 0.0-1.0, ...} — confidence for each field
+EXTRACTION_SYSTEM_PROMPT = """You are an expert data extraction specialist for historical legal and financial documents (1880s–1940s).
 
-CONFIDENCE SCORING RULES (be accurate, not conservative):
-- 1.0 = field is explicitly present and unambiguous (e.g. a labeled field, clear header value)
-- 0.97-0.99 = field clearly found, minor formatting uncertainty
-- 0.95-0.96 = field found with high confidence, slight ambiguity in interpretation
-- 0.85-0.94 = field found but requires some inference
-- below 0.85 = genuinely uncertain or partially missing
+These documents often have OCR scanning artifacts — READ THROUGH THEM:
+• "l9l9", "l9l8", "l92O" etc. = 1919, 1918, 1920 (lowercase L mistaken for digit 1, O for 0)
+• "¬" at line end = hyphenation artifact, ignore and join the word across lines
+• Garbled uppercase runs (e.g. "AgrPPttttfttt") = OCR error for "Agreement" — use context
+• "$5O,OOO,OOO" → $50,000,000 (O vs 0 confusion)
 
-Most clearly labeled fields in structured documents (resumes, invoices, agreements) should score 0.95-1.0.
-Do NOT artificially lower scores — if you can clearly read the value, score it 0.97+."""
+EXTRACTION RULES:
+1. Return ONLY valid JSON: {"extracted_data": {...}, "confidence_scores": {...}}
+2. For fields with multiple values (serial maturity dates, multiple parties), join with " / "
+3. If a value has OCR noise but is CLEARLY inferable from context, extract it — score 0.85-0.94
+4. Use null ONLY if the field is genuinely absent from the entire document
+5. Score 0.97-1.0 for clean values; 0.85-0.96 for OCR-inferred but confident values
+6. Most fields in structured legal documents ARE present — search before returning null."""
 
 
 class ClaudeService:
@@ -59,13 +59,14 @@ class ClaudeService:
         else:
             content.append({
                 "type": "text",
-                "text": f"""Extract data from the following document text.
+                "text": f"""Extract data from this historical legal document.
+OCR artifacts to ignore: 'l9l9'=1919, '¬'=hyphen, garbled words = OCR errors for common terms.
 
 COLUMNS TO EXTRACT:
 {columns_desc}
 
 DOCUMENT TEXT:
-{text[:12000]}
+{text[:20000]}
 
 Return JSON with two keys:
 1. "extracted_data": {{column_name: value, ...}}
