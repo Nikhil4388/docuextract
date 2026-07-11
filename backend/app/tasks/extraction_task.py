@@ -415,6 +415,9 @@ async def _async_pipeline(job_id: str):
 
     # ── Step 4: Bulk-save all results ────────────────────────────────────
     def _save_all(db):
+        # Delete any existing results first — makes this safe to re-run on Celery
+        # retries without creating duplicate rows in the DB.
+        db.query(ExtractionResult).filter_by(job_id=job_uuid).delete()
         for path, outcome in all_results:
             fname = os.path.basename(path)
             if isinstance(outcome, Exception):

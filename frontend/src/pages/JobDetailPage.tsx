@@ -64,10 +64,11 @@ export default function JobDetailPage() {
     return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 100);
   };
 
-  // Build dynamic columns from first result
+  // Build dynamic columns from the first result that actually has extracted data
   const dynamicColumns: GridColDef[] = React.useMemo(() => {
     if (!results?.length) return [];
-    const firstRow = results[0];
+    // Skip failed rows (null extracted_data) when deriving column keys
+    const firstRow = results.find(r => r.extracted_data && Object.keys(r.extracted_data).length > 0) ?? results[0];
     const extractedKeys = Object.keys(firstRow.extracted_data ?? {});
     return [
       { field: 'file_name', headerName: 'File', flex: 1.5, minWidth: 200 },
