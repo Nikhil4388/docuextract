@@ -226,12 +226,17 @@ async def _async_pipeline(job_id: str):
                     io_pool, _extractor.extract_text, path
                 )
                 full_text = "\n\n".join(p["text"] for p in pages if p["text"])
+                # Only treat as scanned if text is truly sparse — PDFs with blank
+                # trailing pages produce a few image slots but have abundant OCR text.
+                # Sending those blank images while ignoring 90KB of good text = all nulls.
                 page_images = [p["image_b64"] for p in pages if p.get("image_b64")]
                 ocr_used = any(p["ocr_used"] for p in pages)
+                use_vision = bool(page_images) and len(full_text.strip()) < 500
 
                 print(
                     f"[TASK] 📄 {fname}: {len(pages)} pages, "
-                    f"{len(full_text)} text chars, {len(page_images)} image pages | "
+                    f"{len(full_text)} text chars, {len(page_images)} image pages, "
+                    f"mode={'VISION' if use_vision else 'TEXT'} | "
                     f"text_preview={full_text[:120]!r}",
                     flush=True,
                 )
@@ -239,7 +244,7 @@ async def _async_pipeline(job_id: str):
                 columns_desc = json.dumps(columns, indent=2)
                 t0 = time.time()
 
-                if page_images:
+                if use_vision:
                     content = [
                         {"type": "text", "text": (
                             f"Extract data from this scanned document.\n\n"
@@ -254,13 +259,13 @@ async def _async_pipeline(job_id: str):
                     content = [{"type": "text", "text": (
                         f"Extract data from this document.\n\n"
                         f"COLUMNS:\n{columns_desc}\n\n"
-                        f"TEXT:\n{full_text[:8000]}\n\n"
+                        f"TEXT:\n{full_text[:12000]}\n\n"
                         f"Return JSON only. Score clearly found fields 0.97+."
                     )}]
 
                 msg = await client.messages.create(
                     model=model,
-                    max_tokens=2000,
+                    max_tokens=4096,
                     system=_SYSTEM_PROMPT,
                     messages=[{"role": "user", "content": content}],
                 )

@@ -35,15 +35,19 @@ class ClaudeService:
     ) -> Dict[str, Any]:
         columns_desc = json.dumps(columns, indent=2)
 
-        # Build message content — for scanned docs send images directly to Claude Vision
+        # Build message content.
+        # Use Vision ONLY when text is truly sparse — PDFs with blank trailing pages
+        # produce image slots but have abundant OCR text; discarding that text causes
+        # all-null results. Prefer text whenever ≥500 chars are available.
         content: List[Any] = []
+        use_vision = bool(page_images) and len(text.strip()) < 500
 
-        if page_images:
+        if use_vision:
             content.append({
                 "type": "text",
                 "text": f"This is a scanned document. Extract data from the images below.\n\nCOLUMNS TO EXTRACT:\n{columns_desc}\n\nReturn JSON with 'extracted_data' and 'confidence_scores'. Score 0.97+ for any value you can clearly read."
             })
-            for img_b64 in page_images[:5]:  # max 5 pages
+            for img_b64 in page_images[:10]:  # max 10 pages
                 content.append({
                     "type": "image",
                     "source": {
@@ -61,7 +65,7 @@ COLUMNS TO EXTRACT:
 {columns_desc}
 
 DOCUMENT TEXT:
-{text[:8000]}
+{text[:12000]}
 
 Return JSON with two keys:
 1. "extracted_data": {{column_name: value, ...}}
@@ -70,7 +74,7 @@ Return JSON with two keys:
 
         message = self.client.messages.create(
             model=model,
-            max_tokens=2000,
+            max_tokens=4096,
             system=EXTRACTION_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": content}],
         )
