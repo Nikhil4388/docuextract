@@ -91,11 +91,30 @@ def _run_db(fn, retries: int = 3):
 
 
 # ── Constants ────────────────────────────────────────────────────────────────
+# Models that are EOL and must not be sent to the API.
 _DEPRECATED_MODELS = {
     "claude-3-haiku-20240307",
     "claude-3-sonnet-20240229",
     "claude-3-opus-20240229",
+    "claude-3-5-sonnet-20240620",
+    "claude-3-5-sonnet-20241022",
+    "claude-3-5-haiku-20241022",
+    "claude-3-7-sonnet-20250219",
+    "claude-opus-4-5",
+    "claude-sonnet-4-5",
+    "claude-haiku-4-6",
 }
+
+# All models the UI exposes. Any model not in this set falls back to default.
+_ALLOWED_MODELS = {
+    "claude-haiku-4-5-20251001",   # Fastest
+    "claude-sonnet-4-6",           # Balanced (default)
+    "claude-sonnet-5",             # New / smarter
+    "claude-opus-4-6",             # Quality
+    "claude-opus-4-8",             # Premium
+    "claude-fable-5",              # Most powerful
+}
+
 _DEFAULT_MODEL = "claude-sonnet-4-6"
 
 _SYSTEM_PROMPT = """You are an expert data extraction specialist for historical legal and financial documents (1880s–1940s).
@@ -163,11 +182,18 @@ async def _async_pipeline(job_id: str):
 
     job_uuid = snap["id"]
     columns = snap["columns"]
-    model = (
-        snap["llm_model"]
-        if snap["llm_model"] and snap["llm_model"] not in _DEPRECATED_MODELS
-        else _DEFAULT_MODEL
-    )
+    _requested = snap.get("llm_model") or ""
+    if _requested in _ALLOWED_MODELS:
+        model = _requested
+    elif _requested and _requested not in _DEPRECATED_MODELS:
+        # Unknown model string — try it anyway (forward-compat with future releases)
+        model = _requested
+        print(f"[TASK] ⚠️  Unknown model '{_requested}' — forwarding to API anyway", flush=True)
+    else:
+        model = _DEFAULT_MODEL
+        if _requested:
+            print(f"[TASK] ⚠️  Deprecated/invalid model '{_requested}' — falling back to {_DEFAULT_MODEL}", flush=True)
+    print(f"[TASK] 🤖 Model selected: {model} (requested: {_requested or 'none'})", flush=True)
 
     def _update_job(**kwargs):
         """Apply field updates to the job in a fresh session."""

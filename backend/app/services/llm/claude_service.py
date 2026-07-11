@@ -142,7 +142,7 @@ Return ONLY a valid JSON array. No markdown, no explanation, no wrapping object.
             })
 
         message = self.client.messages.create(
-            model="claude-sonnet-4-6",
+            model="claude-sonnet-5",  # Best column suggestions
             max_tokens=3000,
             system=system,
             messages=[{"role": "user", "content": content}],
