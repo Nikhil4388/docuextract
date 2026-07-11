@@ -46,7 +46,7 @@ function ExcelCard() {
       <Box sx={{
         position: 'relative', width: '100%', height: '100%',
         transformStyle: 'preserve-3d',
-        animation: 'cardFloat 9s ease-in-out infinite',
+        animation: 'cardFloat 4s ease-in-out infinite',
       }}>
         {/* Back slab — cyan */}
         <Box sx={{
@@ -493,7 +493,7 @@ export default function LandingPage() {
 
       {/* ── MARQUEE ── */}
       <Box sx={{ overflow: 'hidden', py: 3, mb: { xs: 4, md: 6 }, borderTop: '1px solid rgba(0,0,0,0.07)', borderBottom: '1px solid rgba(0,0,0,0.07)', bgcolor: 'rgba(0,0,0,0.02)' }}>
-        <Box sx={{ display: 'flex', animation: 'marqueeScroll 22s linear infinite', width: 'max-content' }}>
+        <Box sx={{ display: 'flex', animation: 'marqueeScroll 14s linear infinite', width: 'max-content' }}>
           {[...USE_CASES, ...USE_CASES].map((u, i) => (
             <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 3 }}>
               <Typography sx={{ fontSize: 15, whiteSpace: 'nowrap', color: '#94a3b8', fontWeight: 600 }}>{u}</Typography>
