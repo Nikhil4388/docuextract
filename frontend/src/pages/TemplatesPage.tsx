@@ -1,4 +1,10 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import * as pdfjsLib from 'pdfjs-dist';
+// Vite bundles the worker; new URL resolves it at build time
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.js',
+  import.meta.url,
+).href;
 import {
   Box, Button, Paper, Typography, Grid, Card, CardContent,
   CardActions, Dialog, DialogTitle, DialogContent, DialogActions,
@@ -56,75 +62,82 @@ function ColumnRow({
   );
 }
 
-// ── PDF loaded card — shows when PDF is uploaded ──────────────────────────────
-function PdfLoadedCard({ pdfName, pdfSize }: { pdfName: string; pdfSize?: number }) {
-  const sizeLabel = pdfSize
-    ? pdfSize > 1024 * 1024
-      ? `${(pdfSize / 1024 / 1024).toFixed(1)} MB`
-      : `${(pdfSize / 1024).toFixed(0)} KB`
-    : null;
+// ── PDF canvas — renders first page using pdfjs-dist npm bundle (no CSP issues) ──
+function PdfCanvas({ file }: { file: File }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [pageCount, setPageCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [renderError, setRenderError] = useState(false);
 
-  // Deterministic "line" widths to simulate a document
-  const lines = [92, 78, 85, 55, 88, 70, 80, 60, 75, 45, 83, 68];
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setRenderError(false);
+
+    (async () => {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        if (cancelled) return;
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        if (cancelled) return;
+        setPageCount(pdf.numPages);
+        const page = await pdf.getPage(1);
+        if (cancelled) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        // Scale to fit ~600px wide (the panel is ~46% of a 1200px dialog)
+        const viewport = page.getViewport({ scale: 1 });
+        const scale = Math.min(600 / viewport.width, 2);
+        const scaled = page.getViewport({ scale });
+        canvas.width = scaled.width;
+        canvas.height = scaled.height;
+        const ctx = canvas.getContext('2d')!;
+        await page.render({ canvasContext: ctx, viewport: scaled }).promise;
+        if (!cancelled) setLoading(false);
+      } catch {
+        if (!cancelled) { setLoading(false); setRenderError(true); }
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [file]);
 
   return (
     <Box sx={{
-      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', gap: 2, py: 3,
+      position: 'relative', width: '100%', flex: 1, overflow: 'auto',
+      bgcolor: '#525659', display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+      borderRadius: 2,
     }}>
-      {/* Simulated document */}
-      <Box sx={{
-        width: 180, bgcolor: 'white', borderRadius: 3,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
-        overflow: 'hidden', border: '1px solid #f0f0f0',
-      }}>
-        {/* Doc header bar */}
-        <Box sx={{ bgcolor: '#667eea', px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 0.8 }}>
-          {['#ff5f57','#febc2e','#28c840'].map((c) => (
-            <Box key={c} sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: c }} />
-          ))}
-          <Box sx={{ flex: 1, height: 4, bgcolor: 'rgba(255,255,255,0.3)', borderRadius: 2, ml: 0.5 }} />
+      {loading && !renderError && (
+        <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <CircularProgress size={28} sx={{ color: 'white' }} />
         </Box>
-        {/* Doc body */}
-        <Box sx={{ p: 1.5 }}>
-          {lines.map((w, i) => (
-            <Box key={i} sx={{
-              height: 5, borderRadius: 2, mb: 0.7,
-              bgcolor: i === 0 ? '#667eea' : i % 4 === 3 ? '#667eea20' : '#e8e8e8',
-              width: `${w}%`,
-            }} />
-          ))}
+      )}
+      {renderError ? (
+        <Box sx={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, p: 4, textAlign: 'center', mt: 4 }}>
+          Could not render preview
         </Box>
-      </Box>
-
-      {/* Checkmark badge */}
-      <Box sx={{
-        display: 'flex', alignItems: 'center', gap: 1,
-        bgcolor: '#ecfdf5', border: '1px solid #6ee7b7',
-        borderRadius: 10, px: 2, py: 0.8,
-      }}>
-        <Box component="span" sx={{ color: '#10b981', fontWeight: 800, fontSize: 14 }}>✓</Box>
-        <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#065f46' }}>PDF loaded successfully</Typography>
-      </Box>
-
-      {/* File info */}
-      <Box sx={{ textAlign: 'center' }}>
-        <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#374151', wordBreak: 'break-all', px: 1 }}>
-          {pdfName}
-        </Typography>
-        {sizeLabel && (
-          <Typography sx={{ fontSize: 11, color: '#9ca3af', mt: 0.3 }}>{sizeLabel}</Typography>
-        )}
-      </Box>
+      ) : (
+        <canvas ref={canvasRef} style={{ display: 'block', maxWidth: '100%', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }} />
+      )}
+      {pageCount > 0 && (
+        <Box sx={{
+          position: 'absolute', bottom: 10, right: 10,
+          bgcolor: 'rgba(0,0,0,0.6)', color: 'white',
+          fontSize: 11, fontWeight: 600, px: 1.2, py: 0.5, borderRadius: 1,
+        }}>
+          Page 1 / {pageCount}
+        </Box>
+      )}
     </Box>
   );
 }
 
 // ── PDF left panel ────────────────────────────────────────────────────────────
 function PdfPanel({
-  pdfUrl, pdfName, pdfSize, isAnalyzing, isDragActive, getRootProps, getInputProps,
+  pdfFile, isAnalyzing, isDragActive, getRootProps, getInputProps,
 }: {
-  pdfUrl: string | null; pdfName: string | null; pdfSize: number | null; isAnalyzing: boolean;
+  pdfFile: File | null; isAnalyzing: boolean;
   isDragActive: boolean;
   getRootProps: () => any; getInputProps: () => any;
 }) {
@@ -142,15 +155,15 @@ function PdfPanel({
         </Typography>
       </Box>
 
-      {pdfUrl ? (
-        // PDF loaded — show styled card + replace button
+      {pdfFile ? (
+        // PDF loaded — render via pdfjs-dist (no iframe, no CSP)
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <Box sx={{
             flex: 1, borderRadius: 2, overflow: 'hidden',
-            border: '1px solid #e8e8e8', bgcolor: '#f9fafb',
+            border: '1px solid #e0e0e0',
             minHeight: 360, display: 'flex',
           }}>
-            <PdfLoadedCard pdfName={pdfName ?? ''} pdfSize={pdfSize ?? undefined} />
+            <PdfCanvas file={pdfFile} />
           </Box>
           {/* Replace button */}
           <Box
@@ -171,7 +184,7 @@ function PdfPanel({
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: '#10b981', boxShadow: '0 0 6px #10b981', flexShrink: 0 }} />
-            <Typography variant="caption" color="text.secondary" noWrap>{pdfName}</Typography>
+            <Typography variant="caption" color="text.secondary" noWrap>{pdfFile.name}</Typography>
           </Box>
         </Box>
       ) : (
@@ -436,7 +449,7 @@ export default function TemplatesPage() {
         <DialogContent sx={{ p: 0, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, minHeight: 540, overflow: 'hidden' }}>
           {/* LEFT — PDF preview */}
           <PdfPanel
-            pdfUrl={pdfUrl} pdfName={pdfFile?.name ?? null} pdfSize={pdfSize}
+            pdfFile={pdfFile}
             isAnalyzing={isAnalyzing} isDragActive={isDragActive}
             getRootProps={getRootProps} getInputProps={getInputProps}
           />
