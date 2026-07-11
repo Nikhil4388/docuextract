@@ -126,6 +126,16 @@ These documents often have OCR scanning artifacts — READ THROUGH THEM:
 • "$5O,OOO,OOO" → $50,000,000 (O vs 0 confusion)
 • Split numbers across lines should be read as one value
 
+VALUE FORMAT — CRITICAL:
+Extract ONLY the essential value. NEVER copy surrounding sentence text.
+• Interest rate → "6%" not "at the rate of six per cent. (6%) per annum"
+• Date → "January 1, 1919" not "made this 1st day of January in the year 1919"
+• Amount → "$50,000,000" not "the aggregate principal amount of fifty million dollars ($50,000,000)"
+• Company name → "Anaconda Copper Mining Company" not "the party of the first part, Anaconda Copper Mining Company, a corporation"
+• State → "Montana" not "incorporated under the laws of the State of Montana"
+• Yes/No fields → "Yes" or "No" only
+• Numbers → digits only, e.g. "10" not "ten (10) years"
+
 EXTRACTION RULES:
 1. Return ONLY valid JSON: {"extracted_data": {...}, "confidence_scores": {...}}
 2. For fields with multiple values (serial maturity dates, multiple parties), join with " / "
