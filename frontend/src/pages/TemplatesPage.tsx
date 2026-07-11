@@ -56,73 +56,75 @@ function ColumnRow({
   );
 }
 
-// ── PDF canvas renderer (avoids CSP blob: iframe block) ──────────────────────
-function PdfCanvas({ pdfUrl }: { pdfUrl: string }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [pageCount, setPageCount] = useState(0);
+// ── PDF loaded card — shows when PDF is uploaded ──────────────────────────────
+function PdfLoadedCard({ pdfName, pdfSize }: { pdfName: string; pdfSize?: number }) {
+  const sizeLabel = pdfSize
+    ? pdfSize > 1024 * 1024
+      ? `${(pdfSize / 1024 / 1024).toFixed(1)} MB`
+      : `${(pdfSize / 1024).toFixed(0)} KB`
+    : null;
 
-  useEffect(() => {
-    if (!pdfUrl) return;
-    let cancelled = false;
-
-    // Dynamically load PDF.js from CDN to avoid needing an npm package
-    const script = document.getElementById('pdfjs-script') as HTMLScriptElement | null;
-    const render = async () => {
-      const pdfjsLib = (window as any).pdfjsLib;
-      if (!pdfjsLib) return;
-      pdfjsLib.GlobalWorkerOptions.workerSrc =
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-      try {
-        const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
-        if (cancelled) return;
-        setPageCount(pdf.numPages);
-        const page = await pdf.getPage(1);
-        if (cancelled) return;
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const viewport = page.getViewport({ scale: 1.4 });
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        await page.render({ canvasContext: canvas.getContext('2d')!, viewport }).promise;
-      } catch { /* silently fail — placeholder shows */ }
-    };
-
-    if ((window as any).pdfjsLib) {
-      render();
-    } else {
-      const s = document.createElement('script');
-      s.id = 'pdfjs-script';
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-      s.onload = render;
-      document.head.appendChild(s);
-    }
-    return () => { cancelled = true; };
-  }, [pdfUrl]);
+  // Deterministic "line" widths to simulate a document
+  const lines = [92, 78, 85, 55, 88, 70, 80, 60, 75, 45, 83, 68];
 
   return (
-    <Box sx={{ position: 'relative', width: '100%', flex: 1, minHeight: 0, overflow: 'hidden', borderRadius: 2, bgcolor: '#f5f5f5' }}>
-      <canvas
-        ref={canvasRef}
-        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
-      />
-      {pageCount > 0 && (
-        <Box sx={{
-          position: 'absolute', bottom: 8, right: 8,
-          bgcolor: 'rgba(0,0,0,0.55)', color: 'white',
-          fontSize: 11, fontWeight: 600, px: 1.2, py: 0.4, borderRadius: 1,
-        }}>
-          {pageCount} page{pageCount !== 1 ? 's' : ''}
+    <Box sx={{
+      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: 'center', gap: 2, py: 3,
+    }}>
+      {/* Simulated document */}
+      <Box sx={{
+        width: 180, bgcolor: 'white', borderRadius: 3,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
+        overflow: 'hidden', border: '1px solid #f0f0f0',
+      }}>
+        {/* Doc header bar */}
+        <Box sx={{ bgcolor: '#667eea', px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 0.8 }}>
+          {['#ff5f57','#febc2e','#28c840'].map((c) => (
+            <Box key={c} sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: c }} />
+          ))}
+          <Box sx={{ flex: 1, height: 4, bgcolor: 'rgba(255,255,255,0.3)', borderRadius: 2, ml: 0.5 }} />
         </Box>
-      )}
+        {/* Doc body */}
+        <Box sx={{ p: 1.5 }}>
+          {lines.map((w, i) => (
+            <Box key={i} sx={{
+              height: 5, borderRadius: 2, mb: 0.7,
+              bgcolor: i === 0 ? '#667eea' : i % 4 === 3 ? '#667eea20' : '#e8e8e8',
+              width: `${w}%`,
+            }} />
+          ))}
+        </Box>
+      </Box>
+
+      {/* Checkmark badge */}
+      <Box sx={{
+        display: 'flex', alignItems: 'center', gap: 1,
+        bgcolor: '#ecfdf5', border: '1px solid #6ee7b7',
+        borderRadius: 10, px: 2, py: 0.8,
+      }}>
+        <Box component="span" sx={{ color: '#10b981', fontWeight: 800, fontSize: 14 }}>✓</Box>
+        <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#065f46' }}>PDF loaded successfully</Typography>
+      </Box>
+
+      {/* File info */}
+      <Box sx={{ textAlign: 'center' }}>
+        <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#374151', wordBreak: 'break-all', px: 1 }}>
+          {pdfName}
+        </Typography>
+        {sizeLabel && (
+          <Typography sx={{ fontSize: 11, color: '#9ca3af', mt: 0.3 }}>{sizeLabel}</Typography>
+        )}
+      </Box>
     </Box>
   );
 }
 
 // ── PDF left panel ────────────────────────────────────────────────────────────
 function PdfPanel({
-  pdfUrl, pdfName, isAnalyzing, isDragActive, getRootProps, getInputProps,
+  pdfUrl, pdfName, pdfSize, isAnalyzing, isDragActive, getRootProps, getInputProps,
 }: {
-  pdfUrl: string | null; pdfName: string | null; isAnalyzing: boolean;
+  pdfUrl: string | null; pdfName: string | null; pdfSize: number | null; isAnalyzing: boolean;
   isDragActive: boolean;
   getRootProps: () => any; getInputProps: () => any;
 }) {
@@ -141,14 +143,14 @@ function PdfPanel({
       </Box>
 
       {pdfUrl ? (
-        // PDF loaded — render via canvas (no CSP issues)
+        // PDF loaded — show styled card + replace button
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <Box sx={{
             flex: 1, borderRadius: 2, overflow: 'hidden',
-            border: '1px solid #e0e0e0', boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+            border: '1px solid #e8e8e8', bgcolor: '#f9fafb',
             minHeight: 360, display: 'flex',
           }}>
-            <PdfCanvas pdfUrl={pdfUrl} />
+            <PdfLoadedCard pdfName={pdfName ?? ''} pdfSize={pdfSize ?? undefined} />
           </Box>
           {/* Replace button */}
           <Box
@@ -263,6 +265,7 @@ export default function TemplatesPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfSize, setPdfSize] = useState<number | null>(null);
   const pdfUrlRef = useRef<string | null>(null);
 
   // Edit dialog
@@ -311,6 +314,7 @@ export default function TemplatesPage() {
     pdfUrlRef.current = url;
     setPdfFile(file);
     setPdfUrl(url);
+    setPdfSize(file.size);
 
     // Analyze with AI
     setIsAnalyzing(true);
@@ -339,6 +343,7 @@ export default function TemplatesPage() {
     if (pdfUrlRef.current) { URL.revokeObjectURL(pdfUrlRef.current); pdfUrlRef.current = null; }
     setPdfFile(null);
     setPdfUrl(null);
+    setPdfSize(null);
     setUploadAlert(null);
   };
 
@@ -431,7 +436,7 @@ export default function TemplatesPage() {
         <DialogContent sx={{ p: 0, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, minHeight: 540, overflow: 'hidden' }}>
           {/* LEFT — PDF preview */}
           <PdfPanel
-            pdfUrl={pdfUrl} pdfName={pdfFile?.name ?? null}
+            pdfUrl={pdfUrl} pdfName={pdfFile?.name ?? null} pdfSize={pdfSize}
             isAnalyzing={isAnalyzing} isDragActive={isDragActive}
             getRootProps={getRootProps} getInputProps={getInputProps}
           />
