@@ -62,9 +62,9 @@ function ColumnRow({
   );
 }
 
-// ── PDF canvas — renders first page using pdfjs-dist npm bundle (no CSP issues) ──
+// ── PDF viewer — renders ALL pages stacked, scrollable ───────────────────────
 function PdfCanvas({ file }: { file: File }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [pageCount, setPageCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [renderError, setRenderError] = useState(false);
@@ -73,6 +73,10 @@ function PdfCanvas({ file }: { file: File }) {
     let cancelled = false;
     setLoading(true);
     setRenderError(false);
+    setPageCount(0);
+
+    // Clear previous canvases
+    if (containerRef.current) containerRef.current.innerHTML = '';
 
     (async () => {
       try {
@@ -81,19 +85,39 @@ function PdfCanvas({ file }: { file: File }) {
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         if (cancelled) return;
         setPageCount(pdf.numPages);
-        const page = await pdf.getPage(1);
-        if (cancelled) return;
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        // Scale to fit ~600px wide (the panel is ~46% of a 1200px dialog)
-        const viewport = page.getViewport({ scale: 1 });
-        const scale = Math.min(600 / viewport.width, 2);
-        const scaled = page.getViewport({ scale });
-        canvas.width = scaled.width;
-        canvas.height = scaled.height;
-        const ctx = canvas.getContext('2d')!;
-        await page.render({ canvasContext: ctx, viewport: scaled }).promise;
-        if (!cancelled) setLoading(false);
+        setLoading(false);
+
+        // Render pages one by one and append canvases
+        for (let i = 1; i <= pdf.numPages; i++) {
+          if (cancelled) return;
+          const page = await pdf.getPage(i);
+          if (cancelled) return;
+
+          const viewport = page.getViewport({ scale: 1 });
+          // Fit to ~560px wide (panel width minus padding)
+          const scale = Math.min(560 / viewport.width, 2);
+          const scaled = page.getViewport({ scale });
+
+          const canvas = document.createElement('canvas');
+          canvas.width = scaled.width;
+          canvas.height = scaled.height;
+          canvas.style.display = 'block';
+          canvas.style.width = '100%';
+          canvas.style.marginBottom = '8px';
+          canvas.style.boxShadow = '0 2px 12px rgba(0,0,0,0.4)';
+
+          // Page number label
+          const label = document.createElement('div');
+          label.textContent = `Page ${i} of ${pdf.numPages}`;
+          label.style.cssText = 'color:rgba(255,255,255,0.5);font-size:11px;text-align:center;padding:4px 0 8px;font-family:sans-serif;';
+
+          if (containerRef.current && !cancelled) {
+            containerRef.current.appendChild(canvas);
+            containerRef.current.appendChild(label);
+            const ctx = canvas.getContext('2d')!;
+            await page.render({ canvasContext: ctx, viewport: scaled }).promise;
+          }
+        }
       } catch {
         if (!cancelled) { setLoading(false); setRenderError(true); }
       }
@@ -104,29 +128,26 @@ function PdfCanvas({ file }: { file: File }) {
 
   return (
     <Box sx={{
-      position: 'relative', width: '100%',
-      bgcolor: '#525659', display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-      minHeight: '100%',
+      width: '100%', bgcolor: '#525659', p: 1.5,
+      display: 'flex', flexDirection: 'column',
     }}>
-      {loading && !renderError && (
-        <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {loading && (
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 6 }}>
           <CircularProgress size={28} sx={{ color: 'white' }} />
+          <Box component="span" sx={{ color: 'rgba(255,255,255,0.6)', ml: 1.5, fontSize: 13 }}>
+            Loading PDF…
+          </Box>
         </Box>
       )}
-      {renderError ? (
-        <Box sx={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, p: 4, textAlign: 'center', mt: 4 }}>
+      {renderError && (
+        <Box sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, p: 4, textAlign: 'center' }}>
           Could not render preview
         </Box>
-      ) : (
-        <canvas ref={canvasRef} style={{ display: 'block', maxWidth: '100%', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }} />
       )}
+      <div ref={containerRef} style={{ width: '100%' }} />
       {pageCount > 0 && (
-        <Box sx={{
-          position: 'absolute', bottom: 10, right: 10,
-          bgcolor: 'rgba(0,0,0,0.6)', color: 'white',
-          fontSize: 11, fontWeight: 600, px: 1.2, py: 0.5, borderRadius: 1,
-        }}>
-          Page 1 / {pageCount}
+        <Box sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, textAlign: 'center', pt: 1 }}>
+          {pageCount} pages total
         </Box>
       )}
     </Box>
