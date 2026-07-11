@@ -167,7 +167,7 @@ function PdfPanel({
       width: { xs: '100%', md: '46%' }, flexShrink: 0,
       borderRight: { md: '1px solid #eee' },
       display: 'flex', flexDirection: 'column', p: 3,
-      bgcolor: '#fafafa', minHeight: 0, overflow: 'hidden',
+      bgcolor: '#fafafa',
     }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <AutoAwesome sx={{ color: '#667eea', fontSize: 18 }} />
@@ -179,11 +179,12 @@ function PdfPanel({
       {pdfFile ? (
         // PDF loaded — render via pdfjs-dist (no iframe, no CSP)
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {/* Explicit height so overflow:auto actually creates a scrollbar */}
           <Box sx={{
-            flex: 1, borderRadius: 2, overflow: 'auto',
+            height: 'calc(92vh - 260px)',
+            overflowY: 'auto',
+            borderRadius: 2,
             border: '1px solid #e0e0e0',
-            minHeight: 0,          /* let flex shrink below content size */
-            display: 'flex',
           }}>
             <PdfCanvas file={pdfFile} />
           </Box>
@@ -219,7 +220,7 @@ function PdfPanel({
             bgcolor: isDragActive ? '#667eea08' : '#fff',
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
-            gap: 1.5, cursor: 'pointer', minHeight: 400,
+            gap: 1.5, cursor: 'pointer', height: 'calc(92vh - 260px)',
             transition: 'all 0.2s',
             '&:hover': { borderColor: '#667eea', bgcolor: '#667eea06' },
           }}
@@ -468,7 +469,7 @@ export default function TemplatesPage() {
           <IconButton size="small" onClick={handleCloseCreate}><Close fontSize="small" /></IconButton>
         </DialogTitle>
 
-        <DialogContent sx={{ p: 0, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, minHeight: 540, overflow: 'hidden', height: 'calc(92vh - 130px)' }}>
+        <DialogContent sx={{ p: 0, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, overflow: 'hidden' }}>
           {/* LEFT — PDF preview */}
           <PdfPanel
             pdfFile={pdfFile}
@@ -477,7 +478,7 @@ export default function TemplatesPage() {
           />
 
           {/* RIGHT — Column config */}
-          <Box sx={{ flex: 1, p: 3, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ flex: 1, p: 3, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2, height: 'calc(92vh - 130px)' }}>
             <TextField
               label="Template Name" fullWidth value={templateName}
               onChange={(e) => setTemplateName(e.target.value)}
