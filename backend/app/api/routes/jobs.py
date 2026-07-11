@@ -301,50 +301,52 @@ async def upload_files(
         region_name=settings.AWS_DEFAULT_REGION,
     )
 
-    async def upload_file(file: UploadFile):
-        # 1. Extension check
-        if not file.filename.lower().endswith('.pdf'):
-            return None
+    import re, os
 
-        # 2. File size check (before reading the whole thing)
-        max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    # ── Phase 1: Read all files sequentially ────────────────────────────────
+    # UploadFile.read() is NOT safe to call concurrently — two coroutines
+    # sharing the same multipart stream can receive each other's bytes,
+    # making both S3 objects contain the first file's content.
+    # Reading is fast (bytes already in memory), so sequential is fine.
+    max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    file_data: list = []  # list of (safe_name, content_bytes)
+    for file in files:
+        if not file.filename.lower().endswith('.pdf'):
+            continue
+
         content = await file.read(max_bytes + 1)
+
         if len(content) > max_bytes:
             raise HTTPException(
                 status_code=413,
                 detail=f"File '{file.filename}' exceeds {settings.MAX_UPLOAD_SIZE_MB} MB limit.",
             )
-
-        # 3. Magic-bytes check — real PDFs start with %PDF-
         if not content.startswith(b"%PDF-"):
             raise HTTPException(
                 status_code=400,
                 detail=f"File '{file.filename}' is not a valid PDF (magic bytes mismatch).",
             )
 
-        # 4. Sanitize filename — strip directory traversal chars
-        import re, os
         safe_name = re.sub(r"[^\w\-. ]", "_", os.path.basename(file.filename))
+        file_data.append((safe_name, content))
+
+    # ── Phase 2: Upload to S3 concurrently ──────────────────────────────────
+    # S3 puts are network-bound and safe to parallelize — each has its own
+    # key and its own bytes object captured in the closure.
+    import asyncio
+    loop = asyncio.get_event_loop()
+
+    async def s3_put(safe_name: str, data: bytes) -> str:
         key = f"{prefix}/{safe_name}"
-        # Run blocking S3 upload in thread pool
-        import asyncio
-        loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, lambda: s3.put_object(
             Bucket=settings.S3_BUCKET,
             Key=key,
-            Body=content,
+            Body=data,
             ContentType="application/pdf",
         ))
         return safe_name
 
-    # Sequential reads: concurrent UploadFile.read() calls can produce
-    # duplicate content when both coroutines read from the same multipart
-    # stream position, causing both S3 objects to contain the first file's bytes.
-    results = []
-    for f in files:
-        r = await upload_file(f)
-        results.append(r)
-    saved = [r for r in results if r]
+    saved = list(await asyncio.gather(*[s3_put(n, d) for n, d in file_data]))
     # Return S3 path in format "bucket/prefix" for _collect_pdfs
     upload_path = f"{settings.S3_BUCKET}/{prefix}"
     return {"upload_path": upload_path, "storage_provider": "s3", "session_id": sid, "files": saved}
