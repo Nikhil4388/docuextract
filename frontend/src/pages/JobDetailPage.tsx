@@ -161,8 +161,8 @@ export default function JobDetailPage() {
         </Alert>
       )}
 
-      {/* Stats */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+      {/* Stats + Export */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center', flexWrap: 'wrap' }}>
         {[
           ['Total Files', job.total_files],
           ['Processed', job.processed_files],
@@ -176,6 +176,25 @@ export default function JobDetailPage() {
             <Typography fontWeight={700}>{value as string}</Typography>
           </Paper>
         ))}
+        {job.status === 'completed' && (
+          <Button
+            variant="contained"
+            startIcon={<Download />}
+            onClick={handleExport}
+            sx={{
+              borderRadius: 2,
+              whiteSpace: 'nowrap',
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              boxShadow: '0 4px 14px rgba(99,102,241,0.35)',
+              px: 2.5, py: 1.5,
+              fontWeight: 700,
+              '&:hover': { opacity: 0.9, transform: 'translateY(-1px)' },
+              transition: 'all 0.2s ease',
+            }}
+          >
+            Export Excel
+          </Button>
+        )}
       </Box>
 
       {/* Results Table */}
@@ -191,11 +210,6 @@ export default function JobDetailPage() {
               InputProps={{ startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment> }}
               sx={{ width: 220 }}
             />
-            {job.status === 'completed' && (
-              <Button variant="contained" startIcon={<Download />} onClick={handleExport} sx={{ borderRadius: 2, whiteSpace: 'nowrap' }}>
-                Export Excel
-              </Button>
-            )}
           </Box>
           <DataGrid
             rows={rows}

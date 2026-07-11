@@ -300,26 +300,64 @@ async def _async_pipeline(job_id: str):
 
                 data = await _call_llm(content)
 
-                # ── Vision fallback ──────────────────────────────────────────
+                # ── Vision fallback (pre-existing page images) ───────────────
                 # If text path returned mostly nulls (garbled OCR) and we have
-                # page images, retry immediately with Vision for better accuracy.
+                # page images from below-threshold pages, retry with Vision.
                 if not use_vision and page_images:
                     extracted = data.get("extracted_data") or {}
                     null_count = sum(1 for v in extracted.values() if v is None)
                     if null_count > len(columns) * 0.6:
                         print(
                             f"[TASK] ⚠️  {fname}: text gave {null_count}/{len(columns)} nulls "
-                            f"— retrying with Vision",
+                            f"— retrying with Vision (pre-rendered pages)",
                             flush=True,
                         )
                         vision_data = await _call_llm(
                             _build_vision_content(columns_desc, page_images)
                         )
-                        # Use vision result only if it's better (fewer nulls)
                         v_extracted = vision_data.get("extracted_data") or {}
                         v_null = sum(1 for v in v_extracted.values() if v is None)
                         if v_null < null_count:
                             data = vision_data
+                            print(f"[TASK] ✅ {fname}: Vision improved nulls {null_count}→{v_null}", flush=True)
+
+                # ── Render-on-demand Vision fallback ─────────────────────────
+                # If ALL pages had OCR text (page_images is empty) but extraction
+                # still returns mostly nulls, the OCR quality is too poor to parse.
+                # Render first 10 pages as PNG images on-demand and retry with Vision.
+                if not use_vision and not page_images:
+                    extracted = data.get("extracted_data") or {}
+                    null_count = sum(1 for v in extracted.values() if v is None)
+                    if null_count > len(columns) * 0.6:
+                        print(
+                            f"[TASK] 🖼️  {fname}: text gave {null_count}/{len(columns)} nulls "
+                            f"and no pre-rendered images — rendering pages on-demand for Vision",
+                            flush=True,
+                        )
+
+                        def _render_pages(pdf_path: str, num_pages: int = 10) -> list:
+                            import fitz as _fitz, base64 as _b64
+                            _doc = _fitz.open(pdf_path)
+                            _images = []
+                            _mat = _fitz.Matrix(2, 2)
+                            for _i, _page in enumerate(_doc):
+                                if _i >= num_pages:
+                                    break
+                                _pix = _page.get_pixmap(matrix=_mat)
+                                _images.append(_b64.b64encode(_pix.tobytes("png")).decode("utf-8"))
+                            _doc.close()
+                            return _images
+
+                        rendered = await loop.run_in_executor(io_pool, _render_pages, path)
+                        print(f"[TASK] 🖼️  {fname}: rendered {len(rendered)} pages", flush=True)
+                        vision_data = await _call_llm(_build_vision_content(columns_desc, rendered))
+                        v_extracted = vision_data.get("extracted_data") or {}
+                        v_null = sum(1 for v in v_extracted.values() if v is None)
+                        if v_null < null_count:
+                            data = vision_data
+                            print(f"[TASK] ✅ {fname}: on-demand Vision improved nulls {null_count}→{v_null}", flush=True)
+                        else:
+                            print(f"[TASK] ⚠️  {fname}: Vision didn't improve ({v_null} vs {null_count} nulls), keeping text result", flush=True)
 
                 elapsed_ms = int((time.time() - t0) * 1000)
 
