@@ -162,6 +162,37 @@ function PdfPanel({
   );
 }
 
+// ── Shared button styles ──────────────────────────────────────────────────────
+const btnPrimary = {
+  borderRadius: '10px',
+  textTransform: 'none' as const,
+  fontWeight: 600,
+  px: 3,
+  py: 1,
+  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  boxShadow: '0 4px 14px rgba(102,126,234,0.4)',
+  color: 'white',
+  '&:hover': {
+    background: 'linear-gradient(135deg, #5a70e0 0%, #6a3f96 100%)',
+    boxShadow: '0 6px 20px rgba(102,126,234,0.55)',
+    transform: 'translateY(-1px)',
+  },
+  '&:active': { transform: 'translateY(0)' },
+  transition: 'all 0.18s ease',
+  '&.Mui-disabled': { background: '#e0e0e0', boxShadow: 'none', color: '#aaa' },
+};
+
+const btnSecondary = {
+  borderRadius: '10px',
+  textTransform: 'none' as const,
+  fontWeight: 500,
+  px: 2.5,
+  color: '#64748b',
+  border: '1.5px solid #e2e8f0',
+  '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' },
+  transition: 'all 0.15s ease',
+};
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function TemplatesPage() {
   const qc = useQueryClient();
@@ -288,8 +319,7 @@ export default function TemplatesPage() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5" fontWeight={700}>Column Templates</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={openCreate}
-          sx={{ borderRadius: 2, background: 'linear-gradient(135deg, #667eea, #764ba2)', boxShadow: 'none' }}>
+        <Button variant="contained" startIcon={<Add />} onClick={openCreate} sx={btnPrimary}>
           New Template
         </Button>
       </Box>
@@ -390,12 +420,11 @@ export default function TemplatesPage() {
         </DialogContent>
 
         <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid #f0f0f0', gap: 1 }}>
-          <Button onClick={handleCloseCreate} sx={{ textTransform: 'none' }}>Cancel</Button>
+          <Button variant="outlined" onClick={handleCloseCreate} sx={btnSecondary}>Cancel</Button>
           <Button
             variant="contained" onClick={() => createMutation.mutate()}
             disabled={!templateName || createMutation.isPending}
-            sx={{ borderRadius: 2, textTransform: 'none', px: 3,
-              background: 'linear-gradient(135deg, #667eea, #764ba2)', boxShadow: 'none' }}
+            sx={btnPrimary}
           >
             {createMutation.isPending ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Create Template'}
           </Button>
@@ -436,12 +465,11 @@ export default function TemplatesPage() {
           </Button>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, borderTop: '1px solid #f0f0f0', gap: 1 }}>
-          <Button onClick={() => setEditOpen(false)} sx={{ textTransform: 'none' }}>Cancel</Button>
+          <Button variant="outlined" onClick={() => setEditOpen(false)} sx={btnSecondary}>Cancel</Button>
           <Button
             variant="contained" onClick={() => updateMutation.mutate()}
             disabled={!editName || updateMutation.isPending}
-            sx={{ borderRadius: 2, textTransform: 'none', px: 3,
-              background: 'linear-gradient(135deg, #667eea, #764ba2)', boxShadow: 'none' }}
+            sx={btnPrimary}
           >
             {updateMutation.isPending ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Save Changes'}
           </Button>
