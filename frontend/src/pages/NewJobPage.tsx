@@ -17,9 +17,12 @@ const STEPS = [
 ];
 
 const CLAUDE_MODELS = [
-  { value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5', tag: 'Fastest', color: '#10b981', desc: '~3s/file · Great for bulk runs' },
-  { value: 'claude-sonnet-4-6',         label: 'Sonnet 4.6', tag: 'Balanced', color: '#6366f1', desc: '~6s/file · High accuracy' },
-  { value: 'claude-opus-4-6',           label: 'Opus 4.6',   tag: 'Best',    color: '#8b5cf6', desc: '~8s/file · Maximum quality' },
+  { value: 'claude-sonnet-4-6',         label: 'Sonnet 4.6', tag: 'Recommended', color: '#6366f1', desc: '~6s/file · Best balance of speed & accuracy', recommended: true },
+  { value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5',  tag: 'Fastest',     color: '#10b981', desc: '~3s/file · Great for bulk runs, simple docs' },
+  { value: 'claude-sonnet-5',           label: 'Sonnet 5',   tag: 'New',         color: '#06b6d4', desc: '~5s/file · Smarter than 4.6, fast output' },
+  { value: 'claude-opus-4-6',           label: 'Opus 4.6',   tag: 'Quality',     color: '#8b5cf6', desc: '~8s/file · Deep reasoning, complex docs' },
+  { value: 'claude-opus-4-8',           label: 'Opus 4.8',   tag: 'Premium',     color: '#7c3aed', desc: '~10s/file · Best for enterprise & agentic jobs' },
+  { value: 'claude-fable-5',            label: 'Fable 5',    tag: 'Most Powerful', color: '#dc2626', desc: '~15s/file · Highest accuracy, any document type' },
 ];
 
 export default function NewJobPage() {
@@ -362,41 +365,47 @@ export default function NewJobPage() {
                 Choose the Claude model — faster models work great for most jobs
               </Typography>
 
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
-                {CLAUDE_MODELS.map((m) => (
-                  <Box key={m.value}
-                    onClick={() => setLlmModel(m.value)}
-                    sx={{
-                      p: 2.5, borderRadius: 3, cursor: 'pointer',
-                      border: `1.5px solid ${llmModel === m.value ? m.color : '#e2e8f0'}`,
-                      bgcolor: llmModel === m.value ? `${m.color}08` : 'white',
-                      display: 'flex', alignItems: 'center', gap: 2.5,
-                      boxShadow: llmModel === m.value ? `0 4px 16px ${m.color}25` : '0 1px 4px rgba(0,0,0,0.04)',
-                      transition: 'all 0.2s ease',
-                      '&:hover': { borderColor: m.color, bgcolor: `${m.color}06` },
-                    }}>
-                    {/* Selection radio */}
-                    <Box sx={{
-                      width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-                      border: `2px solid ${llmModel === m.value ? m.color : '#d1d5db'}`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.15s',
-                    }}>
-                      {llmModel === m.value && (
-                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: m.color }} />
-                      )}
-                    </Box>
-                    <Box sx={{ flex: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.3 }}>
-                        <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#1e293b' }}>{m.label}</Typography>
-                        <Box sx={{ px: 1, py: 0.3, borderRadius: 4, bgcolor: m.color + '15' }}>
-                          <Typography sx={{ fontSize: 10, fontWeight: 700, color: m.color }}>{m.tag}</Typography>
-                        </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 3 }}>
+                {CLAUDE_MODELS.map((m) => {
+                  const selected = llmModel === m.value;
+                  return (
+                    <Box key={m.value}
+                      onClick={() => setLlmModel(m.value)}
+                      sx={{
+                        p: 2.5, borderRadius: 3, cursor: 'pointer', position: 'relative',
+                        border: `1.5px solid ${selected ? m.color : m.recommended ? m.color + '40' : '#e2e8f0'}`,
+                        bgcolor: selected ? `${m.color}08` : 'white',
+                        display: 'flex', alignItems: 'center', gap: 2.5,
+                        boxShadow: selected ? `0 4px 16px ${m.color}25` : '0 1px 4px rgba(0,0,0,0.04)',
+                        transition: 'all 0.2s ease',
+                        '&:hover': { borderColor: m.color, bgcolor: `${m.color}06` },
+                      }}>
+                      {/* Selection radio */}
+                      <Box sx={{
+                        width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                        border: `2px solid ${selected ? m.color : '#d1d5db'}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.15s',
+                      }}>
+                        {selected && <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: m.color }} />}
                       </Box>
-                      <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>{m.desc}</Typography>
+                      <Box sx={{ flex: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.3, flexWrap: 'wrap' }}>
+                          <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#1e293b' }}>{m.label}</Typography>
+                          <Box sx={{ px: 1, py: 0.3, borderRadius: 4, bgcolor: m.color + '15' }}>
+                            <Typography sx={{ fontSize: 10, fontWeight: 700, color: m.color }}>{m.tag}</Typography>
+                          </Box>
+                          {m.recommended && (
+                            <Box sx={{ px: 1, py: 0.3, borderRadius: 4, bgcolor: '#fef3c7', border: '1px solid #fde68a' }}>
+                              <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#d97706' }}>⭐ Top pick</Typography>
+                            </Box>
+                          )}
+                        </Box>
+                        <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>{m.desc}</Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                ))}
+                  );
+                })}
               </Box>
 
               <FormControlLabel
