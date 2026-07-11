@@ -11,8 +11,8 @@ const DRAWER_WIDTH = 260;
 
 const NAV = [
   { label: 'Dashboard', path: '/dashboard', icon: '◈', emoji: '⚡' },
-  { label: 'Jobs',      path: '/jobs',      icon: '◉', emoji: '🚀' },
   { label: 'Templates', path: '/templates', icon: '◧', emoji: '📋' },
+  { label: 'Jobs',      path: '/jobs',      icon: '◉', emoji: '🚀' },
   { label: 'Settings',  path: '/settings',  icon: '◎', emoji: '⚙️' },
 ];
 
