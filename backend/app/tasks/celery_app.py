@@ -39,12 +39,11 @@ celery_app.conf.update(
     broker_use_ssl=_ssl_opts or None,
 
     # ── Celery Beat schedule ──────────────────────────────────────────────────
-    # Runs cleanup_old_jobs once every 7 days.
-    # On first deploy it fires ~7 days after the worker starts.
+    # Runs cleanup_old_jobs every 24 hours so it reliably catches the 3-day mark.
     beat_schedule={
-        "cleanup-jobs-every-7-days": {
+        "cleanup-jobs-every-24h": {
             "task":     "app.tasks.cleanup_task.cleanup_old_jobs",
-            "schedule": 60 * 60 * 24 * 7,   # 604 800 seconds = 7 days
+            "schedule": 60 * 60 * 24,   # 86 400 seconds = 24 hours
             "options":  {"queue": "celery"},
         },
     },
