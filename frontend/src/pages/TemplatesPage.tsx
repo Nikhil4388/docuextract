@@ -104,9 +104,9 @@ function PdfCanvas({ file }: { file: File }) {
 
   return (
     <Box sx={{
-      position: 'relative', width: '100%', flex: 1, overflow: 'auto',
+      position: 'relative', width: '100%',
       bgcolor: '#525659', display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-      borderRadius: 2,
+      minHeight: '100%',
     }}>
       {loading && !renderError && (
         <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -146,7 +146,7 @@ function PdfPanel({
       width: { xs: '100%', md: '46%' }, flexShrink: 0,
       borderRight: { md: '1px solid #eee' },
       display: 'flex', flexDirection: 'column', p: 3,
-      bgcolor: '#fafafa', minHeight: 500,
+      bgcolor: '#fafafa', minHeight: 0, overflow: 'hidden',
     }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <AutoAwesome sx={{ color: '#667eea', fontSize: 18 }} />
@@ -159,9 +159,10 @@ function PdfPanel({
         // PDF loaded — render via pdfjs-dist (no iframe, no CSP)
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <Box sx={{
-            flex: 1, borderRadius: 2, overflow: 'hidden',
+            flex: 1, borderRadius: 2, overflow: 'auto',
             border: '1px solid #e0e0e0',
-            minHeight: 360, display: 'flex',
+            minHeight: 0,          /* let flex shrink below content size */
+            display: 'flex',
           }}>
             <PdfCanvas file={pdfFile} />
           </Box>
@@ -446,7 +447,7 @@ export default function TemplatesPage() {
           <IconButton size="small" onClick={handleCloseCreate}><Close fontSize="small" /></IconButton>
         </DialogTitle>
 
-        <DialogContent sx={{ p: 0, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, minHeight: 540, overflow: 'hidden' }}>
+        <DialogContent sx={{ p: 0, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, minHeight: 540, overflow: 'hidden', height: 'calc(92vh - 130px)' }}>
           {/* LEFT — PDF preview */}
           <PdfPanel
             pdfFile={pdfFile}
