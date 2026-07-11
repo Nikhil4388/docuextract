@@ -218,12 +218,23 @@ async def _async_pipeline(job_id: str):
                 return path, Exception(billing_error[0])
 
             try:
+                # Create a fresh PDFExtractor per file — avoids any PyMuPDF
+                # shared-state issues when multiple threads open documents
+                # concurrently inside the thread pool.
+                _extractor = PDFExtractor()
                 pages = await loop.run_in_executor(
-                    io_pool, extractor.extract_text, path
+                    io_pool, _extractor.extract_text, path
                 )
                 full_text = "\n\n".join(p["text"] for p in pages if p["text"])
                 page_images = [p["image_b64"] for p in pages if p.get("image_b64")]
                 ocr_used = any(p["ocr_used"] for p in pages)
+
+                print(
+                    f"[TASK] 📄 {fname}: {len(pages)} pages, "
+                    f"{len(full_text)} text chars, {len(page_images)} image pages | "
+                    f"text_preview={full_text[:120]!r}",
+                    flush=True,
+                )
 
                 columns_desc = json.dumps(columns, indent=2)
                 t0 = time.time()
@@ -237,7 +248,7 @@ async def _async_pipeline(job_id: str):
                         )},
                         *[{"type": "image", "source": {
                             "type": "base64", "media_type": "image/png", "data": img,
-                        }} for img in page_images[:5]],
+                        }} for img in page_images[:10]],
                     ]
                 else:
                     content = [{"type": "text", "text": (

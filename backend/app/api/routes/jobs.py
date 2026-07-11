@@ -337,7 +337,13 @@ async def upload_files(
         ))
         return safe_name
 
-    results = await asyncio.gather(*[upload_file(f) for f in files])
+    # Sequential reads: concurrent UploadFile.read() calls can produce
+    # duplicate content when both coroutines read from the same multipart
+    # stream position, causing both S3 objects to contain the first file's bytes.
+    results = []
+    for f in files:
+        r = await upload_file(f)
+        results.append(r)
     saved = [r for r in results if r]
     # Return S3 path in format "bucket/prefix" for _collect_pdfs
     upload_path = f"{settings.S3_BUCKET}/{prefix}"
