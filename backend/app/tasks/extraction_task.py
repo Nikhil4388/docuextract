@@ -414,22 +414,24 @@ async def _async_pipeline(job_id: str):
     )
 
     # ── Step 4: Bulk-save all results ────────────────────────────────────
+    import uuid as _uuid_mod
+    _job_uuid_obj = _uuid_mod.UUID(job_uuid)  # ensure real UUID type for PG columns
+
     def _save_all(db):
-        # Delete any existing results first — makes this safe to re-run on Celery
-        # retries without creating duplicate rows in the DB.
-        db.query(ExtractionResult).filter_by(job_id=job_uuid).delete()
+        # Delete any existing results first — idempotent on Celery retries
+        db.query(ExtractionResult).filter_by(job_id=_job_uuid_obj).delete()
         for path, outcome in all_results:
             fname = os.path.basename(path)
             if isinstance(outcome, Exception):
                 db.add(ExtractionResult(
-                    job_id=job_uuid,
+                    job_id=_job_uuid_obj,
                     file_name=fname,
                     file_path=path,
                     error_message=str(outcome),
                 ))
             else:
                 db.add(ExtractionResult(
-                    job_id=job_uuid,
+                    job_id=_job_uuid_obj,
                     file_name=fname,
                     file_path=path,
                     extracted_data=outcome.get("extracted_data"),
@@ -437,7 +439,8 @@ async def _async_pipeline(job_id: str):
                     processing_time_ms=outcome.get("processing_time_ms"),
                     ocr_used=outcome.get("ocr_used", False),
                 ))
-        j = db.query(ExtractionJob).filter_by(id=job_uuid).first()
+        print(f"[TASK] 💾 saving {len(all_results)} result rows for job {job_uuid}", flush=True)
+        j = db.query(ExtractionJob).filter_by(id=_job_uuid_obj).first()
         if j:
             j.processed_files = progress["ok"]
             j.failed_files = progress["fail"]

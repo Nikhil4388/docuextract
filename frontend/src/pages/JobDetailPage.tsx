@@ -30,10 +30,14 @@ export default function JobDetailPage() {
     refetchInterval: (q) => ['pending', 'processing'].includes(q.state.data?.status ?? '') ? 3000 : false,
   });
 
+  const jobDone = job?.status === 'completed' || job?.status === 'failed';
   const { data: results, isLoading: resultsLoading, refetch: refetchResults } = useQuery<ExtractionResult[]>({
-    queryKey: ['job-results', jobId, search],
+    // Include job.status in the key so the query re-fires when the job finishes
+    queryKey: ['job-results', jobId, search, job?.status],
     queryFn: () => api.get(`/jobs/${jobId}/results`, { params: { search: search || undefined, limit: 1000 } }).then((r) => r.data),
-    enabled: job?.status === 'completed' || job?.status === 'failed',
+    enabled: jobDone,
+    // If job is done but we got 0 rows (DB propagation lag), keep polling every 2s until rows arrive
+    refetchInterval: (q) => (jobDone && (q.state.data?.length ?? 0) === 0) ? 2000 : false,
   });
 
   const handleRefresh = async () => {
