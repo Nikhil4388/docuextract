@@ -56,6 +56,68 @@ function ColumnRow({
   );
 }
 
+// ── PDF canvas renderer (avoids CSP blob: iframe block) ──────────────────────
+function PdfCanvas({ pdfUrl }: { pdfUrl: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [pageCount, setPageCount] = useState(0);
+
+  useEffect(() => {
+    if (!pdfUrl) return;
+    let cancelled = false;
+
+    // Dynamically load PDF.js from CDN to avoid needing an npm package
+    const script = document.getElementById('pdfjs-script') as HTMLScriptElement | null;
+    const render = async () => {
+      const pdfjsLib = (window as any).pdfjsLib;
+      if (!pdfjsLib) return;
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      try {
+        const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
+        if (cancelled) return;
+        setPageCount(pdf.numPages);
+        const page = await pdf.getPage(1);
+        if (cancelled) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const viewport = page.getViewport({ scale: 1.4 });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d')!, viewport }).promise;
+      } catch { /* silently fail — placeholder shows */ }
+    };
+
+    if ((window as any).pdfjsLib) {
+      render();
+    } else {
+      const s = document.createElement('script');
+      s.id = 'pdfjs-script';
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload = render;
+      document.head.appendChild(s);
+    }
+    return () => { cancelled = true; };
+  }, [pdfUrl]);
+
+  return (
+    <Box sx={{ position: 'relative', width: '100%', flex: 1, minHeight: 0, overflow: 'hidden', borderRadius: 2, bgcolor: '#f5f5f5' }}>
+      <canvas
+        ref={canvasRef}
+        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+      />
+      {pageCount > 0 && (
+        <Box sx={{
+          position: 'absolute', bottom: 8, right: 8,
+          bgcolor: 'rgba(0,0,0,0.55)', color: 'white',
+          fontSize: 11, fontWeight: 600, px: 1.2, py: 0.4, borderRadius: 1,
+        }}>
+          {pageCount} page{pageCount !== 1 ? 's' : ''}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
 // ── PDF left panel ────────────────────────────────────────────────────────────
 function PdfPanel({
   pdfUrl, pdfName, isAnalyzing, isDragActive, getRootProps, getInputProps,
@@ -79,19 +141,14 @@ function PdfPanel({
       </Box>
 
       {pdfUrl ? (
-        // PDF is loaded — show iframe preview
+        // PDF loaded — render via canvas (no CSP issues)
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <Box sx={{
             flex: 1, borderRadius: 2, overflow: 'hidden',
             border: '1px solid #e0e0e0', boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-            minHeight: 380,
+            minHeight: 360, display: 'flex',
           }}>
-            <iframe
-              src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-              width="100%" height="100%"
-              style={{ border: 'none', display: 'block', minHeight: 380 }}
-              title="PDF Preview"
-            />
+            <PdfCanvas pdfUrl={pdfUrl} />
           </Box>
           {/* Replace button */}
           <Box
@@ -106,7 +163,7 @@ function PdfPanel({
           >
             <input {...getInputProps()} />
             {isAnalyzing
-              ? <><CircularProgress size={14} /><Typography variant="caption">Analyzing…</Typography></>
+              ? <><CircularProgress size={14} /><Typography variant="caption" sx={{ ml: 0.5 }}>Analyzing with AI…</Typography></>
               : <><CloudUpload sx={{ fontSize: 16, color: '#667eea' }} /><Typography variant="caption" color="text.secondary">Replace PDF</Typography></>
             }
           </Box>
@@ -116,7 +173,7 @@ function PdfPanel({
           </Box>
         </Box>
       ) : (
-        // No PDF yet — show drop zone
+        // No PDF yet — dropzone
         <Box
           {...getRootProps()}
           sx={{
@@ -138,7 +195,6 @@ function PdfPanel({
             </>
           ) : (
             <>
-              {/* Simulated document lines */}
               <Box sx={{
                 width: 120, p: 2, bgcolor: 'white', borderRadius: 2,
                 boxShadow: '0 4px 20px rgba(0,0,0,0.1)', mb: 1,
