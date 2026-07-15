@@ -34,11 +34,12 @@ export default function JobDetailPage() {
   });
 
   const jobDone = ['completed', 'failed', 'partial'].includes(job?.status ?? '');
-  const { data: results, isLoading: resultsLoading, refetch: refetchResults } = useQuery<ExtractionResult[]>({
+  const { data: results, isLoading: resultsLoading, isError: resultsError, refetch: refetchResults } = useQuery<ExtractionResult[]>({
     queryKey: ['job-results', jobId, search, job?.status],
     queryFn: () => api.get(`/jobs/${jobId}/results`, { params: { search: search || undefined, limit: 1000 } }).then((r) => r.data),
     enabled: jobDone,
-    refetchInterval: (q) => (jobDone && (q.state.data?.length ?? 0) === 0) ? 2000 : false,
+    retry: 3,
+    refetchInterval: (q) => (jobDone && !q.state.error && (q.state.data?.length ?? 0) === 0) ? 2000 : false,
   });
 
   const handleRefresh = async () => {
@@ -76,22 +77,10 @@ export default function JobDetailPage() {
         flex: 1,
         minWidth: 140,
         valueGetter: (_, row) => row.extracted_data?.[key] ?? '—',
-        renderCell: ({ row, value }) => {
-          const score = row.confidence_scores?.[key];
-          const isLow = typeof score === 'number' && score < 0.85;
-          return (
-            <Box sx={{
-              width: '100%', height: '100%',
-              display: 'flex', alignItems: 'center',
-              px: 1,
-              bgcolor: isLow ? '#fee2e2' : 'transparent',
-              borderLeft: isLow ? '3px solid #ef4444' : '3px solid transparent',
-            }}>
-              <Typography fontSize={13} color={isLow ? '#dc2626' : 'inherit'} fontWeight={isLow ? 600 : 400} noWrap>
-                {value ?? '—'}
-              </Typography>
-            </Box>
-          );
+        // Use cellClassName for per-cell red highlight — safer than renderCell
+        cellClassName: (params) => {
+          const score = params.row.confidence_scores?.[key];
+          return typeof score === 'number' && score < 0.85 ? 'low-conf-cell' : '';
         },
       })),
       {
@@ -169,6 +158,14 @@ export default function JobDetailPage() {
         <Alert severity="error" sx={{ mb: 3 }}>{job.error_message}</Alert>
       )}
 
+      {resultsError && jobDone && (
+        <Alert severity="error" sx={{ mb: 3 }} action={
+          <Button color="inherit" size="small" onClick={() => refetchResults()}>Retry</Button>
+        }>
+          Could not load extracted data. Check your connection or try again.
+        </Alert>
+      )}
+
       {/* Stats + Export */}
       <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center', flexWrap: 'wrap' }}>
         {[
@@ -224,7 +221,12 @@ export default function JobDetailPage() {
             sx={{
               border: 'none',
               '& .MuiDataGrid-columnHeaders': { bgcolor: '#f8f4ee' },
-              '& .MuiDataGrid-cell': { px: 0 },
+              '& .low-conf-cell': {
+                bgcolor: '#fee2e2 !important',
+                borderLeft: '3px solid #ef4444',
+                color: '#dc2626',
+                fontWeight: 600,
+              },
             }}
           />
         </Paper>

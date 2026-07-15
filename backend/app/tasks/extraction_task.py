@@ -273,17 +273,17 @@ async def _async_pipeline(job_id: str):
                     io_pool, _extractor.extract_text, path
                 )
                 full_text = "\n\n".join(p["text"] for p in pages if p["text"])
-                # Only treat as scanned if text is truly sparse — PDFs with blank
-                # trailing pages produce a few image slots but have abundant OCR text.
-                # Sending those blank images while ignoring 90KB of good text = all nulls.
+                # Always render first 8 pages as images (vision-first approach).
+                # Claude uses images as ground truth even when OCR text is available.
                 page_images = [p["image_b64"] for p in pages if p.get("image_b64")]
                 ocr_used = any(p["ocr_used"] for p in pages)
-                use_vision = bool(page_images) and len(full_text.strip()) < 500
+                # Always use vision when we have images (first 8 pages are always rendered)
+                use_vision = bool(page_images)
 
                 print(
                     f"[TASK] 📄 {fname}: {len(pages)} pages, "
                     f"{len(full_text)} text chars, {len(page_images)} image pages, "
-                    f"mode={'VISION' if use_vision else 'TEXT'} | "
+                    f"mode={'VISION+TEXT' if use_vision else 'TEXT'} | "
                     f"text_preview={full_text[:120]!r}",
                     flush=True,
                 )
@@ -291,16 +291,22 @@ async def _async_pipeline(job_id: str):
                 columns_desc = json.dumps(columns, indent=2)
                 t0 = time.time()
 
-                def _build_vision_content(cols_desc: str, imgs: list) -> list:
+                def _build_vision_content(cols_desc: str, txt: str, imgs: list) -> list:
+                    """Send text + page images together — images are ground truth, text aids search."""
                     return [
                         {"type": "text", "text": (
-                            f"Extract data from this scanned historical document.\n\n"
+                            f"Extract data from this historical document. "
+                            f"Use the page images as the PRIMARY source of truth. "
+                            f"The OCR text below may have artifacts (l→1, O→0, garbled words) — "
+                            f"use images to verify and correct any OCR errors.\n\n"
                             f"COLUMNS:\n{cols_desc}\n\n"
-                            f"Return JSON only with 'extracted_data' and 'confidence_scores'."
+                            f"DOCUMENT TEXT (OCR, may have artifacts — use images to verify):\n{txt[:15000]}\n\n"
+                            f"Page images follow. Return JSON only:\n"
+                            f"{{\"extracted_data\": {{...}}, \"confidence_scores\": {{...}}}}"
                         )},
                         *[{"type": "image", "source": {
                             "type": "base64", "media_type": "image/png", "data": img,
-                        }} for img in imgs[:10]],
+                        }} for img in imgs[:8]],
                     ]
 
                 def _build_text_content(cols_desc: str, txt: str) -> list:
@@ -312,13 +318,38 @@ async def _async_pipeline(job_id: str):
                         f"Return JSON with 'extracted_data' and 'confidence_scores' only."
                     )}]
 
-                def _parse_llm_raw(raw: str) -> dict:
+                import re as _re
+
+                def _parse_llm_raw(raw: str, col_names: list) -> dict:
+                    """Parse LLM response with 3-step fallback — never raises."""
                     raw = raw.strip()
+                    # Strip markdown code fences
                     if raw.startswith("```"):
-                        raw = raw.split("```")[1]
+                        parts = raw.split("```")
+                        raw = parts[1] if len(parts) > 1 else raw
                         if raw.startswith("json"):
                             raw = raw[4:]
-                    return json.loads(raw.strip())
+                        raw = raw.strip()
+                    # Step 1: direct parse
+                    try:
+                        return json.loads(raw)
+                    except json.JSONDecodeError:
+                        pass
+                    # Step 2: find first JSON object in response
+                    match = _re.search(r'\{[\s\S]*\}', raw)
+                    if match:
+                        try:
+                            return json.loads(match.group())
+                        except json.JSONDecodeError:
+                            pass
+                    # Step 3: fallback — return all nulls (shows as dashes in UI, not error)
+                    print(f"[TASK] ⚠️  JSON parse failed, returning nulls for {fname}", flush=True)
+                    return {
+                        "extracted_data": {n: None for n in col_names},
+                        "confidence_scores": {n: 0.0 for n in col_names},
+                    }
+
+                col_names = [c.get("name", str(i)) for i, c in enumerate(columns)]
 
                 async def _call_llm(content: list) -> dict:
                     m = await client.messages.create(
@@ -327,73 +358,15 @@ async def _async_pipeline(job_id: str):
                         system=_SYSTEM_PROMPT,
                         messages=[{"role": "user", "content": content}],
                     )
-                    return _parse_llm_raw(m.content[0].text)
+                    return _parse_llm_raw(m.content[0].text, col_names)
 
+                # Always use vision when images are available (vision-first strategy)
                 if use_vision:
-                    content = _build_vision_content(columns_desc, page_images)
+                    content = _build_vision_content(columns_desc, full_text, page_images)
                 else:
                     content = _build_text_content(columns_desc, full_text)
 
                 data = await _call_llm(content)
-
-                # ── Vision fallback (pre-existing page images) ───────────────
-                # If text path returned mostly nulls (garbled OCR) and we have
-                # page images from below-threshold pages, retry with Vision.
-                if not use_vision and page_images:
-                    extracted = data.get("extracted_data") or {}
-                    null_count = sum(1 for v in extracted.values() if v is None)
-                    if null_count > len(columns) * 0.6:
-                        print(
-                            f"[TASK] ⚠️  {fname}: text gave {null_count}/{len(columns)} nulls "
-                            f"— retrying with Vision (pre-rendered pages)",
-                            flush=True,
-                        )
-                        vision_data = await _call_llm(
-                            _build_vision_content(columns_desc, page_images)
-                        )
-                        v_extracted = vision_data.get("extracted_data") or {}
-                        v_null = sum(1 for v in v_extracted.values() if v is None)
-                        if v_null < null_count:
-                            data = vision_data
-                            print(f"[TASK] ✅ {fname}: Vision improved nulls {null_count}→{v_null}", flush=True)
-
-                # ── Render-on-demand Vision fallback ─────────────────────────
-                # If ALL pages had OCR text (page_images is empty) but extraction
-                # still returns mostly nulls, the OCR quality is too poor to parse.
-                # Render first 10 pages as PNG images on-demand and retry with Vision.
-                if not use_vision and not page_images:
-                    extracted = data.get("extracted_data") or {}
-                    null_count = sum(1 for v in extracted.values() if v is None)
-                    if null_count > len(columns) * 0.6:
-                        print(
-                            f"[TASK] 🖼️  {fname}: text gave {null_count}/{len(columns)} nulls "
-                            f"and no pre-rendered images — rendering pages on-demand for Vision",
-                            flush=True,
-                        )
-
-                        def _render_pages(pdf_path: str, num_pages: int = 10) -> list:
-                            import fitz as _fitz, base64 as _b64
-                            _doc = _fitz.open(pdf_path)
-                            _images = []
-                            _mat = _fitz.Matrix(2, 2)
-                            for _i, _page in enumerate(_doc):
-                                if _i >= num_pages:
-                                    break
-                                _pix = _page.get_pixmap(matrix=_mat)
-                                _images.append(_b64.b64encode(_pix.tobytes("png")).decode("utf-8"))
-                            _doc.close()
-                            return _images
-
-                        rendered = await loop.run_in_executor(io_pool, _render_pages, path)
-                        print(f"[TASK] 🖼️  {fname}: rendered {len(rendered)} pages", flush=True)
-                        vision_data = await _call_llm(_build_vision_content(columns_desc, rendered))
-                        v_extracted = vision_data.get("extracted_data") or {}
-                        v_null = sum(1 for v in v_extracted.values() if v is None)
-                        if v_null < null_count:
-                            data = vision_data
-                            print(f"[TASK] ✅ {fname}: on-demand Vision improved nulls {null_count}→{v_null}", flush=True)
-                        else:
-                            print(f"[TASK] ⚠️  {fname}: Vision didn't improve ({v_null} vs {null_count} nulls), keeping text result", flush=True)
 
                 elapsed_ms = int((time.time() - t0) * 1000)
 
@@ -480,7 +453,13 @@ async def _async_pipeline(job_id: str):
         if j:
             j.processed_files = progress["ok"]
             j.failed_files = progress["fail"]
-            j.status = JobStatus.COMPLETED
+            # Set final status based on success/failure counts
+            if progress["fail"] == 0:
+                j.status = JobStatus.COMPLETED        # all succeeded
+            elif progress["ok"] == 0:
+                j.status = JobStatus.FAILED           # all failed
+            else:
+                j.status = JobStatus.PARTIAL          # mixed
             j.completed_at = datetime.utcnow()
             # Surface billing / fatal errors on the job itself so the UI can show them
             if billing_error:

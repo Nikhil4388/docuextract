@@ -49,7 +49,7 @@ class ResultRow(BaseModel):
     id: str
     file_name: str
     extracted_data: Optional[Dict[str, Any]]
-    confidence_scores: Optional[Dict[str, float]]
+    confidence_scores: Optional[Dict[str, Optional[float]]]  # Claude may return null for some fields
     processing_time_ms: Optional[int]
     error_message: Optional[str]
 
