@@ -111,11 +111,18 @@ async def run_extraction_bg(job_id: str) -> None:
                 job.status_message = f"Processed {job.processed_files + job.failed_files} of {job.total_files} files…"
                 await db.commit()
 
-            job.status = JobStatus.COMPLETED
+            # Set final status based on success/failure counts
+            if job.failed_files == 0:
+                job.status = JobStatus.COMPLETED          # all succeeded
+            elif job.processed_files == 0:
+                job.status = JobStatus.FAILED             # all failed
+            else:
+                job.status = JobStatus.PARTIAL            # mixed — some succeeded, some failed
+
             job.status_message = None
             job.completed_at = datetime.utcnow()
             await db.commit()
-            print(f"[BG] job={job_id} completed: {job.processed_files} ok, {job.failed_files} failed", flush=True)
+            print(f"[BG] job={job_id} final_status={job.status} ok={job.processed_files} failed={job.failed_files}", flush=True)
 
         except Exception as exc:
             print(f"[BG] unhandled error for job={job_id}: {exc}", flush=True)

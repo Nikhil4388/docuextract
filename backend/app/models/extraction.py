@@ -11,6 +11,7 @@ class JobStatus(str, enum.Enum):
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
+    PARTIAL = "partial"    # some files succeeded, some failed
     FAILED = "failed"
     CANCELLED = "cancelled"
 

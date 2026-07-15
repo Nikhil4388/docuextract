@@ -1,20 +1,21 @@
 import React, { useState, useMemo } from 'react';
-import { Box, Typography, Skeleton, Avatar, TextField, InputAdornment } from '@mui/material';
+import { Box, Typography, Skeleton, TextField, InputAdornment } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { ExtractionJob } from '../types';
 import { useAuthStore } from '../store/authStore';
 
-const STATUS_TABS = ['all', 'pending', 'processing', 'completed', 'failed'] as const;
+const STATUS_TABS = ['all', 'pending', 'processing', 'completed', 'partial', 'failed'] as const;
 
-const STATUS_STYLE: Record<string, { dot: string; bg: string; text: string; label: string }> = {
-  all:        { dot: '#6366f1', bg: '#ede9fe', text: '#5b21b6', label: 'All' },
-  pending:    { dot: '#f59e0b', bg: '#fef3c7', text: '#92400e', label: 'Pending' },
-  processing: { dot: '#3b82f6', bg: '#dbeafe', text: '#1e40af', label: 'Processing' },
-  completed:  { dot: '#10b981', bg: '#d1fae5', text: '#065f46', label: 'Completed' },
-  failed:     { dot: '#ef4444', bg: '#fee2e2', text: '#991b1b', label: 'Failed' },
-  cancelled:  { dot: '#94a3b8', bg: '#f1f5f9', text: '#475569', label: 'Cancelled' },
+const STATUS_STYLE: Record<string, { dot: string; bg: string; text: string; label: string; icon: string }> = {
+  all:        { dot: '#6366f1', bg: '#ede9fe', text: '#5b21b6', label: 'All',             icon: '◎' },
+  pending:    { dot: '#f59e0b', bg: '#fef3c7', text: '#92400e', label: 'Pending',         icon: '⏳' },
+  processing: { dot: '#3b82f6', bg: '#dbeafe', text: '#1e40af', label: 'Processing',      icon: '⚡' },
+  completed:  { dot: '#10b981', bg: '#d1fae5', text: '#065f46', label: 'Complete',        icon: '✓' },
+  partial:    { dot: '#f59e0b', bg: '#fef9c3', text: '#854d0e', label: 'Partial',         icon: '◑' },
+  failed:     { dot: '#ef4444', bg: '#fee2e2', text: '#991b1b', label: 'Not Complete',    icon: '✕' },
+  cancelled:  { dot: '#94a3b8', bg: '#f1f5f9', text: '#475569', label: 'Cancelled',       icon: '–' },
 };
 
 function timeAgo(d: string) {
@@ -38,8 +39,9 @@ const AVATAR_GRADIENTS = [
 export default function JobsPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [search, setSearch] = useState('');
+  const [search, setSearch]       = useState('');
   const [activeTab, setActiveTab] = useState<string>('all');
+  const [spinning, setSpinning]   = useState(false);
 
   const freeLimit    = user?.free_limit ?? 2;
   const paidLimit    = user?.paid_limit ?? 20;
@@ -55,6 +57,12 @@ export default function JobsPage() {
     queryFn: () => api.get('/jobs/').then((r) => r.data),
     refetchInterval: 5000,
   });
+
+  const handleRefresh = async () => {
+    setSpinning(true);
+    await refetch();
+    setTimeout(() => setSpinning(false), 600);
+  };
 
   const counts = useMemo(() => {
     if (!jobs) return {} as Record<string, number>;
@@ -77,12 +85,16 @@ export default function JobsPage() {
     <Box>
       <style>{`
         @keyframes jobCardIn {
-          from { opacity: 0; transform: translateY(10px); }
+          from { opacity: 0; transform: translateY(12px); }
           to   { opacity: 1; transform: translateY(0); }
         }
         .job-card { animation: jobCardIn 0.22s ease both; }
-        @keyframes blink {
-          0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .spinning { animation: spin 0.6s linear; }
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
         }
       `}</style>
 
@@ -129,20 +141,28 @@ export default function JobsPage() {
           </Typography>
         </Box>
         <Box sx={{ flex: 1 }} />
-        <Box onClick={() => refetch()} sx={{
+
+        {/* REFRESH BUTTON */}
+        <Box onClick={handleRefresh} sx={{
           width: 40, height: 40, borderRadius: 2.5, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          bgcolor: 'white', border: '1px solid #e2e8f0', color: '#64748b',
-          '&:hover': { bgcolor: '#f8faff', borderColor: '#c7d2fe', color: '#6366f1' },
+          bgcolor: 'white', border: '1.5px solid #e2e8f0', color: '#64748b',
+          '&:hover': { bgcolor: '#f0f0ff', borderColor: '#a5b4fc', color: '#6366f1' },
+          '&:active': { transform: 'scale(0.93)' },
           transition: 'all 0.15s ease',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
         }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            <path d="M21 3v5h-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M21 12a9 9 0 01-9 9 9.75 9.75 0 01-6.74-2.74L3 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          <svg
+            className={spinning ? 'spinning' : ''}
+            width="16" height="16" viewBox="0 0 24 24" fill="none"
+          >
+            <path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
+            <path d="M21 3v5h-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M21 12a9 9 0 01-9 9 9.75 9.75 0 01-6.74-2.74L3 16" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
           </svg>
         </Box>
+
+        {/* NEW JOB BUTTON */}
         <Box onClick={() => hitLimit ? navigate('/pricing') : navigate('/jobs/new')} sx={{
           display: 'flex', alignItems: 'center', gap: 1,
           px: 3, py: 1.2, borderRadius: 3, cursor: 'pointer',
@@ -153,6 +173,7 @@ export default function JobsPage() {
             ? '0 4px 16px rgba(245,158,11,0.35)'
             : '0 4px 16px rgba(99,102,241,0.35)',
           '&:hover': { opacity: 0.92, transform: 'translateY(-1px)' },
+          '&:active': { transform: 'translateY(0)' },
           transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}>
           <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 14 }}>
@@ -181,7 +202,7 @@ export default function JobsPage() {
         />
 
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          {STATUS_TABS.map((tab) => {
+          {STATUS_TABS.filter(tab => tab === 'all' || (counts[tab] ?? 0) > 0 || activeTab === tab).map((tab) => {
             const s = STATUS_STYLE[tab];
             const isActive = activeTab === tab;
             return (
@@ -189,19 +210,21 @@ export default function JobsPage() {
                 display: 'flex', alignItems: 'center', gap: 0.8,
                 px: 2, py: 0.7, borderRadius: 6, cursor: 'pointer',
                 bgcolor: isActive ? s.bg : 'white',
-                border: `1px solid ${isActive ? s.dot + '50' : '#e2e8f0'}`,
-                boxShadow: isActive ? `0 2px 8px ${s.dot}25` : '0 1px 3px rgba(0,0,0,0.04)',
+                border: `1.5px solid ${isActive ? s.dot + '60' : '#e2e8f0'}`,
+                boxShadow: isActive ? `0 2px 10px ${s.dot}30` : '0 1px 3px rgba(0,0,0,0.04)',
                 transition: 'all 0.15s ease',
-                '&:hover': { bgcolor: s.bg, borderColor: s.dot + '40' },
+                '&:hover': { bgcolor: s.bg, borderColor: s.dot + '50', transform: 'translateY(-1px)' },
               }}>
-                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: s.dot }} />
+                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: s.dot,
+                  ...(tab === 'processing' && isActive && { animation: 'blink 1.2s ease infinite' })
+                }} />
                 <Typography sx={{ fontSize: 12, fontWeight: 600, color: isActive ? s.text : '#64748b' }}>
                   {s.label}
                 </Typography>
                 {counts[tab] !== undefined && (
                   <Box sx={{
-                    px: 0.8, borderRadius: 4, bgcolor: isActive ? s.dot + '20' : '#f1f5f9',
-                    display: 'inline-flex', alignItems: 'center',
+                    px: 0.8, borderRadius: 4,
+                    bgcolor: isActive ? s.dot + '25' : '#f1f5f9',
                   }}>
                     <Typography sx={{ fontSize: 11, fontWeight: 700, color: isActive ? s.text : '#94a3b8', lineHeight: '18px' }}>
                       {counts[tab]}
@@ -271,53 +294,74 @@ export default function JobsPage() {
           )}
         </Box>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {filtered.map((job, idx) => {
             const s = STATUS_STYLE[job.status] ?? STATUS_STYLE.cancelled;
             const pct = job.total_files > 0 ? Math.round((job.processed_files / job.total_files) * 100) : 0;
+            const hasFiles = job.total_files > 0;
 
             return (
               <Box key={job.id} className="job-card"
                 onClick={() => navigate(`/jobs/${job.id}`)}
                 sx={{
-                  animationDelay: `${Math.min(idx * 0.04, 0.3)}s`,
-                  bgcolor: 'white', borderRadius: '16px',
-                  p: 2.5, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 2.5,
-                  border: '1px solid #f1f5f9',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                  animationDelay: `${Math.min(idx * 0.035, 0.28)}s`,
+                  bgcolor: 'white',
+                  borderRadius: '18px',
+                  p: '18px 20px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2.5,
+                  border: `1.5px solid`,
+                  borderColor: job.status === 'completed' ? '#d1fae5'
+                    : job.status === 'partial'    ? '#fef08a'
+                    : job.status === 'failed'     ? '#fee2e2'
+                    : job.status === 'processing' ? '#dbeafe'
+                    : '#f1f5f9',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
                   '&:hover': {
-                    borderColor: '#c7d2fe',
-                    boxShadow: '0 8px 32px rgba(99,102,241,0.12)',
+                    borderColor: s.dot + '55',
+                    boxShadow: `0 8px 32px ${s.dot}18`,
                     transform: 'translateY(-2px)',
                   },
                   transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >
-                <Avatar sx={{
-                  width: 48, height: 48, fontSize: 16, fontWeight: 900, flexShrink: 0,
+                {/* AVATAR */}
+                <Box sx={{
+                  width: 46, height: 46, borderRadius: '14px', flexShrink: 0,
                   background: AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length],
-                  boxShadow: '0 4px 12px rgba(99,102,241,0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 17, fontWeight: 900, color: 'white',
+                  boxShadow: `0 4px 12px ${s.dot}30`,
                 }}>
                   {job.name?.[0]?.toUpperCase()}
-                </Avatar>
+                </Box>
 
+                {/* CONTENT */}
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: 15, color: '#0f172a', mb: 0.3 }} noWrap>
+                  <Typography sx={{ fontWeight: 700, fontSize: 15, color: '#0f172a', mb: 0.2 }} noWrap>
                     {job.name}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>{timeAgo(job.created_at)}</Typography>
-                    {job.total_files > 0 && (
+                    {hasFiles && (
                       <>
                         <Box sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: '#cbd5e1', flexShrink: 0 }} />
                         <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>
                           {job.processed_files}/{job.total_files} files
+                          {job.failed_files > 0 && (
+                            <Box component="span" sx={{ color: '#ef4444', fontWeight: 600 }}>
+                              {' '}· {job.failed_files} failed
+                            </Box>
+                          )}
                         </Typography>
                       </>
                     )}
                   </Box>
-                  {job.status === 'processing' && job.total_files > 0 && (
+
+                  {/* PROGRESS BAR (processing only) */}
+                  {job.status === 'processing' && hasFiles && (
                     <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <Box sx={{ flex: 1, height: 4, bgcolor: '#f1f5f9', borderRadius: 2, overflow: 'hidden' }}>
                         <Box sx={{
@@ -334,20 +378,25 @@ export default function JobsPage() {
                   )}
                 </Box>
 
+                {/* STATUS BADGE */}
                 <Box sx={{ flexShrink: 0 }}>
                   <Box sx={{
-                    display: 'inline-flex', alignItems: 'center', gap: 0.8,
-                    px: 1.5, py: 0.6, borderRadius: 6, bgcolor: s.bg,
+                    display: 'inline-flex', alignItems: 'center', gap: 0.7,
+                    px: 1.5, py: 0.55, borderRadius: 6,
+                    bgcolor: s.bg,
+                    border: `1px solid ${s.dot}30`,
                   }}>
                     <Box sx={{
                       width: 6, height: 6, borderRadius: '50%', bgcolor: s.dot,
                       ...(job.status === 'processing' && { animation: 'blink 1.5s ease infinite' }),
                     }} />
-                    <Typography sx={{ fontSize: 12, fontWeight: 700, color: s.text }}>{s.label}</Typography>
+                    <Typography sx={{ fontSize: 12, fontWeight: 700, color: s.text }}>
+                      {s.label}
+                    </Typography>
                   </Box>
                 </Box>
 
-                <Box sx={{ color: '#cbd5e1', flexShrink: 0, fontSize: 20, lineHeight: 1 }}>›</Box>
+                <Box sx={{ color: '#cbd5e1', flexShrink: 0, fontSize: 18, lineHeight: 1 }}>›</Box>
               </Box>
             );
           })}
