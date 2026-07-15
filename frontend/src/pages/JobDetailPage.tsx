@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Box, Button, Paper, Typography, Chip, LinearProgress,
   Alert, CircularProgress, TextField, InputAdornment,
-  IconButton, Tooltip, Popover,
+  IconButton, Tooltip,
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { Download, Refresh, Search, ArrowBack } from '@mui/icons-material';
@@ -19,11 +19,6 @@ const statusColor = (s: string): 'default' | 'info' | 'success' | 'error' | 'war
   return map[s] ?? 'default';
 };
 
-interface ConfidencePopoverState {
-  anchor: HTMLElement | null;
-  scores: Record<string, number>;
-  fileName: string;
-}
 
 export default function JobDetailPage() {
   const { jobId } = useParams<{ jobId: string }>();
@@ -31,7 +26,6 @@ export default function JobDetailPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [confPop, setConfPop] = useState<ConfidencePopoverState>({ anchor: null, scores: {}, fileName: '' });
 
   const { data: job, refetch: refetchJob } = useQuery<ExtractionJob>({
     queryKey: ['job', jobId],
@@ -82,58 +76,44 @@ export default function JobDetailPage() {
         flex: 1,
         minWidth: 140,
         valueGetter: (_, row) => row.extracted_data?.[key] ?? '—',
+        renderCell: ({ row, value }) => {
+          const score = row.confidence_scores?.[key];
+          const isLow = typeof score === 'number' && score < 0.85;
+          return (
+            <Box sx={{
+              width: '100%', height: '100%',
+              display: 'flex', alignItems: 'center',
+              px: 1,
+              bgcolor: isLow ? '#fee2e2' : 'transparent',
+              borderLeft: isLow ? '3px solid #ef4444' : '3px solid transparent',
+            }}>
+              <Typography fontSize={13} color={isLow ? '#dc2626' : 'inherit'} fontWeight={isLow ? 600 : 400} noWrap>
+                {value ?? '—'}
+              </Typography>
+            </Box>
+          );
+        },
       })),
       {
         field: '_confidence',
         headerName: 'Confidence',
-        width: 130,
+        width: 120,
         valueGetter: (_, row) => overallConfidence(row),
         renderCell: ({ row }) => {
           const pct = overallConfidence(row);
           if (pct === null) return <Typography fontSize={12} color="text.secondary">—</Typography>;
-          const color = pct >= 95 ? '#16a34a' : pct >= 75 ? '#d97706' : '#dc2626';
+          const color = pct >= 95 ? '#16a34a' : pct >= 85 ? '#d97706' : '#dc2626';
           const r2 = 16, cx = 20, cy = 20, stroke = 4;
           const circumference = 2 * Math.PI * r2;
           const dash = (pct / 100) * circumference;
-          const needsReview = pct < 100;
           return (
-            <Box
-              onClick={(e) => {
-                e.stopPropagation();
-                if (row.confidence_scores) {
-                  setConfPop({ anchor: e.currentTarget as HTMLElement, scores: row.confidence_scores, fileName: row.file_name });
-                }
-              }}
-              sx={{
-                display: 'flex', alignItems: 'center', gap: 0.8,
-                cursor: needsReview ? 'pointer' : 'default',
-                borderRadius: 2,
-                px: needsReview ? 0.8 : 0,
-                py: 0.3,
-                '&:hover': needsReview ? {
-                  bgcolor: color + '15',
-                  '& .verify-hint': { opacity: 1 },
-                } : {},
-                transition: 'background 0.15s',
-              }}
-            >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <svg width={40} height={40} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
                 <circle cx={cx} cy={cy} r={r2} fill="none" stroke="#e5e7eb" strokeWidth={stroke} />
                 <circle cx={cx} cy={cy} r={r2} fill="none" stroke={color} strokeWidth={stroke}
                   strokeDasharray={`${dash} ${circumference}`} strokeLinecap="round" />
               </svg>
-              <Box>
-                <Typography fontSize={13} fontWeight={700} color={color} lineHeight={1.2}>{pct}%</Typography>
-                {needsReview && (
-                  <Typography
-                    className="verify-hint"
-                    fontSize={9} fontWeight={600}
-                    sx={{ color: color, opacity: 0.6, transition: 'opacity 0.15s', lineHeight: 1 }}
-                  >
-                    click to review
-                  </Typography>
-                )}
-              </Box>
+              <Typography fontSize={13} fontWeight={700} color={color}>{pct}%</Typography>
             </Box>
           );
         },
@@ -150,14 +130,6 @@ export default function JobDetailPage() {
   const rows = results?.map((r) => ({ id: r.id, ...r })) ?? [];
 
   if (!job) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
-
-  // Fields that need verification (below 97%)
-  const flaggedFields = Object.entries(confPop.scores)
-    .filter(([, v]) => typeof v === 'number' && (v as number) < 0.97)
-    .sort(([, a], [, b]) => (a as number) - (b as number));
-  const goodFields = Object.entries(confPop.scores)
-    .filter(([, v]) => typeof v === 'number' && (v as number) >= 0.97)
-    .sort(([, a], [, b]) => (b as number) - (a as number));
 
   return (
     <Box>
@@ -249,122 +221,15 @@ export default function JobDetailPage() {
             pageSizeOptions={[25, 50, 100]}
             initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
             autoHeight disableRowSelectionOnClick
-            getRowClassName={(params) => {
-              const pct = overallConfidence(params.row);
-              if (pct === null) return '';
-              if (pct < 85) return 'row-low-confidence';
-              if (pct < 95) return 'row-mid-confidence';
-              return '';
-            }}
             sx={{
               border: 'none',
               '& .MuiDataGrid-columnHeaders': { bgcolor: '#f8f4ee' },
-              '& .row-mid-confidence': {
-                bgcolor: '#fffbeb',
-                borderLeft: '3px solid #f59e0b',
-                '&:hover': { bgcolor: '#fef3c7' },
-              },
-              '& .row-low-confidence': {
-                bgcolor: '#fff5f5',
-                borderLeft: '3px solid #ef4444',
-                '&:hover': { bgcolor: '#fee2e2' },
-              },
+              '& .MuiDataGrid-cell': { px: 0 },
             }}
           />
         </Paper>
       )}
 
-      {/* CONFIDENCE POPOVER */}
-      <Popover
-        open={Boolean(confPop.anchor)}
-        anchorEl={confPop.anchor}
-        onClose={() => setConfPop(p => ({ ...p, anchor: null }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        PaperProps={{
-          sx: {
-            borderRadius: 3, mt: 1, minWidth: 300, maxWidth: 380,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-            border: '1px solid #f1f5f9',
-            overflow: 'hidden',
-          }
-        }}
-      >
-        {/* Header */}
-        <Box sx={{ px: 2.5, py: 2, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-          <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 14 }}>
-            Confidence Review
-          </Typography>
-          <Typography sx={{ color: 'rgba(255,255,255,0.75)', fontSize: 12, mt: 0.2 }} noWrap>
-            {confPop.fileName}
-          </Typography>
-        </Box>
-
-        {/* Needs Verification */}
-        {flaggedFields.length > 0 && (
-          <Box sx={{ px: 2.5, py: 2, borderBottom: '1px solid #f1f5f9' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f59e0b', flexShrink: 0 }} />
-              <Typography sx={{ fontWeight: 700, fontSize: 12, color: '#92400e' }}>
-                Needs Verification ({flaggedFields.length})
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {flaggedFields.map(([field, score]) => {
-                const pct = Math.round((score as number) * 100);
-                const color = pct >= 85 ? '#d97706' : '#dc2626';
-                return (
-                  <Box key={field} sx={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    px: 1.5, py: 1, borderRadius: 2,
-                    bgcolor: color + '0f', border: `1px solid ${color}25`,
-                  }}>
-                    <Box>
-                      <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#1e293b' }}>{field}</Typography>
-                      <Typography sx={{ fontSize: 11, color: '#94a3b8' }}>
-                        {pct < 85 ? 'Low confidence — manual check recommended' : 'Moderate — please verify'}
-                      </Typography>
-                    </Box>
-                    <Typography sx={{ fontSize: 13, fontWeight: 800, color, flexShrink: 0, ml: 1 }}>
-                      {pct}%
-                    </Typography>
-                  </Box>
-                );
-              })}
-            </Box>
-          </Box>
-        )}
-
-        {/* Good fields */}
-        {goodFields.length > 0 && (
-          <Box sx={{ px: 2.5, py: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981', flexShrink: 0 }} />
-              <Typography sx={{ fontWeight: 700, fontSize: 12, color: '#065f46' }}>
-                High Confidence ({goodFields.length})
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.7 }}>
-              {goodFields.map(([field, score]) => (
-                <Box key={field} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1 }}>
-                  <Typography sx={{ fontSize: 12, color: '#64748b' }}>{field}</Typography>
-                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#10b981' }}>
-                    {Math.round((score as number) * 100)}%
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-          </Box>
-        )}
-
-        {flaggedFields.length === 0 && (
-          <Box sx={{ px: 2.5, py: 3, textAlign: 'center' }}>
-            <Typography sx={{ fontSize: 28, mb: 1 }}>✓</Typography>
-            <Typography sx={{ fontWeight: 700, color: '#065f46', fontSize: 14 }}>All fields verified</Typography>
-            <Typography sx={{ color: '#94a3b8', fontSize: 12, mt: 0.5 }}>No manual review needed</Typography>
-          </Box>
-        )}
-      </Popover>
     </Box>
   );
 }
