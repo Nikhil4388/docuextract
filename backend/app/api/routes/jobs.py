@@ -59,7 +59,7 @@ async def list_jobs(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
-    limit: int = 20,
+    limit: int = 100,
 ):
     result = await db.execute(
         select(ExtractionJob)
