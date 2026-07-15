@@ -157,8 +157,14 @@ export default function JobDetailPage() {
         </Typography>
       </Box>
 
-      {/* ── Stats + Actions row ──────────────────────────────────────── */}
-      <Box sx={{ display: 'flex', gap: 1.5, mb: 3, flexWrap: 'wrap', alignItems: 'stretch' }}>
+      {/* ── Stats + Actions row — sticky so it stays visible while scrolling ── */}
+      <Box sx={{
+        display: 'flex', gap: 1.5, mb: 3, flexWrap: 'wrap', alignItems: 'stretch',
+        position: 'sticky', top: 0, zIndex: 10,
+        bgcolor: '#f3f0ea',   /* match app background so it doesn't bleed */
+        pt: 1.5, pb: 1.5,
+        mx: -2, px: 2,        /* bleed to edges so bg covers full width */
+      }}>
 
         {/* Stat cards */}
         {([
@@ -171,7 +177,7 @@ export default function JobDetailPage() {
         ] as const).map(({ label, value, c }) => (
           <Box key={label} sx={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            px: 2, py: 1.5, borderRadius: 2.5,
+            px: 2, py: 1.25, borderRadius: '12px',
             bgcolor: 'white',
             border: '1px solid #ede9fe',
             minWidth: 88, textAlign: 'center',
@@ -197,10 +203,10 @@ export default function JobDetailPage() {
         {/* Divider */}
         <Box sx={{ width: '1px', bgcolor: '#e5e7eb', mx: 0.5, alignSelf: 'stretch', flexShrink: 0 }} />
 
-        {/* Status pill */}
+        {/* Status chip */}
         <Box sx={{
           display: 'flex', alignItems: 'center', gap: 0.75,
-          px: 1.75, py: 0, borderRadius: 2.5,
+          px: 1.75, py: 0, borderRadius: '12px',
           bgcolor: st.bg,
           border: `1px solid ${st.color}33`,
           boxShadow: `0 1px 6px ${st.color}18`,
@@ -218,7 +224,7 @@ export default function JobDetailPage() {
             bgcolor: 'white',
             border: '1px solid #e5e7eb',
             boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-            borderRadius: 2.5,
+            borderRadius: '12px',
             '&:hover': { bgcolor: '#f5f3ff', borderColor: '#a5b4fc' },
             transition: 'all 0.15s',
           }}>
@@ -239,7 +245,7 @@ export default function JobDetailPage() {
               color: 'white',
               fontWeight: 800,
               fontSize: '0.88rem',
-              borderRadius: 3,
+              borderRadius: '12px',
               px: 3,
               py: 1.1,
               letterSpacing: '0.03em',
