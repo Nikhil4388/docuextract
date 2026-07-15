@@ -73,7 +73,6 @@ export default function JobDetailPage() {
       results.find(r => r.extracted_data && Object.keys(r.extracted_data).length > 0)
       ?? results[0];
     const keys = Object.keys(firstRow.extracted_data ?? {});
-
     return [
       {
         field: 'file_name', headerName: 'File', flex: 1.5, minWidth: 200,
@@ -127,7 +126,7 @@ export default function JobDetailPage() {
   const st   = STATUS_STYLE[job?.status ?? ''] ?? STATUS_STYLE.pending;
 
   if (!job) return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 'calc(100vh - 130px)' }}>
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
       <CircularProgress sx={{ color: '#6366f1' }} />
     </Box>
   );
@@ -135,7 +134,6 @@ export default function JobDetailPage() {
   const fmt = (d: string) =>
     new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  /* ── Stat card definitions ───────────────────────────────────────────── */
   const STATS = [
     { label: 'Total',     value: String(job.total_files),     color: '#6366f1' },
     { label: 'Processed', value: String(job.processed_files), color: '#10b981' },
@@ -147,98 +145,95 @@ export default function JobDetailPage() {
 
   return (
     /*
-     * Outer shell: fixed column, full height minus topbar + AppLayout padding.
-     * Header + stats row are flexShrink:0 (never move).
-     * Table Paper is flex:1 — grows to fill whatever remains.
+     * LAYOUT STRATEGY — no fixed outer height (avoids broken flex chains)
+     * ─────────────────────────────────────────────────────────────────
+     * Header card  → normal flow, always visible
+     * Stats row    → normal flow, always visible
+     * Table Paper  → DataGrid has explicit calc() height so it stays
+     *                within the viewport and only its rows scroll.
      */
-    <Box sx={{
-      display: 'flex', flexDirection: 'column',
-      height: 'calc(100vh - 130px)',   /* 64px topbar + 32px top pad + 32px bottom pad + 2px breathing */
-      overflow: 'hidden',
-      gap: '12px',
-    }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
       <style>{`
         @keyframes shimmerExport {
-          0%       { left: -75%; }
-          60%,100% { left: 130%; }
+          0% { left:-75%; } 60%,100% { left:130%; }
         }
         @keyframes pulseExport {
-          0%,100% { box-shadow: 0 3px 14px rgba(99,102,241,0.40); }
-          50%     { box-shadow: 0 5px 24px rgba(139,92,246,0.65), 0 0 0 4px rgba(99,102,241,0.10); }
+          0%,100% { box-shadow: 0 3px 14px rgba(99,102,241,.40); }
+          50%     { box-shadow: 0 5px 24px rgba(139,92,246,.65), 0 0 0 4px rgba(99,102,241,.10); }
         }
-        @keyframes blinkDot {
-          0%,100% { opacity:1; } 50% { opacity:0.25; }
-        }
+        @keyframes blinkDot { 0%,100%{opacity:1} 50%{opacity:.25} }
       `}</style>
 
-      {/* ───────────────────────────────────────────────────────────────────
-          ROW 1 — header bar: back · name · status · refresh · export
-          flexShrink:0 → never scrolls away
-      ─────────────────────────────────────────────────────────────────── */}
+      {/* ═══════════════════════════════════════
+          HEADER BAR  — back · title · actions
+          Normal document flow — always visible
+      ══════════════════════════════════════ */}
       <Box sx={{
-        flexShrink: 0,
         bgcolor: 'white',
-        borderRadius: '14px',
+        borderRadius: '12px',
         border: '1.5px solid #ede9fe',
-        boxShadow: '0 2px 10px rgba(99,102,241,0.07)',
-        px: 2, py: '11px',
-        display: 'flex', alignItems: 'center', gap: 1.5,
+        boxShadow: '0 2px 8px rgba(99,102,241,.07)',
+        px: '16px', py: '10px',
+        display: 'flex', alignItems: 'center', gap: '10px',
       }}>
 
         {/* Back */}
-        <Box onClick={() => navigate('/jobs')} title="Back to Jobs" sx={{
+        <Box onClick={() => navigate('/jobs')} sx={{
           width: 32, height: 32, borderRadius: '8px', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          bgcolor: '#f5f3ff', border: '1.5px solid #ddd6fe', cursor: 'pointer', color: '#6366f1',
+          bgcolor: '#f5f3ff', border: '1.5px solid #ddd6fe',
+          cursor: 'pointer', color: '#6366f1',
           '&:hover': { bgcolor: '#ede9fe', transform: 'translateX(-1px)' },
-          '&:active': { transform: 'scale(0.9)' },
-          transition: 'all 0.12s',
+          '&:active': { transform: 'scale(.9)' },
+          transition: 'all .12s',
         }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-            <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2.4"
-              strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor"
+              strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </Box>
 
-        {/* divider */}
-        <Box sx={{ width: '1px', height: 24, bgcolor: '#ede9fe', flexShrink: 0 }} />
+        <Box sx={{ width:'1px', height:22, bgcolor:'#ede9fe', flexShrink:0 }} />
 
-        {/* Job name + subtitle */}
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography fontWeight={900} fontSize="0.98rem" color="#0c0c0c"
-            letterSpacing="-0.3px" noWrap lineHeight={1.2}>
+        {/* Title */}
+        <Box sx={{ flex:1, minWidth:0 }}>
+          <Typography fontWeight={900} fontSize=".98rem" color="#0c0c0c"
+            letterSpacing="-.3px" noWrap lineHeight={1.2}>
             {job.name}
           </Typography>
-          <Typography fontSize="0.65rem" color="#a5b4fc" fontWeight={600} letterSpacing="0.06em"
-            textTransform="uppercase">
+          <Typography fontSize=".63rem" color="#a5b4fc" fontWeight={700}
+            letterSpacing=".06em" sx={{ textTransform:'uppercase' }}>
             Extraction Job
           </Typography>
         </Box>
 
-        {/* Status pill */}
+        {/* Status */}
         <Box sx={{
-          flexShrink: 0, display: 'flex', alignItems: 'center', gap: '5px',
-          px: '10px', py: '5px', borderRadius: '7px',
-          bgcolor: st.bg, border: `1.5px solid ${st.dot}35`,
+          flexShrink:0, display:'flex', alignItems:'center', gap:'5px',
+          px:'10px', py:'5px', borderRadius:'7px',
+          bgcolor: st.bg, border:`1.5px solid ${st.dot}35`,
         }}>
           <Box sx={{
-            width: 6, height: 6, borderRadius: '50%', bgcolor: st.dot,
-            ...(job.status === 'processing' && { animation: 'blinkDot 1.2s ease infinite' }),
+            width:6, height:6, borderRadius:'50%', bgcolor:st.dot,
+            ...(job.status==='processing' && { animation:'blinkDot 1.2s ease infinite' }),
           }} />
-          <Typography fontWeight={700} fontSize="0.75rem" color={st.text}>{st.label}</Typography>
+          <Typography fontWeight={700} fontSize=".75rem" color={st.text}>
+            {st.label}
+          </Typography>
         </Box>
 
         {/* Refresh */}
-        <Box onClick={handleRefresh} title="Refresh" sx={{
-          width: 32, height: 32, borderRadius: '8px', flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          bgcolor: '#f8fafc', border: '1.5px solid #e2e8f0', cursor: 'pointer', color: '#6366f1',
-          '&:hover': { bgcolor: '#eef2ff', borderColor: '#a5b4fc' },
-          '&:active': { transform: 'scale(0.9)' },
-          transition: 'all 0.12s',
+        <Box onClick={handleRefresh} sx={{
+          width:32, height:32, borderRadius:'8px', flexShrink:0,
+          display:'flex', alignItems:'center', justifyContent:'center',
+          bgcolor:'#f8fafc', border:'1.5px solid #e2e8f0',
+          cursor:'pointer', color:'#6366f1',
+          '&:hover': { bgcolor:'#eef2ff', borderColor:'#a5b4fc' },
+          '&:active': { transform:'scale(.9)' },
+          transition:'all .12s',
         }}>
           {refreshing
-            ? <CircularProgress size={13} sx={{ color: '#6366f1' }} />
+            ? <CircularProgress size={13} sx={{ color:'#6366f1' }} />
             : (
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
                 <path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
@@ -251,27 +246,26 @@ export default function JobDetailPage() {
         {/* Export */}
         {(job.status === 'completed' || job.status === 'partial') && (
           <Box onClick={handleExport} sx={{
-            position: 'relative', overflow: 'hidden', flexShrink: 0,
-            display: 'flex', alignItems: 'center', gap: '6px',
-            height: 32, px: 2, borderRadius: '8px', cursor: 'pointer',
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            color: 'white', fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap',
-            animation: 'pulseExport 2.4s ease-in-out infinite',
+            position:'relative', overflow:'hidden', flexShrink:0,
+            display:'flex', alignItems:'center', gap:'6px',
+            height:32, px:2, borderRadius:'8px', cursor:'pointer',
+            background:'linear-gradient(135deg,#6366f1,#8b5cf6)',
+            color:'white', fontWeight:700, fontSize:'.8rem', whiteSpace:'nowrap',
+            animation:'pulseExport 2.4s ease-in-out infinite',
             '&:hover': {
-              background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-              transform: 'translateY(-1px)',
-              animation: 'none',
-              boxShadow: '0 6px 20px rgba(99,102,241,0.5)',
-              '&::after': { animation: 'none' },
+              background:'linear-gradient(135deg,#4f46e5,#7c3aed)',
+              transform:'translateY(-1px)', animation:'none',
+              boxShadow:'0 6px 20px rgba(99,102,241,.5)',
+              '&::after': { animation:'none' },
             },
             '&::after': {
-              content: '""', position: 'absolute', top: 0, left: '-75%',
-              width: '50%', height: '100%',
-              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)',
-              transform: 'skewX(-20deg)',
-              animation: 'shimmerExport 2.4s ease-in-out infinite',
+              content:'""', position:'absolute', top:0, left:'-75%',
+              width:'50%', height:'100%',
+              background:'linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent)',
+              transform:'skewX(-20deg)',
+              animation:'shimmerExport 2.4s ease-in-out infinite',
             },
-            transition: 'transform 0.15s, box-shadow 0.15s',
+            transition:'transform .15s, box-shadow .15s',
           }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"
@@ -282,52 +276,54 @@ export default function JobDetailPage() {
         )}
       </Box>
 
-      {/* ───────────────────────────────────────────────────────────────────
-          ROW 2 — stat cards: all identical size, compact, rectangular
-          flexShrink:0 → pinned, never scrolls
-      ─────────────────────────────────────────────────────────────────── */}
+      {/* ═══════════════════════════════════════════
+          STAT CARDS — 6 identical small rectangles
+          Normal flow — always visible above table
+      ════════════════════════════════════════════ */}
       <Box sx={{
-        flexShrink: 0,
-        display: 'flex', gap: '10px', flexWrap: 'nowrap', overflowX: 'auto',
-        /* hide scrollbar on stat row */
-        '&::-webkit-scrollbar': { display: 'none' },
-        scrollbarWidth: 'none',
+        display:'flex', gap:'10px', flexWrap:'nowrap',
+        overflowX:'auto',
+        '&::-webkit-scrollbar': { display:'none' },
+        scrollbarWidth:'none',
       }}>
         {STATS.map(({ label, value, color }) => (
           <Box key={label} sx={{
-            /* ── SAME SIZE: fixed width, explicit padding, small radius ── */
-            width: 108,
+            /*
+             * RECTANGLE guarantee:
+             *   width 104px, padding pt10+pb12 = 22px, label ~14px, gap 5px, value ~16px
+             *   → total height ≈ 67px.  borderRadius 8px / 33.5px half = 24% → clearly rectangular
+             */
+            width: 104,
             flexShrink: 0,
             bgcolor: 'white',
-            borderRadius: '8px',      /* 8px on ~58px card = 14% → clearly rectangular */
+            borderRadius: '8px',
             border: '1.5px solid #f1f5f9',
-            boxShadow: '0 1px 5px rgba(0,0,0,0.05)',
+            boxShadow: '0 1px 4px rgba(0,0,0,.05)',
             pt: '10px', pb: '12px', px: '12px',
             display: 'flex', flexDirection: 'column', gap: '5px',
             position: 'relative', overflow: 'hidden',
-            cursor: 'default',
-            transition: 'all 0.15s ease',
+            transition: 'all .15s ease',
             '&:hover': {
               transform: 'translateY(-2px)',
-              boxShadow: `0 6px 18px ${color}22`,
-              borderColor: `${color}35`,
+              boxShadow: `0 5px 16px ${color}20`,
+              borderColor: `${color}30`,
             },
-            /* 2px bottom accent line */
+            /* 2 px bottom accent */
             '&::after': {
               content: '""', position: 'absolute',
               bottom: 0, left: '10px', right: '10px', height: '2px',
-              bgcolor: color, borderRadius: '2px 2px 0 0', opacity: 0.75,
+              bgcolor: color, borderRadius: '2px 2px 0 0', opacity: .7,
             },
           }}>
             <Typography sx={{
-              fontSize: '0.57rem', fontWeight: 700, letterSpacing: '0.09em',
+              fontSize: '.6rem', fontWeight: 700, letterSpacing: '.09em',
               textTransform: 'uppercase', color: '#b0b8c9', lineHeight: 1,
             }}>
               {label}
             </Typography>
             <Typography sx={{
-              fontSize: '0.95rem', fontWeight: 800, color, letterSpacing: '-0.4px',
-              lineHeight: 1.1,
+              fontSize: '.95rem', fontWeight: 800, color,
+              letterSpacing: '-.3px', lineHeight: 1.15,
             }} noWrap>
               {value}
             </Typography>
@@ -335,20 +331,16 @@ export default function JobDetailPage() {
         ))}
       </Box>
 
-      {/* ───────────────────────────────────────────────────────────────────
-          ROW 3 (conditional) — processing progress card
-          flexShrink:0 → pinned
-      ─────────────────────────────────────────────────────────────────── */}
+      {/* Processing bar (conditional) */}
       {(job.status === 'processing' || job.status === 'pending') && (
         <Box sx={{
-          flexShrink: 0,
-          bgcolor: 'white', borderRadius: '10px',
-          border: '1.5px solid #dbeafe',
-          boxShadow: '0 1px 6px rgba(59,130,246,0.08)',
-          px: 2.5, py: '13px',
+          bgcolor:'white', borderRadius:'10px',
+          border:'1.5px solid #dbeafe',
+          boxShadow:'0 1px 6px rgba(59,130,246,.08)',
+          px:2.5, py:'12px',
         }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: '10px' }}>
-            <CircularProgress size={13} thickness={5.5} sx={{ color: '#6366f1' }} />
+          <Box sx={{ display:'flex', alignItems:'center', gap:1.5, mb:'10px' }}>
+            <CircularProgress size={13} thickness={5.5} sx={{ color:'#6366f1' }} />
             <Typography fontSize={12.5} color="#374151" fontWeight={500}>
               {job.status_message
                 || (job.status === 'pending'
@@ -360,29 +352,28 @@ export default function JobDetailPage() {
             variant={job.total_files > 0 ? 'determinate' : 'indeterminate'}
             value={job.total_files > 0 ? (job.processed_files / job.total_files) * 100 : undefined}
             sx={{
-              height: 5, borderRadius: 3, bgcolor: '#e0e7ff',
-              '& .MuiLinearProgress-bar': { background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius: 3 },
+              height:5, borderRadius:3, bgcolor:'#e0e7ff',
+              '& .MuiLinearProgress-bar': { background:'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius:3 },
             }}
           />
           {job.total_files > 0 && (
-            <Typography fontSize={11} color="#94a3b8" sx={{ mt: '5px' }}>
+            <Typography fontSize={11} color="#94a3b8" sx={{ mt:'5px' }}>
               {job.processed_files} / {job.total_files} files
             </Typography>
           )}
         </Box>
       )}
 
-      {/* Inline alerts */}
       {job.error_message && job.status === 'failed' && (
-        <Alert severity="error" sx={{ flexShrink: 0, borderRadius: '10px', py: 0.5 }}>
+        <Alert severity="error" sx={{ borderRadius:'10px', py:.5 }}>
           {job.error_message}
         </Alert>
       )}
       {resultsError && jobDone && (
-        <Alert severity="error" sx={{ flexShrink: 0, borderRadius: '10px', py: 0.5 }}
+        <Alert severity="error" sx={{ borderRadius:'10px', py:.5 }}
           action={
             <Box onClick={() => refetchResults()}
-              sx={{ cursor: 'pointer', fontSize: 12, fontWeight: 700, color: '#dc2626', px: 1 }}>
+              sx={{ cursor:'pointer', fontSize:12, fontWeight:700, color:'#dc2626', px:1 }}>
               Retry
             </Box>
           }>
@@ -390,37 +381,50 @@ export default function JobDetailPage() {
         </Alert>
       )}
 
-      {/* ───────────────────────────────────────────────────────────────────
-          TABLE — flex:1 fills all remaining height
-          Column headers are always visible; only data rows scroll inside.
-      ─────────────────────────────────────────────────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════
+          TABLE CARD
+          ─────────────────────────────────────────────────────────
+          The DataGrid wrapper has an EXPLICIT calc() height so:
+            • column headers stay pinned at the top of the grid
+            • only data rows scroll inside the grid
+            • the card never pushes header/stats off-screen
+
+          Calculation (desktop, md breakpoint):
+            64px  AppLayout topbar
+          + 32px  AppLayout padding-top (p:4 → 32px)
+          + 54px  header card (py:10px × 2 + content 34px)
+          + 10px  gap
+          + 67px  stats row (pt:10 + content 45 + pb:12)
+          + 10px  gap
+          + 46px  table toolbar (py:10px × 2 + content 26px)
+          + 32px  AppLayout padding-bottom
+          + 10px  breathing room
+          ───────
+            325px  → DataGrid box = calc(100vh - 325px)
+      ════════════════════════════════════════════════════════════ */}
       {jobDone && (
         <Paper sx={{
-          flex: 1,
-          display: 'flex', flexDirection: 'column',
-          minHeight: 0,              /* critical: lets flex child shrink past content size */
-          borderRadius: '14px', overflow: 'hidden',
+          borderRadius: '14px',
+          overflow: 'hidden',
           border: '1.5px solid #f1f5f9',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+          boxShadow: '0 2px 10px rgba(0,0,0,.05)',
         }}>
-
-          {/* Toolbar — fixed, never scrolls */}
+          {/* Toolbar */}
           <Box sx={{
-            flexShrink: 0,
-            px: 2.5, py: '11px',
-            display: 'flex', alignItems: 'center', gap: 2,
-            borderBottom: '1px solid #f3f4f6', bgcolor: 'white',
+            px:'20px', py:'10px',
+            display:'flex', alignItems:'center', gap:2,
+            borderBottom:'1px solid #f3f4f6', bgcolor:'white',
           }}>
-            <Box sx={{ flex: 1 }}>
-              <Typography fontWeight={800} fontSize="0.88rem" color="#0c0c0c" letterSpacing="-0.2px">
+            <Box sx={{ flex:1 }}>
+              <Typography fontWeight={800} fontSize=".88rem" color="#0c0c0c" letterSpacing="-.2px">
                 Extracted Data
               </Typography>
               {rows.length > 0 && (
-                <Typography fontSize={10.5} color="#94a3b8" sx={{ mt: '2px' }}>
+                <Typography fontSize={10.5} color="#94a3b8" sx={{ mt:'2px' }}>
                   {rows.length} record{rows.length !== 1 ? 's' : ''}
                   {' · '}
-                  <Box component="span" sx={{ color: '#e11d48', fontWeight: 700 }}>red cells</Box>
-                  {' = needs review'}
+                  <Box component="span" sx={{ color:'#e11d48', fontWeight:700 }}>red</Box>
+                  {' = low confidence'}
                 </Typography>
               )}
             </Box>
@@ -436,15 +440,19 @@ export default function JobDetailPage() {
                   </InputAdornment>
                 ),
                 sx: {
-                  bgcolor: '#f9fafb', borderRadius: '9px', fontSize: 12.5,
-                  '& fieldset': { borderColor: '#e5e7eb', borderRadius: '9px' },
+                  bgcolor:'#f9fafb', borderRadius:'8px', fontSize:12.5,
+                  '& fieldset': { borderColor:'#e5e7eb', borderRadius:'8px' },
                 },
               }}
-              sx={{ width: 180 }} />
+              sx={{ width:175 }} />
           </Box>
 
-          {/* DataGrid — fills the rest of the Paper, column headers pinned at top */}
-          <Box sx={{ flex: 1, minHeight: 0 }}>
+          {/* DataGrid — explicit height keeps column headers always visible */}
+          <Box sx={{
+            height: 'calc(100vh - 325px)',
+            minHeight: 280,
+            overflow: 'hidden',
+          }}>
             <DataGrid
               rows={rows}
               columns={dynamicColumns}
@@ -459,9 +467,9 @@ export default function JobDetailPage() {
                 height: '100%',
                 border: 'none',
                 fontFamily: 'inherit',
-                fontSize: '0.82rem',
+                fontSize: '.82rem',
 
-                /* ── Column headers: dark navy matching sidebar ── */
+                /* ── Column headers: sidebar dark navy ── */
                 '& .MuiDataGrid-columnHeaders': {
                   bgcolor:    '#0d0b28 !important',
                   background: 'linear-gradient(90deg,#07071a,#0d0b28,#110d30) !important',
@@ -471,51 +479,43 @@ export default function JobDetailPage() {
                   background: 'transparent !important',
                 },
                 '& .MuiDataGrid-columnHeaderTitle': {
-                  color:         'rgba(255,255,255,0.72) !important',
-                  fontWeight:    700,
-                  fontSize:      '0.66rem',
-                  letterSpacing: '0.09em',
-                  textTransform: 'uppercase',
+                  color: 'rgba(255,255,255,.72) !important',
+                  fontWeight: 700, fontSize: '.66rem',
+                  letterSpacing: '.09em', textTransform: 'uppercase',
                 },
-                '& .MuiDataGrid-columnSeparator': {
-                  color: 'rgba(255,255,255,0.06) !important',
-                },
+                '& .MuiDataGrid-columnSeparator': { color:'rgba(255,255,255,.06) !important' },
                 '& .MuiDataGrid-sortIcon, & .MuiDataGrid-menuIconButton': {
-                  color: 'rgba(255,255,255,0.45) !important',
+                  color:'rgba(255,255,255,.45) !important',
                 },
                 '& .MuiDataGrid-iconButtonContainer .MuiIconButton-root': {
-                  color: 'rgba(255,255,255,0.45) !important',
+                  color:'rgba(255,255,255,.45) !important',
                 },
 
                 /* ── Rows ── */
-                '& .MuiDataGrid-row': { bgcolor: 'white', transition: 'background 0.1s' },
-                '& .row-stripe':      { bgcolor: '#fafafa' },
-                '& .MuiDataGrid-row:hover': { bgcolor: '#f0f0ff !important' },
+                '& .MuiDataGrid-row':       { bgcolor:'white', transition:'background .1s' },
+                '& .row-stripe':            { bgcolor:'#fafafa' },
+                '& .MuiDataGrid-row:hover': { bgcolor:'#f0f0ff !important' },
 
                 /* ── Cells ── */
-                '& .MuiDataGrid-cell': { borderColor: '#f3f4f6', color: '#374151' },
+                '& .MuiDataGrid-cell': { borderColor:'#f3f4f6', color:'#374151' },
                 '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                  outline: '2px solid #818cf8', outlineOffset: -2,
+                  outline:'2px solid #818cf8', outlineOffset:-2,
                 },
 
-                /* ── Low-confidence highlight ── */
+                /* ── Low-confidence cells ── */
                 '& .cell-low': {
                   backgroundColor: '#fff1f2 !important',
                   borderLeft:      '2px solid #fb7185 !important',
                   color:           '#e11d48 !important',
                   fontWeight:      '600 !important',
                 },
-                '& .MuiDataGrid-row:hover .cell-low': {
-                  backgroundColor: '#ffe4e8 !important',
-                },
+                '& .MuiDataGrid-row:hover .cell-low': { backgroundColor:'#ffe4e8 !important' },
 
-                /* ── Pagination footer ── */
+                /* ── Footer ── */
                 '& .MuiDataGrid-footerContainer': {
-                  borderTop: '1px solid #f3f4f6',
-                  bgcolor: '#fafafa',
-                  minHeight: 42,
+                  borderTop:'1px solid #f3f4f6', bgcolor:'#fafafa', minHeight:42,
                 },
-                '& .MuiTablePagination-root': { fontSize: '0.78rem', color: '#6b7280' },
+                '& .MuiTablePagination-root': { fontSize:'.78rem', color:'#6b7280' },
               }}
             />
           </Box>
