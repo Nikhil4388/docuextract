@@ -16,7 +16,7 @@ from typing import List, Dict, Any, Optional
 import fitz  # PyMuPDF
 
 
-IMAGE_CAP = 15  # render images for first N pages; key data is almost always here
+IMAGE_CAP = 8  # render images for first N pages; key data is almost always here
 
 
 class PDFExtractor:
