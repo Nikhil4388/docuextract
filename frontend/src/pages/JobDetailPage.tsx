@@ -77,10 +77,11 @@ export default function JobDetailPage() {
         flex: 1,
         minWidth: 140,
         valueGetter: (_, row) => row.extracted_data?.[key] ?? '—',
-        // Use cellClassName for per-cell red highlight — safer than renderCell
+        // Red highlight if confidence is null/missing OR below 85%
         cellClassName: (params) => {
           const score = params.row.confidence_scores?.[key];
-          return typeof score === 'number' && score < 0.85 ? 'low-conf-cell' : '';
+          const isLow = score == null || score < 0.85;
+          return isLow ? 'low-conf-cell' : '';
         },
       })),
       {
@@ -222,10 +223,10 @@ export default function JobDetailPage() {
               border: 'none',
               '& .MuiDataGrid-columnHeaders': { bgcolor: '#f8f4ee' },
               '& .low-conf-cell': {
-                bgcolor: '#fee2e2 !important',
-                borderLeft: '3px solid #ef4444',
-                color: '#dc2626',
-                fontWeight: 600,
+                backgroundColor: '#fee2e2 !important',
+                borderLeft: '3px solid #ef4444 !important',
+                color: '#dc2626 !important',
+                fontWeight: '600 !important',
               },
             }}
           />
