@@ -232,26 +232,49 @@ export default function JobDetailPage() {
         {(job.status === 'completed' || job.status === 'partial') && (
           <Button
             variant="contained"
-            startIcon={<Download />}
             onClick={handleExport}
             sx={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              position: 'relative', overflow: 'hidden',
+              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 55%, #a78bfa 100%)',
               color: 'white',
-              fontWeight: 700,
-              fontSize: '0.875rem',
-              borderRadius: 2.5,
-              px: 2.5,
-              boxShadow: '0 4px 16px rgba(99,102,241,0.45)',
-              letterSpacing: '0.01em',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-                boxShadow: '0 6px 24px rgba(99,102,241,0.55)',
-                transform: 'translateY(-2px)',
+              fontWeight: 800,
+              fontSize: '0.88rem',
+              borderRadius: 3,
+              px: 3,
+              py: 1.1,
+              letterSpacing: '0.03em',
+              textTransform: 'none',
+              whiteSpace: 'nowrap',
+              /* Pulse-glow animation */
+              animation: 'exportPulse 2.4s ease-in-out infinite',
+              '@keyframes exportPulse': {
+                '0%,100%': { boxShadow: '0 4px 18px rgba(99,102,241,0.45)' },
+                '50%':     { boxShadow: '0 6px 28px rgba(139,92,246,0.7), 0 0 0 5px rgba(99,102,241,0.12)' },
               },
-              transition: 'all 0.2s ease',
+              /* Shimmer sweep */
+              '&::after': {
+                content: '""',
+                position: 'absolute', top: 0, left: '-75%',
+                width: '50%', height: '100%',
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent)',
+                transform: 'skewX(-20deg)',
+                animation: 'exportShimmer 2.4s ease-in-out infinite',
+              },
+              '@keyframes exportShimmer': {
+                '0%':   { left: '-75%' },
+                '60%,100%': { left: '130%' },
+              },
+              '&:hover': {
+                background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #8b5cf6 100%)',
+                boxShadow: '0 8px 32px rgba(99,102,241,0.65)',
+                transform: 'translateY(-2px) scale(1.02)',
+                animation: 'none',
+                '&::after': { animation: 'none' },
+              },
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
             }}
           >
-            Export Excel
+            ↓&nbsp; Export to Excel
           </Button>
         )}
       </Box>
