@@ -419,6 +419,7 @@ export default function AppLayout() {
         transition: 'margin 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
         p: { xs: 2.5, md: 4 },
         bgcolor: '#e8e2d8',
+        overflowX: 'clip' as any,  /* clip wide tables without breaking position:sticky */
       }}>
         <Outlet />
       </Box>

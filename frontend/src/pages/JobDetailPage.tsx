@@ -168,10 +168,8 @@ export default function JobDetailPage() {
         position: 'sticky',
         top: 64,                         /* just below the fixed 64px AppLayout topbar */
         zIndex: 200,
-        bgcolor: '#e8e2d8',              /* match AppLayout background — hides scrolled rows */
+        bgcolor: '#e8e2d8',
         pb: '10px',
-        mx: { xs: '-20px', md: '-32px' }, /* cancel AppLayout padding so bg goes edge-to-edge */
-        px: { xs: '20px', md: '32px' },   /* restore content padding */
         display: 'flex', flexDirection: 'column', gap: '8px',
       }}>
 
