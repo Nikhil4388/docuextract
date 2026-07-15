@@ -147,47 +147,20 @@ export default function JobDetailPage() {
     <Box sx={{ maxWidth: '100%' }}>
 
       {/* ── Top bar ──────────────────────────────────────────────────── */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5 }}>
         <IconButton size="small" onClick={() => navigate('/jobs')}
           sx={{ color: '#6366f1', bgcolor: '#eef2ff', '&:hover': { bgcolor: '#e0e7ff' } }}>
           <ArrowBack fontSize="small" />
         </IconButton>
-
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography fontWeight={800} fontSize="1.1rem" color="#111827" noWrap>
-            {job.name}
-          </Typography>
-        </Box>
-
-        <Chip size="small" label={st.label}
-          sx={{ bgcolor: st.bg, color: st.color, fontWeight: 700, fontSize: '0.72rem', height: 24, px: 0.5 }} />
-
-        <Tooltip title="Refresh">
-          <IconButton size="small" onClick={handleRefresh} disabled={refreshing}
-            sx={{ color: '#6366f1', bgcolor: '#eef2ff', '&:hover': { bgcolor: '#e0e7ff' } }}>
-            {refreshing
-              ? <CircularProgress size={14} sx={{ color: '#6366f1' }} />
-              : <Refresh fontSize="small" />}
-          </IconButton>
-        </Tooltip>
-
-        {(job.status === 'completed' || job.status === 'partial') && (
-          <Button size="small" variant="contained" startIcon={<Download fontSize="small" />}
-            onClick={handleExport}
-            sx={{
-              background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-              fontWeight: 700, borderRadius: 2, px: 2,
-              boxShadow: '0 2px 10px rgba(99,102,241,0.35)',
-              '&:hover': { opacity: 0.9, transform: 'translateY(-1px)', boxShadow: '0 4px 16px rgba(99,102,241,0.4)' },
-              transition: 'all 0.2s',
-            }}>
-            Export Excel
-          </Button>
-        )}
+        <Typography fontWeight={800} fontSize="1.1rem" color="#111827" noWrap>
+          {job.name}
+        </Typography>
       </Box>
 
-      {/* ── Stats row ────────────────────────────────────────────────── */}
-      <Box sx={{ display: 'flex', gap: 1.5, mb: 3, flexWrap: 'wrap' }}>
+      {/* ── Stats + Actions row ──────────────────────────────────────── */}
+      <Box sx={{ display: 'flex', gap: 1.5, mb: 3, flexWrap: 'wrap', alignItems: 'stretch' }}>
+
+        {/* Stat cards */}
         {([
           { label: 'Total',     value: String(job.total_files),     c: '#6366f1' },
           { label: 'Processed', value: String(job.processed_files), c: '#059669' },
@@ -197,23 +170,90 @@ export default function JobDetailPage() {
           { label: 'Finished',  value: job.completed_at ? new Date(job.completed_at).toLocaleTimeString() : '—', c: '#059669' },
         ] as const).map(({ label, value, c }) => (
           <Box key={label} sx={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            px: 2, py: 1.25, borderRadius: 2,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            px: 2, py: 1.5, borderRadius: 2.5,
             bgcolor: 'white',
-            border: '1px solid #e5e7eb',
-            minWidth: 90, textAlign: 'center',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-            transition: 'box-shadow 0.15s',
-            '&:hover': { boxShadow: '0 3px 12px rgba(0,0,0,0.1)' },
+            border: '1px solid #ede9fe',
+            minWidth: 88, textAlign: 'center',
+            boxShadow: '0 1px 6px rgba(99,102,241,0.07)',
+            position: 'relative', overflow: 'hidden',
+            transition: 'all 0.15s',
+            '&:hover': { transform: 'translateY(-2px)', boxShadow: `0 6px 18px ${c}22` },
+            '&::after': {
+              content: '""', position: 'absolute',
+              bottom: 0, left: '20%', right: '20%', height: 2,
+              bgcolor: c, borderRadius: 1, opacity: 0.6,
+            },
           }}>
-            <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#9ca3af', mb: 0.25 }}>
+            <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#c4b5fd', mb: 0.5 }}>
               {label}
             </Typography>
-            <Typography sx={{ fontSize: '0.95rem', fontWeight: 800, color: c, lineHeight: 1 }}>
+            <Typography sx={{ fontSize: '1rem', fontWeight: 800, color: c, lineHeight: 1 }}>
               {value}
             </Typography>
           </Box>
         ))}
+
+        {/* Divider */}
+        <Box sx={{ width: '1px', bgcolor: '#e5e7eb', mx: 0.5, alignSelf: 'stretch', flexShrink: 0 }} />
+
+        {/* Status pill */}
+        <Box sx={{
+          display: 'flex', alignItems: 'center', gap: 0.75,
+          px: 1.75, py: 0, borderRadius: 2.5,
+          bgcolor: st.bg,
+          border: `1px solid ${st.color}33`,
+          boxShadow: `0 1px 6px ${st.color}18`,
+        }}>
+          <Box sx={{
+            width: 8, height: 8, borderRadius: '50%', bgcolor: st.color, flexShrink: 0,
+            boxShadow: `0 0 0 3px ${st.color}30`,
+          }} />
+          <Typography fontWeight={700} fontSize="0.82rem" color={st.color}>{st.label}</Typography>
+        </Box>
+
+        {/* Refresh */}
+        <Tooltip title="Refresh">
+          <IconButton onClick={handleRefresh} disabled={refreshing} sx={{
+            bgcolor: 'white',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            borderRadius: 2.5,
+            '&:hover': { bgcolor: '#f5f3ff', borderColor: '#a5b4fc' },
+            transition: 'all 0.15s',
+          }}>
+            {refreshing
+              ? <CircularProgress size={16} sx={{ color: '#6366f1' }} />
+              : <Refresh sx={{ color: '#6366f1' }} fontSize="small" />}
+          </IconButton>
+        </Tooltip>
+
+        {/* Export button */}
+        {(job.status === 'completed' || job.status === 'partial') && (
+          <Button
+            variant="contained"
+            startIcon={<Download />}
+            onClick={handleExport}
+            sx={{
+              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              color: 'white',
+              fontWeight: 700,
+              fontSize: '0.875rem',
+              borderRadius: 2.5,
+              px: 2.5,
+              boxShadow: '0 4px 16px rgba(99,102,241,0.45)',
+              letterSpacing: '0.01em',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                boxShadow: '0 6px 24px rgba(99,102,241,0.55)',
+                transform: 'translateY(-2px)',
+              },
+              transition: 'all 0.2s ease',
+            }}
+          >
+            Export Excel
+          </Button>
+        )}
       </Box>
 
       {/* ── Processing progress ───────────────────────────────────────── */}
