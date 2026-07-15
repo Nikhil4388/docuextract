@@ -144,10 +144,11 @@ export default function JobDetailPage() {
   );
 
   return (
-    <Box sx={{ maxWidth: '100%' }}>
+    /* Full-height column: header + stats fixed, table fills rest */
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 72px)', overflow: 'hidden' }}>
 
       {/* ── Top bar ──────────────────────────────────────────────────── */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, flexShrink: 0 }}>
         <IconButton size="small" onClick={() => navigate('/jobs')}
           sx={{ color: '#6366f1', bgcolor: '#eef2ff', '&:hover': { bgcolor: '#e0e7ff' } }}>
           <ArrowBack fontSize="small" />
@@ -157,13 +158,10 @@ export default function JobDetailPage() {
         </Typography>
       </Box>
 
-      {/* ── Stats + Actions row — sticky so it stays visible while scrolling ── */}
+      {/* ── Stats + Actions row — never moves ────────────────────────── */}
       <Box sx={{
-        display: 'flex', gap: 1.5, mb: 3, flexWrap: 'wrap', alignItems: 'stretch',
-        position: 'sticky', top: 0, zIndex: 10,
-        bgcolor: '#f3f0ea',   /* match app background so it doesn't bleed */
-        pt: 1.5, pb: 1.5,
-        mx: -2, px: 2,        /* bleed to edges so bg covers full width */
+        display: 'flex', gap: 1.5, mb: 2, flexWrap: 'nowrap', alignItems: 'stretch',
+        flexShrink: 0, overflowX: 'auto',
       }}>
 
         {/* Stat cards */}
@@ -177,10 +175,10 @@ export default function JobDetailPage() {
         ] as const).map(({ label, value, c }) => (
           <Box key={label} sx={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            px: 2, py: 1.25, borderRadius: '12px',
+            px: 2.5, py: 1.5, borderRadius: '10px',
             bgcolor: 'white',
             border: '1px solid #ede9fe',
-            minWidth: 88, textAlign: 'center',
+            minWidth: 96, textAlign: 'center',
             boxShadow: '0 1px 6px rgba(99,102,241,0.07)',
             position: 'relative', overflow: 'hidden',
             transition: 'all 0.15s',
@@ -322,13 +320,17 @@ export default function JobDetailPage() {
         </Alert>
       )}
 
-      {/* ── Results table ─────────────────────────────────────────────── */}
+      {/* ── Results table — fills remaining height, rows scroll inside ── */}
       {jobDone && (
-        <Paper sx={{ borderRadius: 2.5, overflow: 'hidden', boxShadow: '0 1px 12px rgba(0,0,0,0.07)', border: '1px solid #e5e7eb' }}>
+        <Paper sx={{
+          borderRadius: '12px', overflow: 'hidden',
+          boxShadow: '0 1px 12px rgba(0,0,0,0.07)', border: '1px solid #e5e7eb',
+          flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0,
+        }}>
 
           {/* Table toolbar */}
           <Box sx={{
-            px: 2.5, py: 1.75,
+            px: 2.5, py: 1.5, flexShrink: 0,
             display: 'flex', alignItems: 'center', gap: 2,
             borderBottom: '1px solid #f0f0f0',
             bgcolor: 'white',
@@ -355,86 +357,70 @@ export default function JobDetailPage() {
               sx={{ width: 200 }} />
           </Box>
 
-          {/* Grid */}
-          <DataGrid
-            rows={rows}
-            columns={dynamicColumns}
-            loading={resultsLoading}
-            pageSizeOptions={[25, 50, 100]}
-            initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
-            autoHeight
-            disableRowSelectionOnClick
-            rowHeight={46}
-            getRowClassName={p => p.indexRelativeToCurrentPage % 2 !== 0 ? 'row-stripe' : ''}
-            sx={{
-              border: 'none',
-              fontFamily: 'inherit',
-              fontSize: '0.83rem',
+          {/* Grid — fills remaining height, rows scroll inside */}
+          <Box sx={{ flex: 1, minHeight: 0 }}>
+            <DataGrid
+              rows={rows}
+              columns={dynamicColumns}
+              loading={resultsLoading}
+              pageSizeOptions={[25, 50, 100]}
+              initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+              disableRowSelectionOnClick
+              rowHeight={46}
+              getRowClassName={p => p.indexRelativeToCurrentPage % 2 !== 0 ? 'row-stripe' : ''}
+              sx={{
+                height: '100%',
+                border: 'none',
+                fontFamily: 'inherit',
+                fontSize: '0.83rem',
 
-              /* ── Header ── */
-              '& .MuiDataGrid-columnHeaders': {
-                bgcolor: '#1e1b4b !important',
-                background: '#1e1b4b !important',
-                minHeight: '42px !important',
-              },
-              '& .MuiDataGrid-columnHeader': {
-                bgcolor: '#1e1b4b !important',
-                background: '#1e1b4b !important',
-              },
-              '& .MuiDataGrid-columnHeaderTitle': {
-                color: 'rgba(255,255,255,0.85) !important',
-                fontWeight: 700,
-                fontSize: '0.7rem',
-                letterSpacing: '0.07em',
-                textTransform: 'uppercase',
-              },
-              '& .MuiDataGrid-columnSeparator': { color: 'rgba(255,255,255,0.12) !important' },
-              '& .MuiDataGrid-sortIcon, & .MuiDataGrid-menuIconButton': {
-                color: 'rgba(255,255,255,0.6) !important',
-              },
-              '& .MuiDataGrid-iconButtonContainer .MuiIconButton-root': {
-                color: 'rgba(255,255,255,0.6) !important',
-              },
+                /* ── Header ── */
+                '& .MuiDataGrid-columnHeaders': {
+                  bgcolor: '#1e1b4b !important',
+                  background: '#1e1b4b !important',
+                  minHeight: '42px !important',
+                },
+                '& .MuiDataGrid-columnHeader': {
+                  bgcolor: '#1e1b4b !important',
+                  background: '#1e1b4b !important',
+                },
+                '& .MuiDataGrid-columnHeaderTitle': {
+                  color: 'rgba(255,255,255,0.85) !important',
+                  fontWeight: 700, fontSize: '0.7rem',
+                  letterSpacing: '0.07em', textTransform: 'uppercase',
+                },
+                '& .MuiDataGrid-columnSeparator': { color: 'rgba(255,255,255,0.12) !important' },
+                '& .MuiDataGrid-sortIcon, & .MuiDataGrid-menuIconButton': { color: 'rgba(255,255,255,0.6) !important' },
+                '& .MuiDataGrid-iconButtonContainer .MuiIconButton-root': { color: 'rgba(255,255,255,0.6) !important' },
 
-              /* ── Rows ── */
-              '& .MuiDataGrid-row': {
-                transition: 'background 0.1s',
-                bgcolor: 'white',
-              },
-              '& .row-stripe': { bgcolor: '#fafafa' },
-              '& .MuiDataGrid-row:hover': { bgcolor: '#f0f0ff !important' },
+                /* ── Rows ── */
+                '& .MuiDataGrid-row': { transition: 'background 0.1s', bgcolor: 'white' },
+                '& .row-stripe': { bgcolor: '#fafafa' },
+                '& .MuiDataGrid-row:hover': { bgcolor: '#f0f0ff !important' },
 
-              /* ── Cells ── */
-              '& .MuiDataGrid-cell': {
-                borderColor: '#f3f4f6',
-                color: '#374151',
-                py: 0,
-              },
-              '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                outline: '2px solid #818cf8',
-                outlineOffset: -2,
-              },
+                /* ── Cells ── */
+                '& .MuiDataGrid-cell': { borderColor: '#f3f4f6', color: '#374151' },
+                '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                  outline: '2px solid #818cf8', outlineOffset: -2,
+                },
 
-              /* ── Low confidence ── */
-              '& .cell-low': {
-                backgroundColor: '#fff1f2 !important',
-                borderLeft: '2px solid #fb7185 !important',
-                color: '#e11d48 !important',
-                fontWeight: '600 !important',
-              },
-              '& .MuiDataGrid-row:hover .cell-low': {
-                backgroundColor: '#ffe4e8 !important',
-              },
+                /* ── Low confidence ── */
+                '& .cell-low': {
+                  backgroundColor: '#fff1f2 !important',
+                  borderLeft: '2px solid #fb7185 !important',
+                  color: '#e11d48 !important',
+                  fontWeight: '600 !important',
+                },
+                '& .MuiDataGrid-row:hover .cell-low': { backgroundColor: '#ffe4e8 !important' },
 
-              /* ── Footer ── */
-              '& .MuiDataGrid-footerContainer': {
-                borderTop: '1px solid #f3f4f6',
-                bgcolor: '#fafafa',
-                minHeight: 44,
-              },
-              '& .MuiTablePagination-root': { fontSize: '0.8rem', color: '#6b7280' },
-            }}
-          />
+                /* ── Footer ── */
+                '& .MuiDataGrid-footerContainer': {
+                  borderTop: '1px solid #f3f4f6', bgcolor: '#fafafa', minHeight: 44,
+                },
+                '& .MuiTablePagination-root': { fontSize: '0.8rem', color: '#6b7280' },
+              }}
+            />
+          </Box>
         </Paper>
       )}
     </Box>
