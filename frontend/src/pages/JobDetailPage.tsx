@@ -249,7 +249,27 @@ export default function JobDetailPage() {
             pageSizeOptions={[25, 50, 100]}
             initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
             autoHeight disableRowSelectionOnClick
-            sx={{ border: 'none', '& .MuiDataGrid-columnHeaders': { bgcolor: '#f8f4ee' } }}
+            getRowClassName={(params) => {
+              const pct = overallConfidence(params.row);
+              if (pct === null) return '';
+              if (pct < 85) return 'row-low-confidence';
+              if (pct < 95) return 'row-mid-confidence';
+              return '';
+            }}
+            sx={{
+              border: 'none',
+              '& .MuiDataGrid-columnHeaders': { bgcolor: '#f8f4ee' },
+              '& .row-mid-confidence': {
+                bgcolor: '#fffbeb',
+                borderLeft: '3px solid #f59e0b',
+                '&:hover': { bgcolor: '#fef3c7' },
+              },
+              '& .row-low-confidence': {
+                bgcolor: '#fff5f5',
+                borderLeft: '3px solid #ef4444',
+                '&:hover': { bgcolor: '#fee2e2' },
+              },
+            }}
           />
         </Paper>
       )}
