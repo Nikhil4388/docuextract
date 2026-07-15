@@ -46,18 +46,33 @@ class ClaudeService:
         columns_desc = json.dumps(columns, indent=2)
 
         # Build message content.
-        # Use Vision ONLY when text is truly sparse — PDFs with blank trailing pages
-        # produce image slots but have abundant OCR text; discarding that text causes
-        # all-null results. Prefer text whenever ≥500 chars are available.
+        # Strategy:
+        # - If page images exist (scanned or garbled pages), send BOTH text and images.
+        #   Claude uses images as ground truth when OCR text is garbled.
+        # - If no images (clean native-text PDF), send text only.
         content: List[Any] = []
-        use_vision = bool(page_images) and len(text.strip()) < 500
 
-        if use_vision:
+        if page_images:
+            # Mixed/scanned document — text + images together
             content.append({
                 "type": "text",
-                "text": f"This is a scanned document. Extract data from the images below.\n\nCOLUMNS TO EXTRACT:\n{columns_desc}\n\nReturn JSON with 'extracted_data' and 'confidence_scores'. Score 0.97+ for any value you can clearly read."
+                "text": f"""Extract data from this historical document. It contains scanned pages where OCR text may be garbled.
+
+STRATEGY: Use the page images as the primary source of truth. The text below is provided as context but may contain OCR errors (e.g. garbled company names, dates, amounts). When text and image disagree, trust the image.
+
+COLUMNS TO EXTRACT:
+{columns_desc}
+
+DOCUMENT TEXT (may have OCR artifacts — use images to verify):
+{text[:15000]}
+
+Page images follow below.
+
+Return JSON with two keys:
+1. "extracted_data": {{column_name: value, ...}}
+2. "confidence_scores": {{column_name: 0.0-1.0, ...}}"""
             })
-            for img_b64 in page_images[:10]:  # max 10 pages
+            for img_b64 in page_images[:10]:  # max 10 page images
                 content.append({
                     "type": "image",
                     "source": {
