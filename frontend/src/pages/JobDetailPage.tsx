@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Box, Paper, Typography,
+  Box, Paper, Typography, GlobalStyles,
   Alert, CircularProgress, TextField, InputAdornment, LinearProgress,
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
@@ -145,7 +145,8 @@ export default function JobDetailPage() {
 
   return (
     <>
-      <style>{`
+      {/* Keyframe animations */}
+      <GlobalStyles styles={`
         @keyframes shimmerExport {
           0% { left:-75%; } 60%,100% { left:130%; }
         }
@@ -154,41 +155,46 @@ export default function JobDetailPage() {
           50%     { box-shadow: 0 5px 24px rgba(139,92,246,.65), 0 0 0 4px rgba(99,102,241,.10); }
         }
         @keyframes blinkDot { 0%,100%{opacity:1} 50%{opacity:.25} }
+      `} />
 
-        /* ── DataGrid column headers: dark navy, always visible ─────────── */
-        .MuiDataGrid-columnHeaders,
-        .MuiDataGrid-columnHeadersInner {
-          background: linear-gradient(90deg, #07071a, #0d0b28, #110d30) !important;
-          background-color: #0d0b28 !important;
-          min-height: 44px !important;
-        }
-        .MuiDataGrid-columnHeaderRow {
-          background: transparent !important;
-          background-color: transparent !important;
-        }
-        .MuiDataGrid-columnHeader {
-          background: transparent !important;
-          background-color: transparent !important;
-        }
-        .MuiDataGrid-columnHeaderTitle {
-          color: rgba(255, 255, 255, 0.9) !important;
-          font-weight: 700 !important;
-          font-size: 0.72rem !important;
-          letter-spacing: 0.08em !important;
-          text-transform: uppercase !important;
-        }
-        .MuiDataGrid-sortIcon,
-        .MuiDataGrid-iconButtonContainer .MuiIconButton-root,
-        .MuiDataGrid-menuIcon .MuiIconButton-root {
-          color: rgba(255, 255, 255, 0.55) !important;
-        }
-        .MuiDataGrid-columnSeparator svg {
-          color: rgba(255, 255, 255, 0.1) !important;
-        }
-        .MuiDataGrid-columnHeaders .MuiCheckbox-root {
-          color: rgba(255, 255, 255, 0.55) !important;
-        }
-      `}</style>
+      {/* DataGrid column header dark navy — GlobalStyles beats emotion's injected styles */}
+      <GlobalStyles styles={{
+        '.MuiDataGrid-columnHeaders': {
+          background: 'linear-gradient(90deg, #07071a, #0d0b28, #110d30) !important',
+          backgroundColor: '#0d0b28 !important',
+          minHeight: '44px !important',
+        },
+        '.MuiDataGrid-columnHeaderRow': {
+          background: 'transparent !important',
+          backgroundColor: 'transparent !important',
+        },
+        '.MuiDataGrid-columnHeader': {
+          background: 'transparent !important',
+          backgroundColor: 'transparent !important',
+        },
+        '.MuiDataGrid-columnHeaderTitle': {
+          color: 'rgba(255, 255, 255, 0.92) !important',
+          fontWeight: '700 !important',
+          fontSize: '0.72rem !important',
+          letterSpacing: '0.08em !important',
+          textTransform: 'uppercase !important',
+        },
+        '.MuiDataGrid-sortIcon': {
+          color: 'rgba(255, 255, 255, 0.55) !important',
+        },
+        '.MuiDataGrid-iconButtonContainer .MuiIconButton-root': {
+          color: 'rgba(255, 255, 255, 0.55) !important',
+        },
+        '.MuiDataGrid-menuIcon .MuiIconButton-root': {
+          color: 'rgba(255, 255, 255, 0.55) !important',
+        },
+        '.MuiDataGrid-columnSeparator svg': {
+          color: 'rgba(255, 255, 255, 0.1) !important',
+        },
+        '.MuiDataGrid-columnHeaders .MuiCheckbox-root': {
+          color: 'rgba(255, 255, 255, 0.55) !important',
+        },
+      }} />
 
       {/*
         ┌─ STICKY ZONE ──────────────────────────────────────────────────────┐
