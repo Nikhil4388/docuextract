@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Box, Paper, Typography, GlobalStyles,
+  Box, Paper, Typography,
   Alert, CircularProgress, TextField, InputAdornment, LinearProgress,
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
@@ -145,8 +145,7 @@ export default function JobDetailPage() {
 
   return (
     <>
-      {/* Keyframe animations */}
-      <GlobalStyles styles={`
+      <style>{`
         @keyframes shimmerExport {
           0% { left:-75%; } 60%,100% { left:130%; }
         }
@@ -155,46 +154,41 @@ export default function JobDetailPage() {
           50%     { box-shadow: 0 5px 24px rgba(139,92,246,.65), 0 0 0 4px rgba(99,102,241,.10); }
         }
         @keyframes blinkDot { 0%,100%{opacity:1} 50%{opacity:.25} }
-      `} />
 
-      {/* DataGrid column header dark navy — GlobalStyles beats emotion's injected styles */}
-      <GlobalStyles styles={{
-        '.MuiDataGrid-columnHeaders': {
-          background: 'linear-gradient(90deg, #07071a, #0d0b28, #110d30) !important',
-          backgroundColor: '#0d0b28 !important',
-          minHeight: '44px !important',
-        },
-        '.MuiDataGrid-columnHeaderRow': {
-          background: 'transparent !important',
-          backgroundColor: 'transparent !important',
-        },
-        '.MuiDataGrid-columnHeader': {
-          background: 'transparent !important',
-          backgroundColor: 'transparent !important',
-        },
-        '.MuiDataGrid-columnHeaderTitle': {
-          color: 'rgba(255, 255, 255, 0.92) !important',
-          fontWeight: '700 !important',
-          fontSize: '0.72rem !important',
-          letterSpacing: '0.08em !important',
-          textTransform: 'uppercase !important',
-        },
-        '.MuiDataGrid-sortIcon': {
-          color: 'rgba(255, 255, 255, 0.55) !important',
-        },
-        '.MuiDataGrid-iconButtonContainer .MuiIconButton-root': {
-          color: 'rgba(255, 255, 255, 0.55) !important',
-        },
-        '.MuiDataGrid-menuIcon .MuiIconButton-root': {
-          color: 'rgba(255, 255, 255, 0.55) !important',
-        },
-        '.MuiDataGrid-columnSeparator svg': {
-          color: 'rgba(255, 255, 255, 0.1) !important',
-        },
-        '.MuiDataGrid-columnHeaders .MuiCheckbox-root': {
-          color: 'rgba(255, 255, 255, 0.55) !important',
-        },
-      }} />
+        /* ── DataGrid column headers: dark navy, always visible ─────────── */
+        .MuiDataGrid-columnHeaders,
+        .MuiDataGrid-columnHeadersInner {
+          background: linear-gradient(90deg, #07071a, #0d0b28, #110d30) !important;
+          background-color: #0d0b28 !important;
+          min-height: 44px !important;
+        }
+        .MuiDataGrid-columnHeaderRow {
+          background: transparent !important;
+          background-color: transparent !important;
+        }
+        .MuiDataGrid-columnHeader {
+          background: transparent !important;
+          background-color: transparent !important;
+        }
+        .MuiDataGrid-columnHeaderTitle {
+          color: rgba(255, 255, 255, 0.9) !important;
+          font-weight: 700 !important;
+          font-size: 0.72rem !important;
+          letter-spacing: 0.08em !important;
+          text-transform: uppercase !important;
+        }
+        .MuiDataGrid-sortIcon,
+        .MuiDataGrid-iconButtonContainer .MuiIconButton-root,
+        .MuiDataGrid-menuIcon .MuiIconButton-root {
+          color: rgba(255, 255, 255, 0.55) !important;
+        }
+        .MuiDataGrid-columnSeparator svg {
+          color: rgba(255, 255, 255, 0.1) !important;
+        }
+        .MuiDataGrid-columnHeaders .MuiCheckbox-root {
+          color: rgba(255, 255, 255, 0.55) !important;
+        }
+      `}</style>
 
       {/*
         ┌─ STICKY ZONE ──────────────────────────────────────────────────────┐
@@ -288,37 +282,7 @@ export default function JobDetailPage() {
               )}
           </Box>
 
-          {/* Export */}
-          {(job.status === 'completed' || job.status === 'partial') && (
-            <Box onClick={handleExport} sx={{
-              position: 'relative', overflow: 'hidden', flexShrink: 0,
-              display: 'flex', alignItems: 'center', gap: '5px',
-              height: 30, px: '14px', borderRadius: '7px', cursor: 'pointer',
-              background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-              color: 'white', fontWeight: 700, fontSize: '.78rem', whiteSpace: 'nowrap',
-              animation: 'pulseExport 2.4s ease-in-out infinite',
-              '&:hover': {
-                background: 'linear-gradient(135deg,#4f46e5,#7c3aed)',
-                transform: 'translateY(-1px)', animation: 'none',
-                boxShadow: '0 6px 20px rgba(99,102,241,.5)',
-                '&::after': { animation: 'none' },
-              },
-              '&::after': {
-                content: '""', position: 'absolute', top: 0, left: '-75%',
-                width: '50%', height: '100%',
-                background: 'linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent)',
-                transform: 'skewX(-20deg)',
-                animation: 'shimmerExport 2.4s ease-in-out infinite',
-              },
-              transition: 'transform .15s, box-shadow .15s',
-            }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"
-                  stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Export Excel
-            </Box>
-          )}
+          {/* Export button removed from header — now lives in stat cards row */}
         </Box>
 
         {/* ── Stat cards — 6 identical small rectangles ────────── */}
@@ -328,6 +292,50 @@ export default function JobDetailPage() {
           '&::-webkit-scrollbar': { display: 'none' },
           scrollbarWidth: 'none',
         }}>
+          {/* Export Excel — same card size, right after FINISHED */}
+          {(job.status === 'completed' || job.status === 'partial') && (
+            <Box onClick={handleExport} sx={{
+              width: 104, flexShrink: 0,
+              borderRadius: '6px',
+              pt: '9px', pb: '10px', px: '11px',
+              display: 'flex', flexDirection: 'column', gap: '4px',
+              position: 'relative', overflow: 'hidden',
+              cursor: 'pointer',
+              background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+              boxShadow: '0 2px 10px rgba(99,102,241,.3)',
+              transition: 'all .15s ease',
+              animation: 'pulseExport 2.4s ease-in-out infinite',
+              '&:hover': {
+                transform: 'translateY(-1px)',
+                boxShadow: '0 6px 18px rgba(99,102,241,.5)',
+                animation: 'none',
+              },
+              '&:active': { transform: 'scale(.96)' },
+              '&::after': {
+                content: '""', position: 'absolute', top: 0, left: '-75%',
+                width: '50%', height: '100%',
+                background: 'linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent)',
+                transform: 'skewX(-20deg)',
+                animation: 'shimmerExport 2.4s ease-in-out infinite',
+              },
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"
+                    stroke="rgba(255,255,255,0.7)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <Typography sx={{
+                  fontSize: '.58rem', fontWeight: 700, letterSpacing: '.08em',
+                  textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', lineHeight: 1,
+                }}>Export</Typography>
+              </Box>
+              <Typography sx={{
+                fontSize: '.82rem', fontWeight: 800, color: 'white',
+                letterSpacing: '-.2px', lineHeight: 1.2,
+              }}>Excel</Typography>
+            </Box>
+          )}
+
           {STATS.map(({ label, value, color }) => (
             <Box key={label} sx={{
               /*

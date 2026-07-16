@@ -124,7 +124,24 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           border: 'none',
-          '& .MuiDataGrid-columnHeaders': { background: '#f5ede0', borderBottom: '1px solid rgba(0,0,0,0.08)' },
+          '& .MuiDataGrid-columnHeaders': {
+            background: 'linear-gradient(90deg, #07071a, #0d0b28, #110d30)',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+          },
+          '& .MuiDataGrid-columnHeader': {
+            background: 'transparent',
+          },
+          '& .MuiDataGrid-columnHeaderTitle': {
+            color: 'rgba(255,255,255,0.9)',
+            fontWeight: 700,
+            fontSize: '0.72rem',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+          },
+          '& .MuiDataGrid-columnSeparator': { color: 'rgba(255,255,255,0.1)' },
+          '& .MuiDataGrid-sortIcon': { color: 'rgba(255,255,255,0.5)' },
+          '& .MuiDataGrid-iconButtonContainer .MuiIconButton-root': { color: 'rgba(255,255,255,0.5)' },
+          '& .MuiDataGrid-menuIcon .MuiIconButton-root': { color: 'rgba(255,255,255,0.5)' },
           '& .MuiDataGrid-row:hover': { background: 'rgba(99,102,241,0.04)' },
           '& .MuiDataGrid-cell': { borderColor: 'rgba(0,0,0,0.05)' },
           '& .MuiDataGrid-footerContainer': { borderTop: '1px solid rgba(0,0,0,0.08)' },
