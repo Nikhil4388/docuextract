@@ -133,11 +133,14 @@ const theme = createTheme({
             background: 'transparent',
           },
           '& .MuiDataGrid-columnHeaderTitle': {
-            color: '#000000',
-            fontWeight: 900,
-            fontSize: '0.74rem',
+            color: '#000000 !important',
+            fontWeight: '900 !important',
+            fontSize: '0.75rem',
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
+          },
+          '& .MuiDataGrid-columnHeader *': {
+            color: '#000000 !important',
           },
           '& .MuiDataGrid-columnSeparator': { color: '#c7d2fe' },
           '& .MuiDataGrid-sortIcon': { color: '#6366f1' },
