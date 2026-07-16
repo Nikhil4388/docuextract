@@ -154,6 +154,40 @@ export default function JobDetailPage() {
           50%     { box-shadow: 0 5px 24px rgba(139,92,246,.65), 0 0 0 4px rgba(99,102,241,.10); }
         }
         @keyframes blinkDot { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+        /* ── DataGrid column headers: dark navy, always visible ─────────── */
+        .MuiDataGrid-columnHeaders,
+        .MuiDataGrid-columnHeadersInner {
+          background: linear-gradient(90deg, #07071a, #0d0b28, #110d30) !important;
+          background-color: #0d0b28 !important;
+          min-height: 44px !important;
+        }
+        .MuiDataGrid-columnHeaderRow {
+          background: transparent !important;
+          background-color: transparent !important;
+        }
+        .MuiDataGrid-columnHeader {
+          background: transparent !important;
+          background-color: transparent !important;
+        }
+        .MuiDataGrid-columnHeaderTitle {
+          color: rgba(255, 255, 255, 0.9) !important;
+          font-weight: 700 !important;
+          font-size: 0.72rem !important;
+          letter-spacing: 0.08em !important;
+          text-transform: uppercase !important;
+        }
+        .MuiDataGrid-sortIcon,
+        .MuiDataGrid-iconButtonContainer .MuiIconButton-root,
+        .MuiDataGrid-menuIcon .MuiIconButton-root {
+          color: rgba(255, 255, 255, 0.55) !important;
+        }
+        .MuiDataGrid-columnSeparator svg {
+          color: rgba(255, 255, 255, 0.1) !important;
+        }
+        .MuiDataGrid-columnHeaders .MuiCheckbox-root {
+          color: rgba(255, 255, 255, 0.55) !important;
+        }
       `}</style>
 
       {/*
