@@ -23,6 +23,7 @@ export default function JobDetailPage() {
   const navigate    = useNavigate();
   const [search, setSearch]         = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const gridContainerRef = React.useRef<HTMLDivElement>(null);
 
   const { data: job, refetch: refetchJob } = useQuery<ExtractionJob>({
     queryKey: ['job', jobId],
@@ -44,6 +45,44 @@ export default function JobDetailPage() {
       refetchInterval: q =>
         jobDone && !q.state.error && (q.state.data?.length ?? 0) === 0 ? 2000 : false,
     });
+
+  // Direct DOM styling — bypasses ALL CSS cascade/emotion issues
+  React.useEffect(() => {
+    if (!gridContainerRef.current) return;
+    const el = gridContainerRef.current;
+    const apply = () => {
+      const hdr = el.querySelector('.MuiDataGrid-columnHeaders') as HTMLElement | null;
+      if (hdr) {
+        hdr.style.setProperty('background', 'linear-gradient(90deg,#07071a,#0d0b28,#110d30)', 'important');
+        hdr.style.setProperty('background-color', '#0d0b28', 'important');
+        hdr.style.setProperty('min-height', '44px', 'important');
+      }
+      el.querySelectorAll<HTMLElement>('.MuiDataGrid-columnHeaderRow').forEach(r => {
+        r.style.setProperty('background', 'transparent', 'important');
+      });
+      el.querySelectorAll<HTMLElement>('.MuiDataGrid-columnHeader').forEach(c => {
+        c.style.setProperty('background', 'transparent', 'important');
+        c.style.setProperty('background-color', 'transparent', 'important');
+      });
+      el.querySelectorAll<HTMLElement>('.MuiDataGrid-columnHeaderTitle').forEach(t => {
+        t.style.setProperty('color', 'rgba(255,255,255,0.92)', 'important');
+        t.style.setProperty('font-weight', '700', 'important');
+        t.style.setProperty('font-size', '0.72rem', 'important');
+        t.style.setProperty('letter-spacing', '0.08em', 'important');
+        t.style.setProperty('text-transform', 'uppercase', 'important');
+      });
+      el.querySelectorAll<HTMLElement>('.MuiDataGrid-sortIcon, .MuiDataGrid-iconButtonContainer .MuiIconButton-root, .MuiDataGrid-menuIcon .MuiIconButton-root').forEach(i => {
+        i.style.setProperty('color', 'rgba(255,255,255,0.55)', 'important');
+      });
+      el.querySelectorAll<HTMLElement>('.MuiDataGrid-columnSeparator').forEach(s => {
+        s.style.setProperty('color', 'rgba(255,255,255,0.1)', 'important');
+      });
+    };
+    apply();
+    const t1 = setTimeout(apply, 60);
+    const t2 = setTimeout(apply, 300);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [rows, dynamicColumns, resultsLoading]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -493,7 +532,7 @@ export default function JobDetailPage() {
           </Box>
 
           {/* DataGrid — fixed height, internal row scroll, column headers always visible */}
-          <Box sx={{ height: 'calc(100vh - 340px)', minHeight: 240, overflow: 'hidden' }}>
+          <Box ref={gridContainerRef} sx={{ height: 'calc(100vh - 340px)', minHeight: 240, overflow: 'hidden' }}>
             <DataGrid
               rows={rows}
               columns={dynamicColumns}
