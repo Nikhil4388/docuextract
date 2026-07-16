@@ -133,8 +133,8 @@ const theme = createTheme({
             background: 'transparent',
           },
           '& .MuiDataGrid-columnHeaderTitle': {
-            color: '#1e1b4b',
-            fontWeight: 800,
+            color: '#000000',
+            fontWeight: 900,
             fontSize: '0.74rem',
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
