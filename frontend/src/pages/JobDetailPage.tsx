@@ -292,47 +292,69 @@ export default function JobDetailPage() {
           '&::-webkit-scrollbar': { display: 'none' },
           scrollbarWidth: 'none',
         }}>
-          {/* Export Excel — same card size, right after FINISHED */}
+          {/* Export Excel — attractive action card */}
           {(job.status === 'completed' || job.status === 'partial') && (
             <Box onClick={handleExport} sx={{
-              width: 104, flexShrink: 0,
-              borderRadius: '6px',
-              pt: '9px', pb: '10px', px: '11px',
-              display: 'flex', flexDirection: 'column', gap: '4px',
+              width: 118, flexShrink: 0,
+              borderRadius: '10px',
+              py: '10px', px: '12px',
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'flex-start', justifyContent: 'center',
+              gap: '5px',
               position: 'relative', overflow: 'hidden',
               cursor: 'pointer',
-              background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-              boxShadow: '0 2px 10px rgba(99,102,241,.3)',
-              transition: 'all .15s ease',
-              animation: 'pulseExport 2.4s ease-in-out infinite',
+              background: 'linear-gradient(135deg, #059669 0%, #10b981 55%, #34d399 100%)',
+              boxShadow: '0 4px 18px rgba(5,150,105,0.45), 0 1px 4px rgba(5,150,105,0.3)',
+              border: '1.5px solid rgba(255,255,255,0.25)',
+              transition: 'all .18s ease',
               '&:hover': {
-                transform: 'translateY(-1px)',
-                boxShadow: '0 6px 18px rgba(99,102,241,.5)',
-                animation: 'none',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 8px 28px rgba(5,150,105,0.55)',
+                background: 'linear-gradient(135deg, #047857 0%, #059669 55%, #10b981 100%)',
               },
-              '&:active': { transform: 'scale(.96)' },
+              '&:active': { transform: 'scale(.97)' },
+              /* shimmer */
+              '&::before': {
+                content: '""', position: 'absolute',
+                top: 0, left: '-80%', width: '55%', height: '100%',
+                background: 'linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent)',
+                transform: 'skewX(-18deg)',
+                animation: 'shimmerExport 2.6s ease-in-out infinite',
+              },
+              /* subtle top highlight */
               '&::after': {
-                content: '""', position: 'absolute', top: 0, left: '-75%',
-                width: '50%', height: '100%',
-                background: 'linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent)',
-                transform: 'skewX(-20deg)',
-                animation: 'shimmerExport 2.4s ease-in-out infinite',
+                content: '""', position: 'absolute',
+                top: 0, left: 0, right: 0, height: '40%',
+                background: 'linear-gradient(180deg,rgba(255,255,255,0.12),transparent)',
+                borderRadius: '10px 10px 0 0',
               },
             }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none">
-                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"
-                    stroke="rgba(255,255,255,0.7)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+              {/* Excel file icon */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: '5px', zIndex: 1 }}>
+                <Box sx={{
+                  width: 22, height: 22, borderRadius: '5px', flexShrink: 0,
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                      stroke="white" strokeWidth="1.8" fill="rgba(255,255,255,0.15)" strokeLinejoin="round"/>
+                    <polyline points="14 2 14 8 20 8" stroke="white" strokeWidth="1.8" strokeLinejoin="round"/>
+                    <line x1="8" y1="13" x2="16" y2="13" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
+                    <line x1="8" y1="17" x2="16" y2="17" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
+                  </svg>
+                </Box>
                 <Typography sx={{
-                  fontSize: '.58rem', fontWeight: 700, letterSpacing: '.08em',
-                  textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', lineHeight: 1,
+                  fontSize: '.6rem', fontWeight: 700, letterSpacing: '.07em',
+                  textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)', lineHeight: 1,
+                  zIndex: 1,
                 }}>Export</Typography>
               </Box>
               <Typography sx={{
-                fontSize: '.82rem', fontWeight: 800, color: 'white',
-                letterSpacing: '-.2px', lineHeight: 1.2,
-              }}>Excel</Typography>
+                fontSize: '.88rem', fontWeight: 900, color: '#ffffff',
+                letterSpacing: '-.3px', lineHeight: 1, zIndex: 1,
+                textShadow: '0 1px 4px rgba(0,0,0,0.2)',
+              }}>Excel ↓</Typography>
             </Box>
           )}
 
