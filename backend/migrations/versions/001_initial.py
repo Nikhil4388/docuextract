@@ -19,12 +19,32 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Create enum types
-    op.execute("CREATE TYPE authprovider AS ENUM ('email', 'google', 'microsoft', 'apple')")
-    op.execute("CREATE TYPE userrole AS ENUM ('admin', 'user', 'viewer')")
-    op.execute("CREATE TYPE jobstatus AS ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled')")
-    op.execute("CREATE TYPE storageprovider AS ENUM ('local', 's3', 'google_drive', 'dropbox')")
-    op.execute("CREATE TYPE llmprovider AS ENUM ('claude', 'openai')")
+    # Create enum types (idempotent: skip if the type already exists)
+    op.execute(
+        "DO " + "$" + "$ BEGIN "
+        "CREATE TYPE authprovider AS ENUM ('email', 'google', 'microsoft', 'apple'); "
+        "EXCEPTION WHEN duplicate_object THEN null; END " + "$" + "$;"
+    )
+    op.execute(
+        "DO " + "$" + "$ BEGIN "
+        "CREATE TYPE userrole AS ENUM ('admin', 'user', 'viewer'); "
+        "EXCEPTION WHEN duplicate_object THEN null; END " + "$" + "$;"
+    )
+    op.execute(
+        "DO " + "$" + "$ BEGIN "
+        "CREATE TYPE jobstatus AS ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled'); "
+        "EXCEPTION WHEN duplicate_object THEN null; END " + "$" + "$;"
+    )
+    op.execute(
+        "DO " + "$" + "$ BEGIN "
+        "CREATE TYPE storageprovider AS ENUM ('local', 's3', 'google_drive', 'dropbox'); "
+        "EXCEPTION WHEN duplicate_object THEN null; END " + "$" + "$;"
+    )
+    op.execute(
+        "DO " + "$" + "$ BEGIN "
+        "CREATE TYPE llmprovider AS ENUM ('claude', 'openai'); "
+        "EXCEPTION WHEN duplicate_object THEN null; END " + "$" + "$;"
+    )
 
     # Create users table
     op.create_table('users',
