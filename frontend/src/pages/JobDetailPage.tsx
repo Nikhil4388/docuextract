@@ -131,8 +131,16 @@ export default function JobDetailPage() {
     </Box>
   );
 
+  // Show time in the user's local timezone (browser handles conversion from UTC)
   const fmt = (d: string) =>
-    new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  const fmtDuration = (start: string, end: string) => {
+    const secs = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 1000);
+    if (secs < 60) return `${secs}s`;
+    const m = Math.floor(secs / 60), s = secs % 60;
+    return s > 0 ? `${m}m ${s}s` : `${m}m`;
+  };
 
   const STATS = [
     { label: 'Total',     value: String(job.total_files),     color: '#6366f1' },
@@ -141,6 +149,7 @@ export default function JobDetailPage() {
     { label: 'Date',      value: new Date(job.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), color: '#8b5cf6' },
     { label: 'Started',   value: job.started_at   ? fmt(job.started_at)   : '—', color: '#3b82f6' },
     { label: 'Finished',  value: job.completed_at ? fmt(job.completed_at) : '—', color: '#059669' },
+    { label: 'Duration',  value: job.started_at && job.completed_at ? fmtDuration(job.started_at, job.completed_at) : '—', color: '#f59e0b' },
   ] as const;
 
   return (

@@ -270,9 +270,9 @@ def _job_to_response(job: ExtractionJob) -> JobResponse:
         total_files=job.total_files,
         processed_files=job.processed_files,
         failed_files=job.failed_files,
-        created_at=job.created_at.isoformat(),
-        started_at=job.started_at.isoformat() if job.started_at else None,
-        completed_at=job.completed_at.isoformat() if job.completed_at else None,
+        created_at=job.created_at.isoformat() + 'Z',
+        started_at=job.started_at.isoformat() + 'Z' if job.started_at else None,
+        completed_at=job.completed_at.isoformat() + 'Z' if job.completed_at else None,
         status_message=job.status_message,
         error_message=job.error_message,
     )
