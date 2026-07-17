@@ -1,9 +1,13 @@
 import { Box, Button, Typography } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import LogoIcon from '../components/LogoIcon';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const oauthError = searchParams.get('error');
+
   const handleGoogleLogin = () => {
     window.location.href = `${import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1'}/auth/google`;
   };
@@ -187,6 +191,20 @@ export default function LoginPage() {
           <Typography sx={{ fontSize: 14, color: '#64748b', mb: 7, lineHeight: 1.65 }}>
             Sign in to access your extraction workspace.
           </Typography>
+
+          {/* OAuth error banner */}
+          {oauthError && (
+            <Box sx={{
+              mb: 3, px: 2, py: 1.5, borderRadius: '10px',
+              background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
+            }}>
+              <Typography sx={{ fontSize: 13, color: '#ef4444', fontWeight: 600 }}>
+                {oauthError === 'oauth_failed'
+                  ? 'Google sign-in failed. Please try again or contact support.'
+                  : 'Sign-in error. Please try again.'}
+              </Typography>
+            </Box>
+          )}
 
           {/* Google button */}
           <Button

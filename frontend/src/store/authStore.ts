@@ -9,6 +9,7 @@ interface AuthState {
   isInitializing: boolean;   // true while we're checking for a stored session on load
   initAuth: () => Promise<void>;
   setInitialized: () => void;
+  clearSession: () => void;  // clears tokens + auth state without an API call (used on 401)
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, fullName?: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -24,6 +25,12 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   /** Mark init as done (called by AuthInit on /auth/callback where we skip initAuth) */
   setInitialized: () => set({ isInitializing: false }),
+
+  /** Wipe tokens + auth state without calling /auth/logout (used by 401 interceptor) */
+  clearSession: () => {
+    clearAllTokens();
+    set({ user: null, isAuthenticated: false, isInitializing: false });
+  },
 
   /** Called on app mount. Restores session from stored refresh token. */
   initAuth: async () => {

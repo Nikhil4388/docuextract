@@ -67,10 +67,10 @@ api.interceptors.response.use(
 
     const storedRefresh = getRefreshToken();
     if (!storedRefresh) {
-      // No refresh token — only redirect to login if NOT on the OAuth callback page
+      // No refresh token — signal session expired (React Router will redirect, no hard reload)
       if (!window.location.pathname.includes('/auth/callback')) {
         clearAllTokens();
-        window.location.href = '/login';
+        window.dispatchEvent(new Event('auth:sessionExpired'));
       }
       return Promise.reject(error);
     }
@@ -102,7 +102,8 @@ api.interceptors.response.use(
       flushQueue(err, null);
       clearAllTokens();
       if (!window.location.pathname.includes('/auth/callback')) {
-        window.location.href = '/login';
+        // Dispatch event so App.tsx handles redirect via React Router (no hard reload)
+        window.dispatchEvent(new Event('auth:sessionExpired'));
       }
       return Promise.reject(err);
     } finally {

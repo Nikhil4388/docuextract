@@ -247,8 +247,10 @@ function PublicHome() {
 
 // Restores session on mount — must be inside BrowserRouter to use useLocation
 function AuthInit() {
-  const { initAuth, setInitialized } = useAuthStore();
+  const { initAuth, setInitialized, clearSession } = useAuthStore();
+  const navigate = useNavigate();
   const location = useLocation();
+
   useEffect(() => {
     if (location.pathname.includes('/auth/callback')) {
       // AuthCallbackPage handles its own tokens; just mark init done
@@ -257,6 +259,19 @@ function AuthInit() {
       initAuth();
     }
   }, []);
+
+  // Listen for 401 auth failures from the API interceptor.
+  // Using a custom event (not window.location.href) avoids hard reloads that
+  // re-trigger initAuth() and create a redirect loop on new devices.
+  useEffect(() => {
+    const handle = () => {
+      clearSession();
+      navigate('/login', { replace: true });
+    };
+    window.addEventListener('auth:sessionExpired', handle);
+    return () => window.removeEventListener('auth:sessionExpired', handle);
+  }, [clearSession, navigate]);
+
   return null;
 }
 
