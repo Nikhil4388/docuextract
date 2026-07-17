@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useMediaQuery, useTheme } from '@mui/material';
 import * as pdfjsLib from 'pdfjs-dist';
 // Vite bundles the worker; new URL resolves it at build time
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
@@ -162,10 +163,14 @@ function PdfPanel({
   isDragActive: boolean;
   getRootProps: () => any; getInputProps: () => any;
 }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
   return (
     <Box sx={{
       width: { xs: '100%', md: '46%' }, flexShrink: 0,
       borderRight: { md: '1px solid #eee' },
+      borderBottom: { xs: '1px solid #eee', md: 'none' },
       display: 'flex', flexDirection: 'column', p: 3,
       bgcolor: '#fafafa',
     }}>
@@ -177,17 +182,13 @@ function PdfPanel({
       </Box>
 
       {pdfFile ? (
-        // PDF loaded — render via pdfjs-dist (no iframe, no CSP)
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {/* Explicit height so overflow:auto actually creates a scrollbar */}
-          <Box sx={{
-            height: 'calc(92vh - 260px)',
-            overflowY: 'auto',
-            borderRadius: 2,
-            border: '1px solid #e0e0e0',
-          }}>
-            <PdfCanvas file={pdfFile} />
-          </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {/* On desktop show full PDF canvas; on mobile just show file name */}
+          {!isMobile && (
+            <Box sx={{ height: 'calc(92vh - 260px)', overflowY: 'auto', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+              <PdfCanvas file={pdfFile} />
+            </Box>
+          )}
           {/* Replace button */}
           <Box
             {...getRootProps()}
@@ -220,7 +221,8 @@ function PdfPanel({
             bgcolor: isDragActive ? '#667eea08' : '#fff',
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
-            gap: 1.5, cursor: 'pointer', height: 'calc(92vh - 260px)',
+            gap: 1.5, cursor: 'pointer',
+            minHeight: { xs: 160, md: 'calc(92vh - 260px)' },
             transition: 'all 0.2s',
             '&:hover': { borderColor: '#667eea', bgcolor: '#667eea06' },
           }}
@@ -469,7 +471,7 @@ export default function TemplatesPage() {
           <IconButton size="small" onClick={handleCloseCreate}><Close fontSize="small" /></IconButton>
         </DialogTitle>
 
-        <DialogContent sx={{ p: 0, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, overflow: 'hidden' }}>
+        <DialogContent sx={{ p: 0, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, overflow: { xs: 'auto', md: 'hidden' } }}>
           {/* LEFT — PDF preview */}
           <PdfPanel
             pdfFile={pdfFile}
@@ -478,7 +480,7 @@ export default function TemplatesPage() {
           />
 
           {/* RIGHT — Column config */}
-          <Box sx={{ flex: 1, p: 3, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2, height: 'calc(92vh - 130px)' }}>
+          <Box sx={{ flex: 1, p: 3, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2, height: { xs: 'auto', md: 'calc(92vh - 130px)' } }}>
             <TextField
               label="Template Name" fullWidth value={templateName}
               onChange={(e) => setTemplateName(e.target.value)}
