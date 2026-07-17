@@ -61,8 +61,12 @@ selectionStyle.textContent = `
 `;
 document.head.appendChild(selectionStyle);
 
-// ── DevTools size-based detection (best-effort) ──────────────────────────────
+// ── DevTools size-based detection (desktop only) ─────────────────────────────
+// IMPORTANT: skip on mobile — browser chrome (address bar, nav bar, keyboard)
+// easily exceeds 160px on phones, causing false-positive reloads every second.
 (function detectDevtools() {
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (isMobile) return;
   const threshold = 160;
   const check = () => {
     if (
