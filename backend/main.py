@@ -80,36 +80,79 @@ def create_app() -> FastAPI:
     # ── Startup ───────────────────────────────────────────────────────────────
     @app.on_event("startup")
     async def startup_tasks():
+        import asyncio
+        import os
+        import shutil
+        from datetime import timedelta
         from app.core.database import AsyncSessionLocal
         from app.models.extraction import ExtractionJob, JobStatus
-        from sqlalchemy import text, update
-        async with AsyncSessionLocal() as db:
-            migrations = [
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(255)",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS jobs_used INTEGER NOT NULL DEFAULT 0",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_subscribed BOOLEAN NOT NULL DEFAULT false",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(255)",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR(255)",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_end_date TIMESTAMP",
-            ]
-            for sql in migrations:
-                try:
-                    await db.execute(text(sql))
-                except Exception as e:
-                    logger.warning("startup_migration_skipped", sql=sql, error=str(e))
-            await db.commit()
+        from sqlalchemy import text, update, select
+        from sqlalchemy.orm import selectinload
 
-            # Reset stuck processing jobs
-            await db.execute(
-                update(ExtractionJob)
-                .where(ExtractionJob.status == JobStatus.PROCESSING)
-                .values(
-                    status=JobStatus.FAILED,
-                    error_message="Server restarted while job was running. Please resubmit.",
-                    status_message=None,
+        # Run each ALTER in its own session so a caught exception in one
+        # doesn't leave the transaction in an aborted state for the next.
+        migrations = [
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(255)",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS jobs_used INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_subscribed BOOLEAN NOT NULL DEFAULT false",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(255)",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR(255)",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_end_date TIMESTAMP",
+            "ALTER TYPE jobstatus ADD VALUE IF NOT EXISTS 'partial'",
+        ]
+        for sql in migrations:
+            try:
+                async with AsyncSessionLocal() as db:
+                    await db.execute(text(sql))
+                    await db.commit()
+            except Exception as e:
+                logger.warning("startup_migration_skipped", sql=sql, error=str(e))
+
+        # Reset stuck processing jobs (separate session, separate transaction)
+        try:
+            async with AsyncSessionLocal() as db:
+                await db.execute(
+                    update(ExtractionJob)
+                    .where(ExtractionJob.status == JobStatus.PROCESSING)
+                    .values(
+                        status=JobStatus.FAILED,
+                        error_message="Server restarted while job was running. Please resubmit.",
+                        status_message=None,
+                    )
                 )
-            )
-            await db.commit()
+                await db.commit()
+        except Exception as e:
+            logger.warning("startup_reset_stuck_jobs_failed", error=str(e))
+
+        async def _run_cleanup():
+            """Delete jobs + uploaded files older than 3 days."""
+            from datetime import datetime
+            cutoff = datetime.utcnow() - timedelta(days=3)
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(
+                    select(ExtractionJob).where(ExtractionJob.created_at < cutoff)
+                )
+                old_jobs = result.scalars().all()
+                for job in old_jobs:
+                    # Delete local upload dir
+                    job_upload_dir = os.path.join(settings.UPLOAD_DIR, str(job.id))
+                    if os.path.isdir(job_upload_dir):
+                        shutil.rmtree(job_upload_dir, ignore_errors=True)
+                    await db.delete(job)
+                if old_jobs:
+                    await db.commit()
+                    logger.info("cleanup_done", deleted=len(old_jobs))
+
+        async def _daily_cleanup_loop():
+            while True:
+                try:
+                    await _run_cleanup()
+                except Exception as e:
+                    logger.warning("cleanup_error", error=str(e))
+                await asyncio.sleep(24 * 60 * 60)  # run every 24 hours
+
+        # Run cleanup immediately on startup, then every 24h
+        asyncio.create_task(_daily_cleanup_loop())
 
     # ── Health ────────────────────────────────────────────────────────────────
     @app.get("/health")
