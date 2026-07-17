@@ -461,7 +461,7 @@ export default function TemplatesPage() {
       <Dialog
         open={createOpen} onClose={handleCloseCreate}
         maxWidth="lg" fullWidth
-        PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden', maxHeight: '92vh' } }}
+        PaperProps={{ sx: { borderRadius: { xs: 0, md: 3 }, overflow: 'hidden', maxHeight: { xs: '100dvh', md: '92vh' }, height: { xs: '100dvh', md: 'auto' }, margin: { xs: 0, md: 2 } } }}
       >
         <DialogTitle sx={{
           borderBottom: '1px solid #f0f0f0', py: 2, px: 3,
