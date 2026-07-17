@@ -679,9 +679,10 @@ export default function LandingPage() {
         </Typography>
         <Box sx={{ display: 'flex', gap: 3 }}>
           {[
-            { label: 'Privacy', action: () => navigate('/privacy') },
-            { label: 'Terms',   action: () => navigate('/terms') },
-            { label: 'Contact', action: () => navigate('/contact') },
+            { label: 'Privacy',  action: () => navigate('/privacy') },
+            { label: 'Terms',    action: () => navigate('/terms') },
+            { label: 'Contact',  action: () => navigate('/contact') },
+            { label: 'Security', action: () => navigate('/security') },
           ].map((l) => (
             <Typography
               key={l.label}

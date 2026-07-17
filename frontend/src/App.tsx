@@ -23,6 +23,7 @@ import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import ContactPage from './pages/ContactPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
+import SecurityPage from './pages/SecurityPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000;
@@ -299,6 +300,7 @@ export default function App() {
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/security" element={<SecurityPage />} />
 
                 <Route path="/" element={<RequireAuth><AppLayout /></RequireAuth>}>
                   <Route path="dashboard" element={<DashboardPage />} />
