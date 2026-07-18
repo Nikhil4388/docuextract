@@ -61,20 +61,6 @@ selectionStyle.textContent = `
 `;
 document.head.appendChild(selectionStyle);
 
-// ── DevTools size-based detection (best-effort) ──────────────────────────────
-(function detectDevtools() {
-  const threshold = 160;
-  const check = () => {
-    if (
-      window.outerWidth - window.innerWidth > threshold ||
-      window.outerHeight - window.innerHeight > threshold
-    ) {
-      document.body.innerHTML = '';
-      location.reload();
-    }
-  };
-  setInterval(check, 1000);
-})();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
