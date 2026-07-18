@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { ColumnTemplate, LLMProvider, StorageProvider, JobCreatePayload } from '../types';
 import { useAuthStore } from '../store/authStore';
+import { toFriendly } from '../utils/friendlyError';
 
 const STEPS = [
   { id: 0, label: 'Details',  icon: '📝', desc: 'Name + template' },
@@ -94,7 +95,7 @@ export default function NewJobPage() {
   const createJob = useMutation({
     mutationFn: (payload: JobCreatePayload) => api.post('/jobs/', payload),
     onSuccess: (res) => navigate(`/jobs/${res.data.id}`),
-    onError: (err: any) => setError(err?.response?.data?.detail ?? 'Failed to create job'),
+    onError: (err: unknown) => setError(toFriendly(err)),
   });
 
   const handleFileSelect = (files: FileList | null) => {
@@ -132,8 +133,8 @@ export default function NewJobPage() {
         }));
         finalPath        = results[0].upload_path;
         resolvedProvider = (results[0].storage_provider ?? 'local') as StorageProvider;
-      } catch {
-        setError('File upload failed'); setUploading(false); return;
+      } catch (err) {
+        setError(toFriendly(err)); setUploading(false); return;
       }
       setUploading(false);
     }

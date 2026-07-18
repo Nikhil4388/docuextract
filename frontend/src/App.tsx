@@ -1,10 +1,57 @@
-import React, { useEffect, useCallback, useRef, useState } from 'react';
+import React, { useEffect, useCallback, useRef, useState, Component, ErrorInfo, ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { SnackbarProvider, useSnackbar } from 'notistack';
 
 import { useAuthStore } from './store/authStore';
+
+// ── Global Error Boundary ─────────────────────────────────────────────────────
+class ErrorBoundary extends Component<{ children: ReactNode }, { crashed: boolean }> {
+  state = { crashed: false };
+  static getDerivedStateFromError() { return { crashed: true }; }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('[ErrorBoundary]', error, info);
+  }
+  render() {
+    if (this.state.crashed) {
+      return (
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', minHeight: '100vh', background: '#e8e2d8',
+          padding: 32, textAlign: 'center', fontFamily: 'Inter, sans-serif',
+        }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>😔</div>
+          <h2 style={{ color: '#0c0c0c', fontSize: 24, fontWeight: 800, marginBottom: 12 }}>
+            Something went wrong
+          </h2>
+          <p style={{ color: '#64748b', fontSize: 16, maxWidth: 480, lineHeight: 1.6, marginBottom: 24 }}>
+            An unexpected error occurred. This has been noted and our team will look into it.
+            Please try refreshing the page.
+            <br /><br />
+            If the problem continues, please contact us at{' '}
+            <a href="mailto:support@docuextract.com" style={{ color: '#6366f1' }}>
+              support@docuextract.com
+            </a>{' '}
+            so we can help you right away.
+          </p>
+          <button
+            onClick={() => { this.setState({ crashed: false }); window.location.href = '/'; }}
+            style={{
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              color: 'white', border: 'none', borderRadius: 10,
+              padding: '12px 28px', fontSize: 15, fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Go to Home
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import AppLayout from './components/layout/AppLayout';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -243,6 +290,7 @@ export default function App() {
   const { isAuthenticated } = useAuthStore();
 
   return (
+    <ErrorBoundary>
     <QueryClientProvider client={qc}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
@@ -280,5 +328,6 @@ export default function App() {
         </SnackbarProvider>
       </ThemeProvider>
     </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

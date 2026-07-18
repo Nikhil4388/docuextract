@@ -10,6 +10,7 @@ import { useDropzone } from 'react-dropzone';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import { ColumnTemplate, ColumnDefinition } from '../types';
+import { toFriendly } from '../utils/friendlyError';
 
 const DATA_TYPES = ['text', 'number', 'date', 'boolean'];
 
@@ -236,8 +237,8 @@ export default function TemplatesPage() {
       });
       setColumns(res.data.suggested_columns ?? []);
       setUploadAlert(`AI detected ${res.data.suggested_columns?.length ?? 0} columns. Review and adjust on the right.`);
-    } catch {
-      setUploadAlert('Failed to analyze PDF. Please add columns manually.');
+    } catch (err) {
+      setUploadAlert(`We couldn't analyze this PDF automatically. Please add your columns manually. ${toFriendly(err)}`);
     } finally {
       setIsAnalyzing(false);
     }
