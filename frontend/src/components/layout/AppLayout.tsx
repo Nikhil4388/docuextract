@@ -332,7 +332,7 @@ export default function AppLayout() {
               </Button>
             )}
             <Button size="small" variant="outlined" fullWidth
-              onClick={() => { setAnchorEl(null); logout().then(() => navigate('/login')); }}
+              onClick={() => { setAnchorEl(null); logout().then(() => navigate('/')); }}
               sx={{
                 borderRadius: '10px', fontSize: 11, fontWeight: 700, py: 0.9,
                 borderColor: '#fecaca', color: '#dc2626', bgcolor: '#fef2f2',

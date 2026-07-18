@@ -70,7 +70,7 @@ api.interceptors.response.use(
       // No refresh token — only redirect to login if NOT on the OAuth callback page
       if (!window.location.pathname.includes('/auth/callback')) {
         clearAllTokens();
-        window.location.href = '/login';
+        window.location.href = '/';
       }
       return Promise.reject(error);
     }
@@ -102,7 +102,7 @@ api.interceptors.response.use(
       flushQueue(err, null);
       clearAllTokens();
       if (!window.location.pathname.includes('/auth/callback')) {
-        window.location.href = '/login';
+        window.location.href = '/';
       }
       return Promise.reject(err);
     } finally {
