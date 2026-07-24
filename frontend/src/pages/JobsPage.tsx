@@ -41,14 +41,16 @@ export default function JobsPage() {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<string>('all');
 
-  const freeLimit    = user?.free_limit ?? 2;
-  const paidLimit    = user?.paid_limit ?? 20;
-  const jobsUsed     = user?.jobs_used ?? 0;
-  const isSubscribed = user?.is_subscribed ?? false;
-  const isAdmin      = user?.is_admin ?? false;
-  const hitFreeLimit = !isAdmin && !isSubscribed && jobsUsed >= freeLimit;
-  const hitPaidLimit = !isAdmin && isSubscribed && jobsUsed >= paidLimit;
-  const hitLimit     = hitFreeLimit || hitPaidLimit;
+  const freeLimit      = user?.free_limit ?? 2;
+  const paidLimit      = user?.paid_limit ?? 20;
+  const jobsUsed       = user?.jobs_used ?? 0;
+  const isSubscribed   = user?.is_subscribed ?? false;
+  const isAdmin        = user?.is_admin ?? false;
+  // Use server-computed effective_limit so admin overrides are respected
+  const effectiveLimit = user?.effective_limit ?? (isSubscribed ? paidLimit : freeLimit);
+  const hitLimit       = !isAdmin && jobsUsed >= effectiveLimit;
+  const hitFreeLimit   = hitLimit && !isSubscribed && !user?.max_jobs_override;
+  const hitPaidLimit   = hitLimit && (isSubscribed || !!user?.max_jobs_override);
 
   const { data: jobs, isLoading, refetch } = useQuery<ExtractionJob[]>({
     queryKey: ['jobs'],
@@ -98,12 +100,12 @@ export default function JobsPage() {
           <Box sx={{ fontSize: 32, flexShrink: 0 }}>🔒</Box>
           <Box sx={{ flex: 1 }}>
             <Typography sx={{ fontWeight: 800, color: '#78350f', fontSize: 15, mb: 0.3 }}>
-              {hitFreeLimit ? 'Free plan limit reached' : 'Donation plan limit reached'}
+              {hitFreeLimit ? 'Free plan limit reached' : 'Job limit reached'}
             </Typography>
             <Typography sx={{ color: '#92400e', fontSize: 13 }}>
               {hitFreeLimit
                 ? 'Donate $10 to unlock 20 extraction jobs with the same email.'
-                : 'Donate again to top up your job balance.'}
+                : `You've used all ${effectiveLimit} jobs. Please contact support to increase your limit.`}
             </Typography>
           </Box>
           <Box onClick={() => window.open('https://ko-fi.com/docuextract_ashen_vercel', '_blank')} sx={{

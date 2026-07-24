@@ -238,8 +238,8 @@ export default function AppLayout() {
           })()}
         </Box>
 
-        {/* Upgrade card — only for free users */}
-        {!isAdmin && !isSubscribed && (
+        {/* Upgrade card — only for free users without a custom override */}
+        {!isAdmin && !isSubscribed && !user?.max_jobs_override && (
           <Box sx={{ mx: 2, mb: 2 }}>
             <Box sx={{
               p: 2, borderRadius: 2.5,
@@ -265,6 +265,27 @@ export default function AppLayout() {
                   Unlock Access →
                 </Typography>
               </Box>
+            </Box>
+          </Box>
+        )}
+
+        {/* Custom-limit card — for users with admin-set override */}
+        {!isAdmin && !isSubscribed && !!user?.max_jobs_override && (
+          <Box sx={{ mx: 2, mb: 2 }}>
+            <Box sx={{
+              p: 2, borderRadius: 2.5,
+              background: 'linear-gradient(135deg, rgba(139,92,246,0.12) 0%, rgba(99,102,241,0.12) 100%)',
+              border: '1px solid rgba(139,92,246,0.2)',
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                <Box sx={{ fontSize: 14 }}>✦</Box>
+                <Typography sx={{ color: '#c4b5fd', fontSize: 12, fontWeight: 700 }}>
+                  Custom plan
+                </Typography>
+              </Box>
+              <Typography sx={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, lineHeight: 1.5 }}>
+                {Math.max(0, effectiveLimit - jobsUsed)} of {effectiveLimit} jobs remaining
+              </Typography>
             </Box>
           </Box>
         )}
