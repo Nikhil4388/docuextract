@@ -30,8 +30,8 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { crashed: boolea
             Please try refreshing the page.
             <br /><br />
             If the problem continues, please contact us at{' '}
-            <a href="mailto:support@docuextract.com" style={{ color: '#6366f1' }}>
-              support@docuextract.com
+            <a href="mailto:nikhil1996shelke@multipdfstoexcel.com" style={{ color: '#6366f1' }}>
+              nikhil1996shelke@multipdfstoexcel.com
             </a>{' '}
             so we can help you right away.
           </p>

@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 const EFFECTIVE_DATE = 'July 9, 2026';
 const COMPANY = 'MultiPDFsToExcel';
 const DOMAIN = 'multipdfstoexcel.com';
-const EMAIL = 'support@multipdfstoexcel.com';
+const EMAIL = 'nikhil1996shelke@multipdfstoexcel.com';
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <Box mb={4}>

@@ -6,7 +6,7 @@
  * exactly what to do next.
  */
 
-const SUPPORT_NOTE = 'If this keeps happening, please contact us at support@docuextract.com.';
+const SUPPORT_NOTE = 'If this keeps happening, please contact us at nikhil1996shelke@multipdfstoexcel.com.';
 
 export function friendlyError(err: unknown): string {
   const e = err as any;

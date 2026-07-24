@@ -226,22 +226,33 @@ export default function TemplatesPage() {
     setPdfFile(file);
     setPdfUrl(url);
 
-    // Analyze with AI
+    // Analyze with AI — retry once on network-level failures (e.g. server
+    // restarting mid-deploy) before giving up, so a transient blip doesn't
+    // force the user to add all columns manually.
     setIsAnalyzing(true);
     setUploadAlert(null);
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await api.post('/templates/upload-sample', fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setColumns(res.data.suggested_columns ?? []);
-      setUploadAlert(`AI detected ${res.data.suggested_columns?.length ?? 0} columns. Review and adjust on the right.`);
-    } catch (err) {
-      setUploadAlert(`We couldn't analyze this PDF automatically. Please add your columns manually. ${toFriendly(err)}`);
-    } finally {
-      setIsAnalyzing(false);
+    const MAX_ATTEMPTS = 2;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await api.post('/templates/upload-sample', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        setColumns(res.data.suggested_columns ?? []);
+        setUploadAlert(`AI detected ${res.data.suggested_columns?.length ?? 0} columns. Review and adjust on the right.`);
+        break;
+      } catch (err) {
+        const isNetworkError = !(err as any)?.response;
+        if (isNetworkError && attempt < MAX_ATTEMPTS) {
+          // Server unreachable — wait a moment and retry once
+          await new Promise((r) => setTimeout(r, 2500));
+          continue;
+        }
+        setUploadAlert(`We couldn't analyze this PDF automatically. Please add your columns manually. ${toFriendly(err)}`);
+      }
     }
+    setIsAnalyzing(false);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

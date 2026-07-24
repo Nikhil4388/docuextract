@@ -12,8 +12,8 @@ const CONTACTS = [
       </svg>
     ),
     label: 'EMAIL',
-    value: 'nikhil1996shelke@gmail.com',
-    href: 'mailto:nikhil1996shelke@gmail.com',
+    value: 'nikhil1996shelke@multipdfstoexcel.com',
+    href: 'mailto:nikhil1996shelke@multipdfstoexcel.com',
     color: '#6366f1',
     bg: '#eef2ff',
   },
@@ -37,7 +37,7 @@ export default function ContactPage() {
   const navigate = useNavigate();
 
   const copyEmail = () => {
-    navigator.clipboard.writeText('nikhil1996shelke@gmail.com');
+    navigator.clipboard.writeText('nikhil1996shelke@multipdfstoexcel.com');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
