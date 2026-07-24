@@ -19,11 +19,8 @@ const STEPS = [
 
 const CLAUDE_MODELS = [
   { value: 'claude-sonnet-4-6',         label: 'Sonnet 4.6', tag: 'Recommended', color: '#6366f1', desc: '~6s/file · Best balance of speed & accuracy', recommended: true },
-  { value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5',  tag: 'Fastest',     color: '#10b981', desc: '~3s/file · Great for bulk runs, simple docs' },
-  { value: 'claude-sonnet-5',           label: 'Sonnet 5',   tag: 'New',         color: '#06b6d4', desc: '~5s/file · Smarter than 4.6, fast output' },
-  { value: 'claude-opus-4-6',           label: 'Opus 4.6',   tag: 'Quality',     color: '#8b5cf6', desc: '~8s/file · Deep reasoning, complex docs' },
-  { value: 'claude-opus-4-8',           label: 'Opus 4.8',   tag: 'Premium',     color: '#7c3aed', desc: '~10s/file · Best for enterprise & agentic jobs' },
-  { value: 'claude-fable-5',            label: 'Fable 5',    tag: 'Most Powerful', color: '#dc2626', desc: '~15s/file · Highest accuracy, any document type' },
+  { value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5',  tag: 'Fastest',     color: '#10b981', desc: '~3s/file · Great for bulk runs & simple docs' },
+  { value: 'claude-sonnet-5',           label: 'Sonnet 5',   tag: 'Most Accurate', color: '#8b5cf6', desc: '~5s/file · Latest model, highest accuracy' },
 ];
 
 export default function NewJobPage() {
