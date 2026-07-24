@@ -73,6 +73,10 @@ class AdjustCreditsRequest(BaseModel):
     note: Optional[str] = None
 
 
+class SetRoleRequest(BaseModel):
+    is_admin: bool                            # true → promote to admin, false → demote to user
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _effective_limit(user: User) -> int:
@@ -244,6 +248,34 @@ async def adjust_user_credits(
         "max_jobs_override": user.max_jobs_override,
         "effective_limit": _effective_limit(user),
         "is_subscribed": user.is_subscribed,
+    }
+
+
+@router.patch("/users/{user_id}/role")
+async def set_user_role(
+    user_id: str,
+    payload: SetRoleRequest,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Promote a user to admin or demote back to regular user."""
+    uid = uuid.UUID(user_id)
+    result = await db.execute(select(User).where(User.id == uid))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Safety: an admin cannot remove their own admin access (prevents lockout)
+    if user.id == admin.id and not payload.is_admin:
+        raise HTTPException(status_code=400, detail="You can't remove your own admin access")
+
+    user.role = UserRole.ADMIN if payload.is_admin else UserRole.USER
+    await db.commit()
+    return {
+        "message": "Updated",
+        "user_id": str(user.id),
+        "role": user.role.value if hasattr(user.role, "value") else str(user.role),
+        "is_admin": payload.is_admin,
     }
 
 

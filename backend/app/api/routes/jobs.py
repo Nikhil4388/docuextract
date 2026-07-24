@@ -10,7 +10,7 @@ import io
 from app.core.database import get_db
 from app.core.security import encrypt_secret
 from app.core.config import settings
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.extraction import ExtractionJob, ExtractionResult, JobStatus, StorageProvider, LLMProvider
 from app.api.deps import get_current_user
 from app.services.extraction_service import ExtractionService
@@ -81,8 +81,8 @@ async def create_job(
 ):
     # ── Job limit gate ─────────────────────────────────────────────────────
     jobs_used = current_user.jobs_used or 0
-    # Admin accounts bypass all limits
-    if current_user.email in settings.admin_email_list:
+    # Admin accounts bypass all limits (env email list OR DB role)
+    if current_user.email in settings.admin_email_list or current_user.role == UserRole.ADMIN:
         pass  # unlimited — no gate
     else:
         # Determine effective limit:

@@ -6,7 +6,7 @@ from typing import Optional
 from app.core.database import get_db
 from app.core.security import encrypt_secret
 from app.core.config import settings
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.api.deps import get_current_user
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -47,7 +47,11 @@ class UpdateApiKeysRequest(BaseModel):
 
 @router.get("/me", response_model=UserProfile)
 async def get_profile(current_user: User = Depends(get_current_user)):
-    is_admin = current_user.email in settings.admin_email_list
+    # Admin via env email list OR via DB role (set from the admin dashboard)
+    is_admin = (
+        current_user.email in settings.admin_email_list
+        or current_user.role == UserRole.ADMIN
+    )
     is_subscribed = current_user.is_subscribed or False
 
     # Compute the true job limit this user faces:

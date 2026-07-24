@@ -481,6 +481,20 @@ export default function AdminPage() {
     setSnack('Credits updated successfully');
   };
 
+  const handleToggleAdmin = async (target: AdminUser, makeAdmin: boolean) => {
+    // Optimistic update; revert on failure
+    setUsers(prev => prev.map(u => u.id === target.id ? { ...u, role: makeAdmin ? 'admin' : 'user' } : u));
+    try {
+      await api.patch(`/admin/users/${target.id}/role`, { is_admin: makeAdmin });
+      setSnack(makeAdmin
+        ? `${target.full_name || target.email} is now an admin`
+        : `Admin access removed for ${target.full_name || target.email}`);
+    } catch (err) {
+      setUsers(prev => prev.map(u => u.id === target.id ? { ...u, role: target.role } : u));
+      setSnack(toFriendly(err));
+    }
+  };
+
   if (!user?.is_admin) return null;
 
   return (
@@ -646,15 +660,38 @@ export default function AdminPage() {
                           <TableCell sx={{ fontSize: 12, color: '#64748b' }}>{timeAgo(u.last_seen_at)}</TableCell>
                           <TableCell sx={{ fontSize: 12, color: '#64748b' }}>{fmtDate(u.created_at)}</TableCell>
                           <TableCell align="center" onClick={(e) => e.stopPropagation()}>
-                            <Tooltip title="Adjust credits">
-                              <Button size="small" variant="outlined"
-                                onClick={() => { setSelectedUser(u); setAdjustOpen(true); }}
-                                sx={{ borderRadius: 2, fontSize: 11, fontWeight: 700, py: 0.4, px: 1.2,
-                                  borderColor: '#ddd6fe', color: '#7c3aed', bgcolor: '#faf5ff',
-                                  '&:hover': { bgcolor: '#ede9fe' } }}>
-                                Credits
-                              </Button>
-                            </Tooltip>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                              <Tooltip title="Adjust credits">
+                                <Button size="small" variant="outlined"
+                                  onClick={() => { setSelectedUser(u); setAdjustOpen(true); }}
+                                  sx={{ borderRadius: 2, fontSize: 11, fontWeight: 700, py: 0.4, px: 1.2,
+                                    borderColor: '#ddd6fe', color: '#7c3aed', bgcolor: '#faf5ff',
+                                    '&:hover': { bgcolor: '#ede9fe' } }}>
+                                  Credits
+                                </Button>
+                              </Tooltip>
+                              <Tooltip title={
+                                u.email === user?.email
+                                  ? "You can't change your own admin access"
+                                  : u.role === 'admin' ? 'Remove admin access' : 'Make this user an admin'
+                              }>
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                  <Switch
+                                    size="small"
+                                    checked={u.role === 'admin'}
+                                    disabled={u.email === user?.email}
+                                    onChange={(e) => handleToggleAdmin(u, e.target.checked)}
+                                    sx={{
+                                      '& .MuiSwitch-switchBase.Mui-checked': { color: '#7c3aed' },
+                                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#7c3aed' },
+                                    }}
+                                  />
+                                  <Typography sx={{ fontSize: 10, fontWeight: 700, color: u.role === 'admin' ? '#7c3aed' : '#94a3b8' }}>
+                                    Admin
+                                  </Typography>
+                                </Box>
+                              </Tooltip>
+                            </Box>
                           </TableCell>
                         </TableRow>
                       );
