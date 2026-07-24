@@ -7,7 +7,7 @@ import structlog
 import time
 
 from app.core.config import settings
-from app.api.routes import auth, users, templates, jobs, payments
+from app.api.routes import auth, users, templates, jobs, payments, admin, analytics
 from app.middleware.security import SecurityHeadersMiddleware, RateLimitMiddleware
 
 logger = structlog.get_logger()
@@ -72,6 +72,8 @@ def create_app() -> FastAPI:
     app.include_router(templates.router, prefix=prefix)
     app.include_router(jobs.router,      prefix=prefix)
     app.include_router(payments.router,  prefix=prefix)
+    app.include_router(admin.router,     prefix=prefix)
+    app.include_router(analytics.router, prefix=prefix)
 
     # Ko-fi sends webhooks to /api/payments/kofi-webhook (no /v1/).
     # Register the payments router at /api too so both paths work.
@@ -99,6 +101,23 @@ def create_app() -> FastAPI:
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR(255)",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_end_date TIMESTAMP",
             "ALTER TYPE jobstatus ADD VALUE IF NOT EXISTS 'partial'",
+            # Admin additions
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS max_jobs_override INTEGER NULL",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMP NULL",
+            # Analytics events table
+            """CREATE TABLE IF NOT EXISTS analytics_events (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                user_id UUID NULL,
+                session_id VARCHAR(128) NULL,
+                event_type VARCHAR(64) NOT NULL,
+                page VARCHAR(255) NULL,
+                element VARCHAR(255) NULL,
+                metadata JSONB NULL,
+                ip_hash VARCHAR(16) NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT NOW()
+            )""",
+            "CREATE INDEX IF NOT EXISTS idx_analytics_user_id ON analytics_events(user_id)",
+            "CREATE INDEX IF NOT EXISTS idx_analytics_created_at ON analytics_events(created_at DESC)",
         ]
         for sql in migrations:
             try:

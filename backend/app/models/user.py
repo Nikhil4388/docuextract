@@ -46,10 +46,14 @@ class User(Base):
 
     # Subscription / billing
     jobs_used = Column(Integer, default=0, nullable=False, server_default="0")
+    max_jobs_override = Column(Integer, nullable=True)  # Admin-set custom limit; None = use defaults
     is_subscribed = Column(Boolean, default=False, nullable=False, server_default="false")
     stripe_customer_id = Column(String(255), nullable=True)
     stripe_subscription_id = Column(String(255), nullable=True)
     subscription_end_date = Column(DateTime, nullable=True)
+
+    # Activity tracking
+    last_seen_at = Column(DateTime, nullable=True)
 
     extraction_jobs = relationship("ExtractionJob", back_populates="user", cascade="all, delete-orphan")
     column_templates = relationship("ColumnTemplate", back_populates="user", cascade="all, delete-orphan")

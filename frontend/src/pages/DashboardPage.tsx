@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Box, Typography, Button, Skeleton, Avatar } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { ExtractionJob } from '../types';
 import { useAuthStore } from '../store/authStore';
+import { trackPageView } from '../utils/analytics';
 
 function statusDot(s: string) {
   const map: Record<string, string> = {
@@ -43,6 +44,8 @@ export default function DashboardPage() {
   const navigate     = useNavigate();
   const { user }     = useAuthStore();
   const firstName    = user?.full_name?.split(' ')[0] ?? user?.email?.split('@')[0] ?? 'there';
+
+  useEffect(() => { trackPageView('dashboard'); }, []);
 
   const { data: jobs, isLoading } = useQuery<ExtractionJob[]>({
     queryKey: ['jobs'],

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import LogoIcon from '../components/LogoIcon';
+import { trackPageView, trackClick } from '../utils/analytics';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 const FEATURES = [
@@ -158,6 +159,9 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const revealRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  // Track landing page view
+  useEffect(() => { trackPageView('landing'); }, []);
+
   // Scroll reveal
   useEffect(() => {
     const io = new IntersectionObserver(
@@ -293,14 +297,14 @@ export default function LandingPage() {
 
         {/* Right CTAs */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, ml: 'auto' }}>
-          <Box component="button" onClick={() => navigate('/login')} sx={{
+          <Box component="button" onClick={() => { trackClick('sign_in_nav', 'landing'); navigate('/login'); }} sx={{
             px: 2.5, py: 0.9, border: 'none', bgcolor: 'transparent',
             fontSize: 13.5, fontWeight: 600, color: '#374151', cursor: 'pointer',
             borderRadius: 8, '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' }, transition: 'all 0.15s',
           }}>
             Sign In
           </Box>
-          <Box component="button" onClick={() => navigate('/login')} sx={{
+          <Box component="button" onClick={() => { trackClick('get_started_nav', 'landing'); navigate('/login'); }} sx={{
             px: 2.5, py: 0.9, borderRadius: 10, border: 'none',
             bgcolor: '#0c0c0c', color: 'white', fontSize: 13.5, fontWeight: 700,
             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 1,
@@ -367,7 +371,7 @@ export default function LandingPage() {
 
           {/* CTAs */}
           <Box className="hero-ctas" sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 5, alignItems: 'center' }}>
-            <Box component="button" className="cta-primary" onClick={() => navigate('/login')} sx={{
+            <Box component="button" className="cta-primary" onClick={() => { trackClick('start_extracting_hero', 'landing'); navigate('/login'); }} sx={{
               px: 3.5, py: 1.6, borderRadius: '14px', border: 'none',
               bgcolor: '#0c0c0c', color: 'white', fontSize: 15, fontWeight: 700,
               cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 1.2,
@@ -645,7 +649,7 @@ export default function LandingPage() {
             <Typography sx={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', mb: 5, maxWidth: 500, mx: 'auto', lineHeight: 1.7 }}>
               No credit card. No setup. Sign in with Google and extract your first PDF in under a minute.
             </Typography>
-            <Box component="button" className="cta-primary" onClick={() => navigate('/login')} sx={{
+            <Box component="button" className="cta-primary" onClick={() => { trackClick('start_extracting_bottom_cta', 'landing'); navigate('/login'); }} sx={{
               px: 4.5, py: 1.9, borderRadius: '14px', border: 'none',
               bgcolor: 'white', color: '#0c0c0c', fontSize: 15, fontWeight: 800,
               cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 1.5,

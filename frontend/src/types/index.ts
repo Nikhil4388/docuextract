@@ -14,6 +14,7 @@ export interface User {
   jobs_used?: number;
   free_limit?: number;
   paid_limit?: number;
+  max_jobs_override?: number | null;
 }
 
 export interface AuthTokens {

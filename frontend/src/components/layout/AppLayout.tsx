@@ -179,6 +179,61 @@ export default function AppLayout() {
               </Box>
             );
           })}
+
+          {/* Admin-only nav item */}
+          {isAdmin && (() => {
+            const active = location.pathname.startsWith('/admin');
+            return (
+              <>
+                <Box sx={{ mx: 1, my: 1, height: '1px', bgcolor: 'rgba(255,255,255,0.06)' }} />
+                <Box
+                  onClick={() => { navigate('/admin'); if (isMobile) setSidebarOpen(false); }}
+                  sx={{
+                    display: 'flex', alignItems: 'center', gap: 2.5,
+                    px: 2, py: 1.4, borderRadius: 2.5, mb: 0.5,
+                    cursor: 'pointer', position: 'relative', overflow: 'hidden',
+                    background: active
+                      ? 'linear-gradient(135deg, rgba(139,92,246,0.85) 0%, rgba(109,40,217,0.75) 100%)'
+                      : 'transparent',
+                    boxShadow: active ? '0 4px 16px rgba(139,92,246,0.45)' : 'none',
+                    '&:hover': {
+                      background: active
+                        ? 'linear-gradient(135deg, rgba(139,92,246,0.9) 0%, rgba(109,40,217,0.8) 100%)'
+                        : 'rgba(139,92,246,0.1)',
+                    },
+                    transition: 'all 0.18s ease',
+                  }}
+                >
+                  {active && (
+                    <Box sx={{
+                      position: 'absolute', left: 0, top: '20%', bottom: '20%',
+                      width: 3, borderRadius: '0 4px 4px 0',
+                      background: '#c4b5fd', opacity: 0.9,
+                    }} />
+                  )}
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L13.09 8.26L19 6L15.45 11.23L22 12L15.45 12.77L19 18L13.09 15.74L12 22L10.91 15.74L5 18L8.55 12.77L2 12L8.55 11.23L5 6L10.91 8.26L12 2Z"
+                      stroke={active ? 'white' : 'rgba(196,181,253,0.6)'} strokeWidth="1.8" strokeLinejoin="round" fill={active ? 'rgba(255,255,255,0.2)' : 'none'} />
+                  </svg>
+                  <Typography sx={{
+                    fontSize: 14, fontWeight: active ? 700 : 500,
+                    color: active ? 'white' : 'rgba(196,181,253,0.7)',
+                    letterSpacing: active ? 0.1 : 0,
+                  }}>
+                    Admin
+                  </Typography>
+                  <Box sx={{
+                    ml: 'auto', px: 1, py: 0.25, borderRadius: 1,
+                    bgcolor: active ? 'rgba(255,255,255,0.2)' : 'rgba(139,92,246,0.25)',
+                  }}>
+                    <Typography sx={{ fontSize: 9, fontWeight: 800, color: active ? 'white' : '#c4b5fd', letterSpacing: 0.5 }}>
+                      ONLY
+                    </Typography>
+                  </Box>
+                </Box>
+              </>
+            );
+          })()}
         </Box>
 
         {/* Upgrade card — only for free users */}

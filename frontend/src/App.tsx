@@ -71,6 +71,7 @@ import ContactPage from './pages/ContactPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import NotFoundPage from './pages/NotFoundPage';
+import AdminPage from './pages/AdminPage';
 
 const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000;
 
@@ -319,6 +320,7 @@ export default function App() {
                   <Route path="jobs/new" element={<NewJobPage />} />
                   <Route path="jobs/:jobId" element={<JobDetailPage />} />
                   <Route path="settings" element={<SettingsPage />} />
+                  <Route path="admin" element={<AdminPage />} />
                 </Route>
 
                 <Route path="*" element={<NotFoundPage />} />
