@@ -573,8 +573,8 @@ export default function LandingPage() {
           }}>
             <Box
               component="iframe"
-              src="/friday-rescue.html"
-              title="The Friday Night Rescue — DocuExtract Story"
+              src="/product-demo.html"
+              title="MultiPDFToExcel — Live Product Demo"
               scrolling="no"
               sx={{
                 position: 'absolute',

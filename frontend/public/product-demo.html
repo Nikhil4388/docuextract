@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MultiPDFToExcel Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #07071a;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .stage {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── Background grid ── */
+  .grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(99,102,241,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,102,241,0.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .glow {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  /* ── Scenes ── */
+  .scene {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+  }
+  .scene.active { opacity: 1; pointer-events: all; }
+
+  /* ── Labels ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(99,102,241,0.15);
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 99px;
+    padding: 5px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #a5b4fc;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #6366f1;
+    animation: pulse-dot 1.2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.7); }
+  }
+
+  /* ══════════════════════════════
+     SCENE 1 — UPLOAD
+  ══════════════════════════════ */
+  .upload-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+    max-width: 560px;
+    padding: 24px;
+  }
+
+  .upload-title {
+    font-size: clamp(20px, 3.5vw, 32px);
+    font-weight: 900;
+    color: #fff;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .upload-title span { color: #818cf8; }
+
+  .drop-zone {
+    width: 100%;
+    border: 2px dashed rgba(99,102,241,0.4);
+    border-radius: 20px;
+    padding: 32px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    background: rgba(99,102,241,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .drop-zone.lit {
+    border-color: #6366f1;
+    background: rgba(99,102,241,0.1);
+    box-shadow: 0 0 40px rgba(99,102,241,0.2);
+  }
+
+  .drop-icon {
+    font-size: 36px;
+    animation: float-icon 2s ease-in-out infinite;
+  }
+
+  @keyframes float-icon {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .drop-text {
+    font-size: 14px;
+    color: #64748b;
+    text-align: center;
+  }
+
+  .drop-text strong { color: #a5b4fc; }
+
+  /* Flying PDFs */
+  .pdf-files {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 8px;
+  }
+
+  .pdf-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fca5a5;
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .pdf-chip.landed {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  .upload-progress {
+    width: 100%;
+    height: 4px;
+    background: rgba(99,102,241,0.15);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+
+  .upload-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    border-radius: 99px;
+    width: 0%;
+    transition: width 1.5s ease;
+    box-shadow: 0 0 10px rgba(99,102,241,0.6);
+  }
+
+  .upload-stat {
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  .upload-stat strong { color: #a5b4fc; }
+
+  /* ══════════════════════════════
+     SCENE 2 — AI PROCESSING
+  ══════════════════════════════ */
+  .ai-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    max-width: 600px;
+    padding: 24px;
+  }
+
+  .ai-title {
+    font-size: clamp(20px, 3.5vw, 30px);
+    font-weight: 900;
+    color: #fff;
+    text-align: center;
+  }
+
+  .ai-title span { color: #818cf8; }
+
+  .ai-panel {
+    width: 100%;
+    background: rgba(15,15,35,0.8);
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .ai-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .ai-brain {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    animation: spin-slow 3s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin-slow {
+    0% { box-shadow: 0 0 0 0 rgba(99,102,241,0.4); }
+    50% { box-shadow: 0 0 20px 4px rgba(99,102,241,0.4); }
+    100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.4); }
+  }
+
+  .ai-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #e2e8f0;
+  }
+
+  .ai-sub {
+    font-size: 11px;
+    color: #64748b;
+  }
+
+  .job-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .job-name {
+    font-size: 11px;
+    color: #94a3b8;
+    width: 100px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .job-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: rgba(99,102,241,0.1);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .job-bar {
+    height: 100%;
+    border-radius: 99px;
+    width: 0%;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    transition: width 2s ease;
+    box-shadow: 0 0 8px rgba(99,102,241,0.5);
+  }
+
+  .job-pct {
+    font-size: 11px;
+    font-weight: 700;
+    color: #818cf8;
+    width: 32px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .ai-stats {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 4px;
+  }
+
+  .ai-stat {
+    text-align: center;
+  }
+
+  .ai-stat-val {
+    font-size: 22px;
+    font-weight: 900;
+    color: #818cf8;
+    line-height: 1;
+  }
+
+  .ai-stat-label {
+    font-size: 10px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  .counter {
+    display: inline-block;
+  }
+
+  /* ══════════════════════════════
+     SCENE 3 — RESULTS
+  ══════════════════════════════ */
+  .result-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    max-width: 640px;
+    padding: 20px;
+  }
+
+  .result-title {
+    font-size: clamp(18px, 3vw, 28px);
+    font-weight: 900;
+    color: #fff;
+    text-align: center;
+  }
+
+  .result-title span { color: #10b981; }
+
+  .sheet {
+    width: 100%;
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(99,102,241,0.25), 0 0 0 1px rgba(99,102,241,0.15);
+  }
+
+  .sheet-header {
+    background: #1e293b;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sheet-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  .sheet-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-left: 4px;
+    letter-spacing: 0.3px;
+  }
+
+  .sheet-title span { color: #10b981; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: clamp(10px, 1.5vw, 13px);
+  }
+
+  th {
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 700;
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: clamp(9px, 1.3vw, 12px);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  td {
+    padding: 7px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.35s ease;
+  }
+
+  td.show {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  td.highlight { color: #6366f1; font-weight: 700; }
+  td.green { color: #10b981; font-weight: 700; }
+  td.amount { color: #0f172a; font-weight: 700; }
+
+  .conf-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(16,185,129,0.1);
+    color: #10b981;
+    border-radius: 99px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .result-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .result-stats {
+    display: flex;
+    gap: 20px;
+  }
+
+  .rstat {
+    text-align: center;
+  }
+
+  .rstat-val {
+    font-size: 20px;
+    font-weight: 900;
+    color: #10b981;
+    line-height: 1;
+  }
+
+  .rstat-label {
+    font-size: 10px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  .dl-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    animation: pulse-btn 1.5s ease-in-out infinite;
+    font-family: inherit;
+  }
+
+  @keyframes pulse-btn {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+    50% { box-shadow: 0 0 0 10px rgba(16,185,129,0); }
+  }
+
+  /* ── Step progress bar at bottom ── */
+  .steps {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .step-dot {
+    width: 28px;
+    height: 4px;
+    border-radius: 99px;
+    background: rgba(255,255,255,0.1);
+    transition: background 0.4s ease, width 0.3s ease;
+  }
+
+  .step-dot.active {
+    background: #6366f1;
+    box-shadow: 0 0 8px rgba(99,102,241,0.6);
+  }
+
+  .step-dot.done {
+    background: rgba(99,102,241,0.4);
+  }
+
+  /* ── Particles ── */
+  .particles {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #6366f1;
+    opacity: 0;
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="grid"></div>
+  <div class="glow"></div>
+  <div class="particles" id="particles"></div>
+
+  <!-- SCENE 1: UPLOAD -->
+  <div class="scene active" id="scene1">
+    <div class="upload-wrap">
+      <div class="badge"><div class="dot"></div>Step 1 of 3</div>
+      <div class="upload-title">Drop your PDFs.<br/><span>Any format, any size.</span></div>
+      <div class="drop-zone" id="dropZone">
+        <div class="drop-icon">📂</div>
+        <div class="drop-text"><strong>Drag & drop</strong> your PDF files here<br/>or click to browse</div>
+        <div class="pdf-files" id="pdfFiles"></div>
+        <div class="upload-progress"><div class="upload-bar" id="uploadBar"></div></div>
+        <div class="upload-stat" id="uploadStat">Waiting for files…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 2: AI PROCESSING -->
+  <div class="scene" id="scene2">
+    <div class="ai-wrap">
+      <div class="badge"><div class="dot"></div>Step 2 of 3</div>
+      <div class="ai-title">Claude AI is reading<br/><span>all 6 files in parallel.</span></div>
+      <div class="ai-panel">
+        <div class="ai-header">
+          <div class="ai-brain">🤖</div>
+          <div>
+            <div class="ai-label">Claude Sonnet — Extraction Engine</div>
+            <div class="ai-sub">50 parallel workers · Reading every page simultaneously</div>
+          </div>
+        </div>
+        <div id="jobRows"></div>
+        <div class="ai-stats">
+          <div class="ai-stat">
+            <div class="ai-stat-val"><span class="counter" id="pageCount">0</span></div>
+            <div class="ai-stat-label">Pages read</div>
+          </div>
+          <div class="ai-stat">
+            <div class="ai-stat-val"><span class="counter" id="fieldCount">0</span></div>
+            <div class="ai-stat-label">Fields found</div>
+          </div>
+          <div class="ai-stat">
+            <div class="ai-stat-val"><span class="counter" id="confCount">0</span>%</div>
+            <div class="ai-stat-label">Confidence</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 3: RESULTS -->
+  <div class="scene" id="scene3">
+    <div class="result-wrap">
+      <div class="badge" style="background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.3);color:#6ee7b7;">
+        <div class="dot" style="background:#10b981;animation:none;"></div>Extraction Complete
+      </div>
+      <div class="result-title">Clean data.<br/><span>Ready to download.</span></div>
+      <div class="sheet">
+        <div class="sheet-header">
+          <div class="sheet-dot" style="background:#ef4444;"></div>
+          <div class="sheet-dot" style="background:#f59e0b;"></div>
+          <div class="sheet-dot" style="background:#10b981;"></div>
+          <div class="sheet-title">data_extracted.xlsx &nbsp;·&nbsp; <span>6 rows · 5 columns · 2.3s</span></div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Invoice #</th>
+              <th>Date</th>
+              <th>Vendor</th>
+              <th>Amount</th>
+              <th>Confidence</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="result-footer">
+        <div class="result-stats">
+          <div class="rstat">
+            <div class="rstat-val">6</div>
+            <div class="rstat-label">PDFs</div>
+          </div>
+          <div class="rstat">
+            <div class="rstat-val">2.3s</div>
+            <div class="rstat-label">Total time</div>
+          </div>
+          <div class="rstat">
+            <div class="rstat-val">97%</div>
+            <div class="rstat-label">Accuracy</div>
+          </div>
+        </div>
+        <button class="dl-btn">⬇ Download Excel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step indicators -->
+  <div class="steps">
+    <div class="step-dot active" id="dot1"></div>
+    <div class="step-dot" id="dot2"></div>
+    <div class="step-dot" id="dot3"></div>
+  </div>
+</div>
+
+<script>
+const files = [
+  'invoice_jan.pdf',
+  'contract_q1.pdf',
+  'bank_stmt.pdf',
+  'receipt_001.pdf',
+  'report_feb.pdf',
+  'legal_doc.pdf',
+];
+
+const tableData = [
+  ['INV-2024-001', 'Jan 15, 2024', 'Acme Corp', '$12,500.00', 99],
+  ['INV-2024-002', 'Jan 22, 2024', 'TechFlow Ltd', '$8,750.00', 97],
+  ['INV-2024-003', 'Feb 03, 2024', 'CloudBase Inc', '$21,200.00', 98],
+  ['INV-2024-004', 'Feb 18, 2024', 'DataSync Co', '$6,300.00', 96],
+  ['INV-2024-005', 'Mar 01, 2024', 'Vertex Solutions', '$15,900.00', 99],
+  ['INV-2024-006', 'Mar 14, 2024', 'NovaTech LLC', '$9,450.00', 97],
+];
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function setScene(n) {
+  document.querySelectorAll('.scene').forEach((s, i) => {
+    s.classList.toggle('active', i === n - 1);
+  });
+  ['dot1','dot2','dot3'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.classList.remove('active','done');
+    if (i === n - 1) el.classList.add('active');
+    else if (i < n - 1) el.classList.add('done');
+  });
+}
+
+function animateCounter(el, target, duration) {
+  const start = Date.now();
+  const startVal = parseInt(el.textContent) || 0;
+  const tick = () => {
+    const t = Math.min(1, (Date.now() - start) / duration);
+    const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+    el.textContent = Math.round(startVal + (target - startVal) * ease);
+    if (t < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+async function runScene1() {
+  // Reset
+  const pdfFiles = document.getElementById('pdfFiles');
+  const uploadBar = document.getElementById('uploadBar');
+  const uploadStat = document.getElementById('uploadStat');
+  const dropZone = document.getElementById('dropZone');
+  pdfFiles.innerHTML = '';
+  uploadBar.style.width = '0%';
+  uploadStat.textContent = 'Waiting for files…';
+  dropZone.classList.remove('lit');
+
+  await sleep(600);
+  dropZone.classList.add('lit');
+  uploadStat.textContent = 'Uploading 6 files…';
+
+  // Drop files one by one
+  for (let i = 0; i < files.length; i++) {
+    const chip = document.createElement('div');
+    chip.className = 'pdf-chip';
+    chip.innerHTML = `📄 ${files[i]}`;
+    pdfFiles.appendChild(chip);
+    await sleep(80);
+    chip.classList.add('landed');
+    uploadBar.style.width = `${((i + 1) / files.length) * 100}%`;
+    uploadStat.textContent = `Uploading… ${i + 1} of ${files.length} files`;
+    await sleep(280);
+  }
+
+  await sleep(400);
+  uploadStat.innerHTML = '<strong style="color:#10b981">✓ 6 files ready</strong>';
+  await sleep(700);
+}
+
+async function runScene2() {
+  // Build job rows
+  const jobRows = document.getElementById('jobRows');
+  jobRows.innerHTML = '';
+  const bars = [];
+
+  for (let i = 0; i < files.length; i++) {
+    const row = document.createElement('div');
+    row.className = 'job-row';
+    row.innerHTML = `
+      <div class="job-name">📄 ${files[i]}</div>
+      <div class="job-bar-wrap"><div class="job-bar" id="bar${i}"></div></div>
+      <div class="job-pct" id="pct${i}">0%</div>
+    `;
+    jobRows.appendChild(row);
+    bars.push({ bar: document.getElementById(`bar${i}`), pct: document.getElementById(`pct${i}`) });
+  }
+
+  document.getElementById('pageCount').textContent = '0';
+  document.getElementById('fieldCount').textContent = '0';
+  document.getElementById('confCount').textContent = '0';
+
+  await sleep(300);
+
+  // Animate bars with staggered speeds
+  const durations = [2200, 2600, 1900, 2400, 2100, 2800];
+  bars.forEach((b, i) => {
+    b.bar.style.transition = `width ${durations[i]}ms ease`;
+    setTimeout(() => {
+      b.bar.style.width = '100%';
+      let start = Date.now();
+      const tick = () => {
+        const t = Math.min(1, (Date.now() - start) / durations[i]);
+        b.pct.textContent = Math.round(t * 100) + '%';
+        if (t < 1) requestAnimationFrame(tick);
+        else b.pct.style.color = '#10b981';
+      };
+      requestAnimationFrame(tick);
+    }, i * 120);
+  });
+
+  // Animate stats
+  await sleep(400);
+  animateCounter(document.getElementById('pageCount'), 47, 2200);
+  await sleep(300);
+  animateCounter(document.getElementById('fieldCount'), 282, 2000);
+  await sleep(400);
+  animateCounter(document.getElementById('confCount'), 97, 1800);
+
+  await sleep(2800);
+}
+
+async function runScene3() {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+
+  // Build all rows (hidden)
+  for (let i = 0; i < tableData.length; i++) {
+    const [inv, date, vendor, amount, conf] = tableData[i];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="highlight">${inv}</td>
+      <td>${date}</td>
+      <td>${vendor}</td>
+      <td class="amount">${amount}</td>
+      <td><span class="conf-badge">✓ ${conf}%</span></td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  await sleep(200);
+
+  // Reveal rows and cells
+  const rows = tbody.querySelectorAll('tr');
+  for (let i = 0; i < rows.length; i++) {
+    const cells = rows[i].querySelectorAll('td');
+    cells.forEach((td, j) => {
+      setTimeout(() => td.classList.add('show'), j * 60);
+    });
+    await sleep(260);
+  }
+
+  await sleep(1500);
+}
+
+async function runLoop() {
+  while (true) {
+    setScene(1);
+    await runScene1();
+    await sleep(300);
+
+    setScene(2);
+    await runScene2();
+    await sleep(300);
+
+    setScene(3);
+    await runScene3();
+    await sleep(3000);
+  }
+}
+
+// Floating particles
+function spawnParticles() {
+  const container = document.getElementById('particles');
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.top = Math.random() * 100 + '%';
+    const colors = ['#6366f1','#8b5cf6','#10b981','#818cf8'];
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.width = p.style.height = (Math.random() * 3 + 1) + 'px';
+    container.appendChild(p);
+
+    const dur = 3000 + Math.random() * 4000;
+    const delay = Math.random() * 3000;
+
+    function animate() {
+      p.style.transition = `none`;
+      p.style.opacity = '0';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.top = Math.random() * 100 + '%';
+      setTimeout(() => {
+        p.style.transition = `opacity ${dur}ms ease, transform ${dur}ms ease`;
+        p.style.opacity = String(Math.random() * 0.5 + 0.1);
+        p.style.transform = `translateY(-${30 + Math.random() * 60}px)`;
+        setTimeout(() => {
+          p.style.opacity = '0';
+          setTimeout(animate, 500);
+        }, dur);
+      }, 50);
+    }
+
+    setTimeout(animate, delay);
+  }
+}
+
+spawnParticles();
+runLoop();
+</script>
+</body>
+</html>
