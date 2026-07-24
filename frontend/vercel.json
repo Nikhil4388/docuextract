@@ -36,7 +36,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.railway.app https://docuextract-production-8a77.up.railway.app https://accounts.google.com https://*.googleapis.com https://*.anthropic.com; frame-ancestors 'self' https://multipdfstoexcel.com https://www.multipdfstoexcel.com; base-uri 'self'; form-action 'self' https://accounts.google.com https://multipdfstoexcel.com https://www.multipdfstoexcel.com"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.railway.app https://docuextract-production-8a77.up.railway.app https://accounts.google.com https://*.googleapis.com https://*.anthropic.com; frame-src 'self' blob:; frame-ancestors 'self' https://multipdfstoexcel.com https://www.multipdfstoexcel.com; base-uri 'self'; form-action 'self' https://accounts.google.com https://multipdfstoexcel.com https://www.multipdfstoexcel.com"
         }
       ]
     },
