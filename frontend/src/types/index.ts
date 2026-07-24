@@ -14,6 +14,7 @@ export interface User {
   jobs_used?: number;
   free_limit?: number;
   paid_limit?: number;
+  effective_limit?: number;      // actual limit for this user (respects override)
   max_jobs_override?: number | null;
 }
 

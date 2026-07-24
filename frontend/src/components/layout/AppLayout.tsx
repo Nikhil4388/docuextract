@@ -65,11 +65,13 @@ export default function AppLayout() {
     ? user.full_name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
     : user?.email?.[0]?.toUpperCase() ?? '?';
 
-  const isAdmin      = user?.is_admin ?? false;
-  const isSubscribed = user?.is_subscribed ?? false;
-  const jobsUsed     = user?.jobs_used ?? 0;
-  const freeLimit    = user?.free_limit ?? 2;
-  const hitLimit     = !isAdmin && !isSubscribed && jobsUsed >= freeLimit;
+  const isAdmin        = user?.is_admin ?? false;
+  const isSubscribed   = user?.is_subscribed ?? false;
+  const jobsUsed       = user?.jobs_used ?? 0;
+  const freeLimit      = user?.free_limit ?? 2;
+  // Use the server-computed effective limit so admin overrides are reflected
+  const effectiveLimit = user?.effective_limit ?? (isSubscribed ? (user?.paid_limit ?? 20) : freeLimit);
+  const hitLimit       = !isAdmin && jobsUsed >= effectiveLimit;
 
   const currentPage = NAV.find((n) => location.pathname.startsWith(n.path))?.label ?? '';
 
@@ -247,7 +249,7 @@ export default function AppLayout() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <Box sx={{ fontSize: 16 }}>☕</Box>
                 <Typography sx={{ color: 'white', fontSize: 12, fontWeight: 700 }}>
-                  {hitLimit ? 'Limit reached' : `${Math.max(0, freeLimit - jobsUsed)} free job${Math.max(0, freeLimit - jobsUsed) !== 1 ? 's' : ''} left`}
+                  {hitLimit ? 'Limit reached' : `${Math.max(0, effectiveLimit - jobsUsed)} job${Math.max(0, effectiveLimit - jobsUsed) !== 1 ? 's' : ''} left`}
                 </Typography>
               </Box>
               <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, mb: 1.5, lineHeight: 1.5 }}>
@@ -370,7 +372,7 @@ export default function AppLayout() {
             bgcolor: '#f8fafc', borderRadius: '12px', p: 1.5,
             border: '1px solid #f1f5f9', mb: 1.5,
           }}>
-            <Row label="Status"    value={isAdmin ? '⚡ Admin' : isSubscribed ? '⭐ Supporter' : `Free (${jobsUsed}/${freeLimit} used)`} />
+            <Row label="Status"    value={isAdmin ? '⚡ Admin' : isSubscribed ? '⭐ Supporter' : `Free (${jobsUsed}/${effectiveLimit} used)`} />
             <Row label="Jobs used" value={String(jobsUsed)} />
           </Box>
 

@@ -27,6 +27,8 @@ class UserProfile(BaseModel):
     jobs_used: int = 0
     free_limit: int = 2
     paid_limit: int = 20
+    effective_limit: int = 2   # actual limit for THIS user (respects max_jobs_override)
+    max_jobs_override: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -45,6 +47,22 @@ class UpdateApiKeysRequest(BaseModel):
 
 @router.get("/me", response_model=UserProfile)
 async def get_profile(current_user: User = Depends(get_current_user)):
+    is_admin = current_user.email in settings.admin_email_list
+    is_subscribed = current_user.is_subscribed or False
+
+    # Compute the true job limit this user faces:
+    # 1. Admin-set override wins if present
+    # 2. Otherwise paid limit for subscribers, free limit for free tier
+    # 3. Admins are unlimited — use a large sentinel so the UI never shows "limit reached"
+    if is_admin:
+        effective_limit = 999999
+    elif current_user.max_jobs_override is not None:
+        effective_limit = current_user.max_jobs_override
+    elif is_subscribed:
+        effective_limit = settings.PAID_JOB_LIMIT
+    else:
+        effective_limit = settings.FREE_JOB_LIMIT
+
     return UserProfile(
         id=str(current_user.id),
         email=current_user.email,
@@ -54,11 +72,13 @@ async def get_profile(current_user: User = Depends(get_current_user)):
         role=current_user.role,
         is_verified=current_user.is_verified,
         auth_provider=current_user.auth_provider,
-        is_subscribed=current_user.is_subscribed or False,
-        is_admin=current_user.email in settings.admin_email_list,
+        is_subscribed=is_subscribed,
+        is_admin=is_admin,
         jobs_used=current_user.jobs_used or 0,
         free_limit=settings.FREE_JOB_LIMIT,
         paid_limit=settings.PAID_JOB_LIMIT,
+        effective_limit=effective_limit,
+        max_jobs_override=current_user.max_jobs_override,
     )
 
 
