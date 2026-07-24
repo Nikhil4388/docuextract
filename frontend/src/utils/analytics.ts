@@ -2,7 +2,15 @@
  * Lightweight analytics tracking.
  * Sends fire-and-forget events to /api/v1/analytics/track.
  * Never throws — analytics must never break the app.
+ *
+ * NOTE: We use fetch(keepalive: true) instead of navigator.sendBeacon because:
+ *  1. sendBeacon cannot set an Authorization header, so events would always
+ *     be anonymous and last_seen_at would never update.
+ *  2. sendBeacon with an application/json Blob to a cross-origin API is
+ *     silently blocked by the browser (it cannot perform a CORS preflight).
+ * fetch with keepalive:true survives page unload just like sendBeacon.
  */
+import { getAccessToken } from '../services/api';
 
 const BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1');
 
@@ -23,23 +31,23 @@ interface TrackPayload {
 }
 
 function send(payload: TrackPayload): void {
-  // Use sendBeacon when available (works even on page unload)
   const body = JSON.stringify({ ...payload, session_id: getSessionId() });
   const url = `${BASE_URL}/analytics/track`;
 
   try {
-    if (navigator.sendBeacon) {
-      navigator.sendBeacon(url, new Blob([body], { type: 'application/json' }));
-    } else {
-      // Fallback: async fetch, fire-and-forget
-      fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body,
-        credentials: 'omit',
-        keepalive: true,
-      }).catch(() => {});
-    }
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const token = getAccessToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    // keepalive:true lets the request finish even if the page unloads,
+    // giving us sendBeacon semantics WITH auth headers and proper CORS.
+    fetch(url, {
+      method: 'POST',
+      headers,
+      body,
+      credentials: 'omit',
+      keepalive: true,
+    }).catch(() => {});
   } catch {
     // Never propagate
   }

@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' }}>
         <Paper sx={{ p: 4, maxWidth: 400, textAlign: 'center', borderRadius: 3 }}>
           <Typography variant="h5" fontWeight={700} gutterBottom>Check Your Email</Typography>
           <Typography color="text.secondary" mb={3}>
@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' }}>
       <Paper elevation={8} sx={{ p: 4, width: 400, borderRadius: 3 }}>
         <Typography variant="h5" fontWeight={700} textAlign="center" gutterBottom>Forgot Password</Typography>
         <Typography variant="body2" color="text.secondary" textAlign="center" mb={3}>

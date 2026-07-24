@@ -37,9 +37,9 @@ export default function PaymentSuccessPage() {
   if (status === 'loading') {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' }}>
         <Paper sx={{ p: 6, borderRadius: 4, textAlign: 'center', maxWidth: 400, width: '100%' }}>
-          <CircularProgress sx={{ color: '#667eea', mb: 3 }} size={56} />
+          <CircularProgress sx={{ color: '#6366f1', mb: 3 }} size={56} />
           <Typography variant="h6" fontWeight={700} mb={1}>Activating your subscription…</Typography>
           <Typography color="text.secondary" fontSize={14}>Please wait a moment.</Typography>
         </Paper>
@@ -50,7 +50,7 @@ export default function PaymentSuccessPage() {
   return (
     <Box sx={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3,
     }}>
       <Paper sx={{ p: 6, borderRadius: 4, maxWidth: 460, width: '100%', textAlign: 'center' }}>
@@ -67,7 +67,7 @@ export default function PaymentSuccessPage() {
           onClick={() => navigate('/jobs/new')}
           sx={{
             py: 1.5, borderRadius: 2, fontSize: 16, fontWeight: 700, mb: 2,
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
           }}
         >
           Start Extracting

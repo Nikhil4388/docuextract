@@ -73,7 +73,7 @@ function PdfPanel({
       bgcolor: '#fafafa', minHeight: 500,
     }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <AutoAwesome sx={{ color: '#667eea', fontSize: 18 }} />
+        <AutoAwesome sx={{ color: '#6366f1', fontSize: 18 }} />
         <Typography variant="subtitle2" fontWeight={700} color="text.secondary" letterSpacing={0.8} sx={{ textTransform: 'uppercase', fontSize: 11 }}>
           Sample PDF · AI Column Detection
         </Typography>
@@ -101,14 +101,14 @@ function PdfPanel({
               display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center',
               py: 1.5, border: '1.5px dashed #d0d0d0', borderRadius: 2,
               cursor: 'pointer', bgcolor: '#fff',
-              '&:hover': { borderColor: '#667eea', bgcolor: '#667eea08' },
+              '&:hover': { borderColor: '#6366f1', bgcolor: '#6366f108' },
               transition: 'all 0.2s',
             }}
           >
             <input {...getInputProps()} />
             {isAnalyzing
               ? <><CircularProgress size={14} /><Typography variant="caption">Analyzing…</Typography></>
-              : <><CloudUpload sx={{ fontSize: 16, color: '#667eea' }} /><Typography variant="caption" color="text.secondary">Replace PDF</Typography></>
+              : <><CloudUpload sx={{ fontSize: 16, color: '#6366f1' }} /><Typography variant="caption" color="text.secondary">Replace PDF</Typography></>
             }
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -122,19 +122,19 @@ function PdfPanel({
           {...getRootProps()}
           sx={{
             flex: 1, border: '2px dashed', borderRadius: 3,
-            borderColor: isDragActive ? '#667eea' : '#d4d4d4',
-            bgcolor: isDragActive ? '#667eea08' : '#fff',
+            borderColor: isDragActive ? '#6366f1' : '#d4d4d4',
+            bgcolor: isDragActive ? '#6366f108' : '#fff',
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
             gap: 1.5, cursor: 'pointer', minHeight: 400,
             transition: 'all 0.2s',
-            '&:hover': { borderColor: '#667eea', bgcolor: '#667eea06' },
+            '&:hover': { borderColor: '#6366f1', bgcolor: '#6366f106' },
           }}
         >
           <input {...getInputProps()} />
           {isAnalyzing ? (
             <>
-              <CircularProgress sx={{ color: '#667eea' }} />
+              <CircularProgress sx={{ color: '#6366f1' }} />
               <Typography fontWeight={500} color="text.secondary">Analyzing with AI…</Typography>
             </>
           ) : (
@@ -146,12 +146,12 @@ function PdfPanel({
               }}>
                 {[100, 70, 85, 60, 90, 65, 80].map((w, i) => (
                   <Box key={i} sx={{
-                    height: 6, borderRadius: 3, bgcolor: i === 3 ? '#667eea40' : '#e0e0e0',
+                    height: 6, borderRadius: 3, bgcolor: i === 3 ? '#6366f140' : '#e0e0e0',
                     width: `${w}%`, mb: 0.8,
                   }} />
                 ))}
               </Box>
-              <CloudUpload sx={{ fontSize: 32, color: '#667eea' }} />
+              <CloudUpload sx={{ fontSize: 32, color: '#6366f1' }} />
               <Typography fontWeight={600} color="#374151">Drop a sample PDF</Typography>
               <Typography variant="caption" color="text.secondary">AI will detect columns automatically</Typography>
               <Typography variant="caption" color="text.secondary" sx={{ opacity: 0.6 }}>or click to browse</Typography>
@@ -290,7 +290,7 @@ export default function TemplatesPage() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5" fontWeight={700}>Column Templates</Typography>
         <Button variant="contained" startIcon={<Add />} onClick={openCreate}
-          sx={{ borderRadius: 2, background: 'linear-gradient(135deg, #667eea, #764ba2)', boxShadow: 'none' }}>
+          sx={{ borderRadius: 2, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: 'none' }}>
           New Template
         </Button>
       </Box>
@@ -373,7 +373,7 @@ export default function TemplatesPage() {
                   Columns
                 </Typography>
                 <Chip label={`${columns.filter(c => c.name).length} defined`} size="small"
-                  sx={{ bgcolor: '#667eea15', color: '#667eea', fontWeight: 600, fontSize: 11 }} />
+                  sx={{ bgcolor: '#6366f115', color: '#6366f1', fontWeight: 600, fontSize: 11 }} />
               </Box>
 
               <Box sx={{ overflowY: 'auto', maxHeight: 340, pr: 0.5 }}>
@@ -383,7 +383,7 @@ export default function TemplatesPage() {
               </Box>
 
               <Button startIcon={<Add />} onClick={addColumn} size="small"
-                sx={{ mt: 1, color: '#667eea', textTransform: 'none' }}>
+                sx={{ mt: 1, color: '#6366f1', textTransform: 'none' }}>
                 Add Column
               </Button>
             </Box>
@@ -396,7 +396,7 @@ export default function TemplatesPage() {
             variant="contained" onClick={() => createMutation.mutate()}
             disabled={!templateName || createMutation.isPending}
             sx={{ borderRadius: 2, textTransform: 'none', px: 3,
-              background: 'linear-gradient(135deg, #667eea, #764ba2)', boxShadow: 'none' }}
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: 'none' }}
           >
             {createMutation.isPending ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Create Template'}
           </Button>
@@ -425,14 +425,14 @@ export default function TemplatesPage() {
               Columns
             </Typography>
             <Chip label={`${editColumns.filter(c => c.name).length} defined`} size="small"
-              sx={{ bgcolor: '#667eea15', color: '#667eea', fontWeight: 600, fontSize: 11 }} />
+              sx={{ bgcolor: '#6366f115', color: '#6366f1', fontWeight: 600, fontSize: 11 }} />
           </Box>
 
           {editColumns.map((col, i) => (
             <ColumnRow key={i} col={col} index={i} onChange={updateEditColumn} onDelete={deleteEditColumn} />
           ))}
           <Button startIcon={<Add />} onClick={addEditColumn} size="small"
-            sx={{ mt: 1, color: '#667eea', textTransform: 'none' }}>
+            sx={{ mt: 1, color: '#6366f1', textTransform: 'none' }}>
             Add Column
           </Button>
         </DialogContent>
@@ -442,7 +442,7 @@ export default function TemplatesPage() {
             variant="contained" onClick={() => updateMutation.mutate()}
             disabled={!editName || updateMutation.isPending}
             sx={{ borderRadius: 2, textTransform: 'none', px: 3,
-              background: 'linear-gradient(135deg, #667eea, #764ba2)', boxShadow: 'none' }}
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: 'none' }}
           >
             {updateMutation.isPending ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Save Changes'}
           </Button>

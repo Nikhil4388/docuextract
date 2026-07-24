@@ -65,9 +65,14 @@ export default function PricingPage() {
             You need to be signed in so we know which account to unlock after your donation.
           </Typography>
           <Button
-            fullWidth variant="contained" size="large" startIcon={<Login />}
+            fullWidth size="large" startIcon={<Login />}
             onClick={() => navigate('/login', { state: { from: '/pricing' } })}
-            sx={{ borderRadius: 2, py: 1.5, fontWeight: 700, bgcolor: '#667eea', '&:hover': { bgcolor: '#5a6fd8' } }}
+            sx={{
+              borderRadius: '14px', py: 1.5, fontWeight: 700,
+              bgcolor: '#0c0c0c', color: 'white',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
+              '&:hover': { bgcolor: '#1c1c1c' },
+            }}
           >
             Sign in with Google
           </Button>
@@ -105,13 +110,13 @@ export default function PricingPage() {
         {/* Free card */}
         <Paper sx={{
           p: 4, borderRadius: 4,
-          border: '2px solid #667eea',
+          border: '2px solid #6366f1',
           background: 'linear-gradient(145deg, #ffffff 0%, #f5f4ff 100%)',
           mb: 3,
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-            <Star sx={{ color: '#667eea', fontSize: 22 }} />
-            <Typography fontWeight={800} fontSize={20} color="#667eea">Everything Free</Typography>
+            <Star sx={{ color: '#6366f1', fontSize: 22 }} />
+            <Typography fontWeight={800} fontSize={20} color="#6366f1">Everything Free</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 3 }}>
             <Typography variant="h2" fontWeight={900}>$0</Typography>
@@ -121,7 +126,7 @@ export default function PricingPage() {
             {ALL_FEATURES.map(f => (
               <ListItem key={f} disableGutters sx={{ py: 0.6 }}>
                 <ListItemIcon sx={{ minWidth: 32 }}>
-                  <CheckCircle sx={{ fontSize: 18, color: '#667eea' }} />
+                  <CheckCircle sx={{ fontSize: 18, color: '#6366f1' }} />
                 </ListItemIcon>
                 <ListItemText primary={f} primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
               </ListItem>
@@ -132,7 +137,7 @@ export default function PricingPage() {
             onClick={() => navigate('/jobs/new')}
             sx={{
               mt: 3, borderRadius: 2, py: 1.4, fontSize: 15, fontWeight: 700,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
             }}
           >
             Start Extracting — It's Free
@@ -235,7 +240,7 @@ export default function PricingPage() {
             { q: 'Will it stay free?', a: 'We plan to keep a generous free tier always. If we ever add a paid plan, existing users will get notice in advance.' },
             { q: 'How do I support?', a: 'Click the button above, pick an amount, and pay via PayPal. No Ko-fi account needed — just your PayPal or card.' },
           ].map(f => (
-            <Box key={f.q} sx={{ mb: 2.5, p: 3, bgcolor: 'white', borderRadius: 3, borderLeft: '3px solid #667eea' }}>
+            <Box key={f.q} sx={{ mb: 2.5, p: 3, bgcolor: 'white', borderRadius: 3, borderLeft: '3px solid #6366f1' }}>
               <Typography fontWeight={700} mb={0.5}>{f.q}</Typography>
               <Typography color="text.secondary" fontSize={14}>{f.a}</Typography>
             </Box>

@@ -504,7 +504,7 @@ export default function PdfEditorPage() {
         </Box>
         {phase === 'loading' ? (
           <Box sx={{ textAlign: 'center' }}>
-            <CircularProgress size={52} sx={{ color: '#667eea' }} />
+            <CircularProgress size={52} sx={{ color: '#6366f1' }} />
             <Typography mt={2} color="text.secondary">Loading PDF pages…</Typography>
           </Box>
         ) : (
@@ -512,10 +512,10 @@ export default function PdfEditorPage() {
             {...getRootProps()}
             sx={{
               width: 460, border: '2px dashed',
-              borderColor: isDragActive ? '#667eea' : '#d1d5db',
+              borderColor: isDragActive ? '#6366f1' : '#d1d5db',
               borderRadius: 3, p: 7, textAlign: 'center', cursor: 'pointer',
-              bgcolor: isDragActive ? '#667eea0a' : 'white', transition: 'all 0.2s',
-              '&:hover': { borderColor: '#667eea', bgcolor: '#667eea06' },
+              bgcolor: isDragActive ? '#6366f10a' : 'white', transition: 'all 0.2s',
+              '&:hover': { borderColor: '#6366f1', bgcolor: '#6366f106' },
             }}
           >
             <input {...getInputProps()} />
@@ -594,9 +594,9 @@ export default function PdfEditorPage() {
               <IconButton size="small" onClick={() => setTool(id)}
                 sx={{
                   width: 36, height: 36, borderRadius: 1.5,
-                  bgcolor: tool === id ? '#667eea' : 'transparent',
+                  bgcolor: tool === id ? '#6366f1' : 'transparent',
                   color:   tool === id ? 'white'   : '#6b7280',
-                  '&:hover': { bgcolor: tool === id ? '#667eea' : '#f3f4f6' },
+                  '&:hover': { bgcolor: tool === id ? '#6366f1' : '#f3f4f6' },
                 }}
               >{icon}</IconButton>
             </Tooltip>
@@ -617,7 +617,7 @@ export default function PdfEditorPage() {
             <Box key={c} onClick={() => setColor(c)}
               sx={{
                 width: 20, height: 20, borderRadius: '50%', bgcolor: c, cursor: 'pointer',
-                border: color === c ? '2.5px solid #667eea' : `1.5px solid ${c === '#ffffff' ? '#d1d5db' : 'transparent'}`,
+                border: color === c ? '2.5px solid #6366f1' : `1.5px solid ${c === '#ffffff' ? '#d1d5db' : 'transparent'}`,
                 '&:hover': { transform: 'scale(1.25)' }, transition: 'transform 0.1s',
               }}
             />
@@ -653,7 +653,7 @@ export default function PdfEditorPage() {
                 top:   Math.max(editingState.item.y * zoom - 72, 4),
                 zIndex: 50,
                 bgcolor: 'white',
-                border: '1.5px solid #667eea',
+                border: '1.5px solid #6366f1',
                 borderRadius: 2,
                 boxShadow: '0 4px 20px rgba(102,126,234,0.25)',
                 p: 1.5,
