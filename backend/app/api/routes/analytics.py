@@ -38,18 +38,21 @@ async def track_event(
         ip_hash = hashlib.sha256(ip.encode()).hexdigest()[:16]
         meta_json = json.dumps(payload.metadata) if payload.metadata else None
 
+        # NOTE: never use `:param::type` cast syntax inside text() — SQLAlchemy's
+        # bind-param parser mangles it (`:user_id::uuid` parses as param "user_i").
+        # Always use CAST(:param AS type) instead.
         await db.execute(
             text("""
                 INSERT INTO analytics_events
                     (id, user_id, session_id, event_type, page, element, metadata, ip_hash, created_at)
                 VALUES
                     (gen_random_uuid(),
-                     :user_id::uuid,
+                     CAST(:user_id AS uuid),
                      :session_id,
                      :event_type,
                      :page,
                      :element,
-                     :metadata::jsonb,
+                     CAST(:metadata AS jsonb),
                      :ip_hash,
                      NOW())
             """),

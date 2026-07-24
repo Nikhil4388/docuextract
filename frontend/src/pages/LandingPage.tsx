@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import LogoIcon from '../components/LogoIcon';
-import { trackPageView, trackClick } from '../utils/analytics';
+import { trackClick } from '../utils/analytics';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 const FEATURES = [
@@ -160,7 +160,6 @@ export default function LandingPage() {
   const revealRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // Track landing page view
-  useEffect(() => { trackPageView('landing'); }, []);
 
   // Scroll reveal
   useEffect(() => {

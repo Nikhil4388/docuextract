@@ -272,6 +272,22 @@ function PublicHome() {
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />;
 }
 
+// Tracks a page_view on every route change — covers ALL pages so the admin
+// Activity Feed sees the full journey, not just pages with manual tracking.
+function PageTracker() {
+  const location = useLocation();
+  const { isInitializing } = useAuthStore();
+  useEffect(() => {
+    if (isInitializing) return; // wait for auth restore so events carry the user token
+    // Normalize: strip IDs so pages group nicely (e.g. /jobs/abc123 → /jobs/:id)
+    const page = location.pathname
+      .replace(/\/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, '/:id')
+      .replace(/^\/$/, 'landing');
+    import('./utils/analytics').then(({ trackPageView }) => trackPageView(page));
+  }, [location.pathname, isInitializing]);
+  return null;
+}
+
 // Restores session on mount — must be inside BrowserRouter to use useLocation
 function AuthInit() {
   const { initAuth, setInitialized } = useAuthStore();
@@ -298,6 +314,7 @@ export default function App() {
         <SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
           <BrowserRouter>
             <AuthInit />
+            <PageTracker />
             <InactivityGuard>
               <Routes>
                 <Route path="/" element={<PublicHome />} />
