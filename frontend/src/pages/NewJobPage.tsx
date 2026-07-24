@@ -30,16 +30,18 @@ export default function NewJobPage() {
   const navigate     = useNavigate();
   const { user }     = useAuthStore();
 
-  const freeLimit    = user?.free_limit ?? 2;
-  const paidLimit    = user?.paid_limit ?? 20;
-  const jobsUsed     = user?.jobs_used ?? 0;
-  const isSubscribed = user?.is_subscribed ?? false;
-  const isAdmin      = user?.is_admin ?? false;
-  const hitFreeLimit = !isAdmin && !isSubscribed && jobsUsed >= freeLimit;
-  const hitPaidLimit = !isAdmin && isSubscribed && jobsUsed >= paidLimit;
+  const freeLimit      = user?.free_limit ?? 2;
+  const paidLimit      = user?.paid_limit ?? 20;
+  const jobsUsed       = user?.jobs_used ?? 0;
+  const isSubscribed   = user?.is_subscribed ?? false;
+  const isAdmin        = user?.is_admin ?? false;
+  // Use server-computed effective_limit so admin overrides are respected
+  const effectiveLimit = user?.effective_limit ?? (isSubscribed ? paidLimit : freeLimit);
+  const hitLimit       = !isAdmin && jobsUsed >= effectiveLimit;
+  const hitFreeLimit   = hitLimit && !isSubscribed && !user?.max_jobs_override;
 
   // Paywall gate
-  if (hitFreeLimit || hitPaidLimit) {
+  if (hitLimit) {
     return (
       <Box sx={{ maxWidth: 500, mx: 'auto', mt: 8, px: 2 }}>
         <Box sx={{
@@ -49,13 +51,15 @@ export default function NewJobPage() {
         }}>
           <Typography sx={{ fontSize: 64, mb: 2 }}>🔒</Typography>
           <Typography sx={{ fontSize: 22, fontWeight: 900, color: '#0c0c0c', mb: 1 }}>
-            {hitFreeLimit ? 'Free limit reached' : 'Limit reached'}
+            {hitFreeLimit ? 'Free limit reached' : 'Job limit reached'}
           </Typography>
           <Typography sx={{ color: '#64748b', mb: 1 }}>
-            {hitFreeLimit ? "You've used all free extractions." : `You've used all ${paidLimit} jobs.`}
+            {hitFreeLimit
+              ? "You've used all free extractions."
+              : `You've used all ${effectiveLimit} jobs.`}
           </Typography>
           <Typography sx={{ fontWeight: 800, fontSize: 18, color: '#d97706', mb: 3 }}>
-            Donate $10 → Unlock 20 jobs
+            {hitFreeLimit ? 'Donate $10 → Unlock 20 jobs' : 'Contact support to increase your limit'}
           </Typography>
           <Box onClick={() => navigate('/pricing')} sx={{
             py: 1.5, borderRadius: 3, cursor: 'pointer', mb: 2, textAlign: 'center',
