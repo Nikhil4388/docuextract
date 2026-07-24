@@ -239,8 +239,12 @@ export default function TemplatesPage() {
         const res = await api.post('/templates/upload-sample', fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        setColumns(res.data.suggested_columns ?? []);
-        setUploadAlert(`AI detected ${res.data.suggested_columns?.length ?? 0} columns. Review and adjust on the right.`);
+        if (res.data.analysis_failed) {
+          setUploadAlert('AI analysis is temporarily unavailable for this PDF. Your file is fine — please add the columns you need manually, or try re-uploading in a minute.');
+        } else {
+          setColumns(res.data.suggested_columns ?? []);
+          setUploadAlert(`AI detected ${res.data.suggested_columns?.length ?? 0} columns. Review and adjust on the right.`);
+        }
         break;
       } catch (err) {
         const isNetworkError = !(err as any)?.response;

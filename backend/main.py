@@ -79,6 +79,7 @@ def create_app() -> FastAPI:
     # Register the payments router at /api too so both paths work.
     app.include_router(payments.router,  prefix="/api")
 
+
     # ── Startup ───────────────────────────────────────────────────────────────
     @app.on_event("startup")
     async def startup_tasks():
@@ -179,13 +180,26 @@ def create_app() -> FastAPI:
         return {"status": "ok", "version": settings.APP_VERSION}
 
     # ── Global error handler — never leak stack traces ────────────────────────
+    # IMPORTANT: responses from this handler bypass CORSMiddleware (Starlette
+    # routes unhandled exceptions through ServerErrorMiddleware, which sits
+    # OUTSIDE the CORS layer). Without explicit CORS headers here, browsers
+    # can't read the 500 and report a fake "network error" to users.
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
         # Log internally but return a generic message to the caller
         logger.error("unhandled_exception", path=request.url.path, exc_type=type(exc).__name__)
+        headers = {}
+        origin = request.headers.get("origin", "")
+        if origin in settings.ALLOWED_ORIGINS:
+            headers = {
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Credentials": "true",
+                "Vary": "Origin",
+            }
         return JSONResponse(
             status_code=500,
             content={"detail": "Internal server error"},
+            headers=headers,
         )
 
     return app

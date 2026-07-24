@@ -1,4 +1,5 @@
 import json
+import asyncio
 from typing import List, Dict, Any, Optional
 import anthropic
 from app.core.config import settings
@@ -151,12 +152,18 @@ Return ONLY a valid JSON array. No markdown, no explanation, no wrapping object.
                 )
             })
 
-        message = self.client.messages.create(
+        # The Anthropic client is synchronous — run it in a thread so it
+        # doesn't block the event loop (blocking here starves /health checks
+        # and every other request while analysis runs).
+        message = await asyncio.to_thread(
+            self.client.messages.create,
             model="claude-sonnet-5",  # Best column suggestions
             max_tokens=3000,
             system=system,
             messages=[{"role": "user", "content": content}],
         )
+        if not message.content:
+            return []
         raw = message.content[0].text.strip()
         if raw.startswith("```"):
             raw = raw.split("```")[1]

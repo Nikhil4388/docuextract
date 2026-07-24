@@ -101,9 +101,17 @@ async def upload_sample_pdf(
     with open(file_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    extractor = PDFExtractor()
-    suggested_columns = await extractor.suggest_columns(file_path)
-    return {"file_path": file_path, "suggested_columns": suggested_columns}
+    # AI analysis must never 500 — if it fails for any reason (Claude API
+    # error, corrupt PDF, OOM on rendering), return an empty column list with
+    # a flag so the UI falls back to manual column entry gracefully.
+    try:
+        extractor = PDFExtractor()
+        suggested_columns = await extractor.suggest_columns(file_path)
+        return {"file_path": file_path, "suggested_columns": suggested_columns}
+    except Exception as e:
+        import structlog
+        structlog.get_logger().error("suggest_columns_failed", error=str(e), error_type=type(e).__name__)
+        return {"file_path": file_path, "suggested_columns": [], "analysis_failed": True}
 
 
 @router.get("/{template_id}", response_model=TemplateResponse)

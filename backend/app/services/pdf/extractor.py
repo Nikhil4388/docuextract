@@ -19,14 +19,18 @@ class PDFExtractor:
 
     OCR_THRESHOLD = 50  # chars per page; below this, treat as scanned image
 
-    def extract_text(self, pdf_path: str) -> List[Dict[str, Any]]:
+    def extract_text(self, pdf_path: str, max_pages: Optional[int] = None) -> List[Dict[str, Any]]:
         """
         Returns a list of page dicts:
           { page_num, text, ocr_used, image_b64 (only for scanned pages), width, height }
+        max_pages: stop after this many pages (avoids rendering images for
+        pages that will never be used, e.g. column suggestion only reads 5).
         """
         pages = []
         doc = fitz.open(pdf_path)
         for page_num, page in enumerate(doc, start=1):
+            if max_pages is not None and page_num > max_pages:
+                break
             text = page.get_text("text").strip()
             ocr_used = False
             image_b64 = None
@@ -64,7 +68,9 @@ class PDFExtractor:
         Returns list of {name, description, data_type, extraction_hint}.
         """
         loop = asyncio.get_event_loop()
-        pages = await loop.run_in_executor(None, self.extract_text, pdf_path)
+        # Only the first 5 pages are used for column suggestion — don't
+        # extract/render the rest (big docs would waste memory and time).
+        pages = await loop.run_in_executor(None, lambda: self.extract_text(pdf_path, max_pages=5))
         if not pages:
             return []
 
