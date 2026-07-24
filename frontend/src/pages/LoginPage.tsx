@@ -103,7 +103,7 @@ export default function LoginPage() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 7 }}>
             <LogoIcon size={36} borderRadius={10} />
             <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 16, letterSpacing: -0.3 }}>
-              MultiPDF<span style={{ color: '#818cf8' }}>ToExcel</span>
+              MultiPDFs<span style={{ color: '#818cf8' }}>ToExcel</span>
             </Typography>
           </Box>
 
@@ -174,7 +174,7 @@ export default function LoginPage() {
           <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1.5, mb: 5 }}>
             <LogoIcon size={32} borderRadius={8} />
             <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#0c0c0c' }}>
-              MultiPDF<span style={{ color: '#6366f1' }}>ToExcel</span>
+              MultiPDFs<span style={{ color: '#6366f1' }}>ToExcel</span>
             </Typography>
           </Box>
 

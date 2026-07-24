@@ -95,7 +95,7 @@ export default function PricingPage() {
         <Box textAlign="center" mb={5}>
           <Chip label="☕ Support the project" sx={{ mb: 2, bgcolor: '#fff3e0', color: '#e65100', fontWeight: 700 }} />
           <Typography variant="h3" fontWeight={800} mb={1.5}>
-            MultiPDFToExcel is Free
+            MultiPDFsToExcel is Free
           </Typography>
           <Typography color="text.secondary" fontSize={18}>
             All features are completely free. If it saves you time, consider buying us a coffee to keep the servers running!

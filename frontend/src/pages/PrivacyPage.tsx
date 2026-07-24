@@ -3,7 +3,7 @@ import { Box, Container, Typography, Divider } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
 const EFFECTIVE_DATE = 'July 9, 2026';
-const COMPANY = 'MultiPDFToExcel';
+const COMPANY = 'MultiPDFsToExcel';
 const DOMAIN = 'multipdfstoexcel.com';
 const EMAIL = 'support@multipdfstoexcel.com';
 

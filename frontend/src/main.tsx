@@ -19,7 +19,7 @@ console.log(
   'color:#fbbf24;font-size:13px;line-height:1.8;font-family:monospace;'
 );
 console.log(
-  '%c— MultiPDFToExcel Security Team',
+  '%c— MultiPDFsToExcel Security Team',
   'color:#6366f1;font-size:12px;font-style:italic;'
 );
 

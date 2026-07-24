@@ -65,7 +65,7 @@ export default function ContactPage() {
         <Box onClick={() => navigate('/')} sx={{ display: 'flex', alignItems: 'center', gap: 1.2, cursor: 'pointer' }}>
           <LogoIcon size={30} borderRadius={8} />
           <Typography sx={{ fontWeight: 800, fontSize: 14, color: '#0c0c0c' }}>
-            MultiPDF<span style={{ color: '#6366f1' }}>ToExcel</span>
+            MultiPDFs<span style={{ color: '#6366f1' }}>ToExcel</span>
           </Typography>
         </Box>
         <Box sx={{ flex: 1 }} />

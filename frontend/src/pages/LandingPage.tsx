@@ -269,7 +269,7 @@ export default function LandingPage() {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mr: 'auto', cursor: 'pointer' }} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
           <LogoIcon size={32} borderRadius={9} />
           <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#0c0c0c', letterSpacing: -0.3 }}>
-            MultiPDF<span style={{ color: '#6366f1' }}>ToExcel</span>
+            MultiPDFs<span style={{ color: '#6366f1' }}>ToExcel</span>
           </Typography>
         </Box>
 
@@ -553,7 +553,7 @@ export default function LandingPage() {
             Any PDF. One perfect spreadsheet.
           </Typography>
           <Typography sx={{ fontSize: 16, color: '#64748b', maxWidth: 560, mx: 'auto', lineHeight: 1.75 }}>
-            Watch how MultiPDFToExcel turns hundreds of PDFs into clean,
+            Watch how MultiPDFsToExcel turns hundreds of PDFs into clean,
             structured Excel data — in minutes, not hours.
           </Typography>
         </Box>
@@ -574,7 +574,7 @@ export default function LandingPage() {
             <Box
               component="iframe"
               src="/product-demo.html"
-              title="MultiPDFToExcel — Live Product Demo"
+              title="MultiPDFsToExcel — Live Product Demo"
               scrolling="no"
               sx={{
                 position: 'absolute',
@@ -672,10 +672,10 @@ export default function LandingPage() {
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
           <LogoIcon size={26} borderRadius={7} />
-          <Typography sx={{ fontWeight: 700, fontSize: 13.5, color: '#374151' }}>MultiPDFToExcel</Typography>
+          <Typography sx={{ fontWeight: 700, fontSize: 13.5, color: '#374151' }}>MultiPDFsToExcel</Typography>
         </Box>
         <Typography sx={{ fontSize: 12.5, color: '#94a3b8' }}>
-          © 2026 MultiPDFToExcel. All rights reserved.
+          © 2026 MultiPDFsToExcel. All rights reserved.
         </Typography>
         <Box sx={{ display: 'flex', gap: 3 }}>
           {[
