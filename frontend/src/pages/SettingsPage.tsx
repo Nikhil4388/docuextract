@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Box, Paper, Typography, TextField, Button, Divider,
+  Box, Paper, Typography, TextField, Button,
   Alert, Stack, Chip,
 } from '@mui/material';
 import { Key, Save } from '@mui/icons-material';
@@ -13,7 +13,6 @@ export default function SettingsPage() {
   const { user } = useAuthStore();
   const qc = useQueryClient();
   const [anthropicKey, setAnthropicKey] = useState('');
-  const [openaiKey, setOpenaiKey] = useState('');
   const [fullName, setFullName] = useState(user?.full_name ?? '');
   const [saved, setSaved] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,12 +26,10 @@ export default function SettingsPage() {
     mutationFn: () =>
       api.put('/users/me/api-keys', {
         anthropic_api_key: anthropicKey || undefined,
-        openai_api_key: openaiKey || undefined,
       }),
     onSuccess: () => {
-      setSaved('API keys saved!');
-      setAnthropicKey('');  // clear inputs — keys are write-only after save
-      setOpenaiKey('');
+      setSaved('API key saved!');
+      setAnthropicKey('');  // clear input — keys are write-only after save
       qc.invalidateQueries({ queryKey: ['api-keys-status'] });
     },
     onError: (err) => setError(toFriendly(err)),
@@ -44,9 +41,8 @@ export default function SettingsPage() {
     onError: (err) => setError(toFriendly(err)),
   });
 
-  // Light format hints — non-blocking, just catch obvious paste mistakes
+  // Light format hint — non-blocking, just catches obvious paste mistakes
   const anthropicLooksWrong = anthropicKey.length > 0 && !anthropicKey.startsWith('sk-ant-');
-  const openaiLooksWrong = openaiKey.length > 0 && !openaiKey.startsWith('sk-');
 
   return (
     <Box maxWidth={700}>
@@ -77,7 +73,8 @@ export default function SettingsPage() {
           <Typography variant="h6" fontWeight={600}>API Keys</Typography>
         </Box>
         <Typography variant="body2" color="text.secondary" mb={2}>
-          API keys are encrypted at rest and never exposed after saving. Leave blank to keep existing.
+          Optional: use your own Anthropic API key for extractions. Encrypted at rest and never
+          exposed after saving. Leave blank to keep the existing key.
         </Typography>
 
         <Stack spacing={2}>
@@ -100,34 +97,13 @@ export default function SettingsPage() {
             />
           </Box>
 
-          <Divider />
-
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <Typography fontWeight={500}>OpenAI</Typography>
-              {keyStatus?.openai
-                ? <Chip label="Configured" color="success" size="small" />
-                : <Chip label="Not set" size="small" />}
-            </Box>
-            <TextField
-              label="OpenAI API Key"
-              type="password"
-              fullWidth
-              value={openaiKey}
-              onChange={(e) => setOpenaiKey(e.target.value)}
-              placeholder="sk-..."
-              error={openaiLooksWrong}
-              helperText={openaiLooksWrong ? "OpenAI keys usually start with sk- — double-check what you pasted" : undefined}
-            />
-          </Box>
-
           <Button
             variant="contained" startIcon={<Save />}
             onClick={() => saveKeys.mutate()}
-            disabled={saveKeys.isPending || (!anthropicKey && !openaiKey)}
+            disabled={saveKeys.isPending || !anthropicKey}
             sx={{ alignSelf: 'flex-start', borderRadius: 2 }}
           >
-            Save API Keys
+            Save API Key
           </Button>
         </Stack>
       </Paper>
