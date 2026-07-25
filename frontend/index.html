@@ -7,6 +7,22 @@
     <meta name="theme-color" content="#6366f1" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+    <!-- Warm up the API connection early (DNS + TLS handshake before first fetch) -->
+    <link rel="preconnect" href="https://docuextract-production-8a77.up.railway.app" crossorigin />
+
+    <!-- Instant paint: match app background before JS loads (no white flash),
+         and show a subtle brand spinner until React mounts -->
+    <style>
+      html, body { background: #e8e2d8; margin: 0; }
+      #root:empty::after {
+        content: ""; display: block; width: 32px; height: 32px;
+        border-radius: 50%; border: 3px solid rgba(99,102,241,0.2);
+        border-top-color: #6366f1; margin: 45vh auto 0;
+        animation: bootSpin 0.7s linear infinite;
+      }
+      @keyframes bootSpin { to { transform: rotate(360deg); } }
+    </style>
+
     <!-- Primary SEO -->
     <title>PDF to Excel Converter — AI Batch Extraction | MultiPDFToExcel</title>
     <meta name="description" content="Convert PDF to Excel in seconds with AI. Upload hundreds of PDFs, extract any data field automatically, and download a clean spreadsheet. Free to try — no code needed." />

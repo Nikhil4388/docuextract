@@ -31,10 +31,12 @@ export default defineConfig({
     chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
+        // Only pin the react core; everything else splits naturally per lazy
+        // route. (Previously ALL of MUI + DataGrid was forced into one 700KB
+        // chunk that every visitor downloaded — now DataGrid ships only with
+        // the job-detail page, admin code only with /admin, etc.)
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
-          mui: ['@mui/material', '@mui/icons-material', '@mui/x-data-grid'],
-          query: ['@tanstack/react-query'],
         },
       },
     },

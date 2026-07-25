@@ -52,26 +52,46 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { crashed: boolea
     return this.props.children;
   }
 }
-import AppLayout from './components/layout/AppLayout';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import VerifyOTPPage from './pages/VerifyOTPPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import DashboardPage from './pages/DashboardPage';
-import TemplatesPage from './pages/TemplatesPage';
-import NewJobPage from './pages/NewJobPage';
-import JobDetailPage from './pages/JobDetailPage';
-import SettingsPage from './pages/SettingsPage';
-import JobsPage from './pages/JobsPage';
+// ── Code splitting ────────────────────────────────────────────────────────────
+// Landing + Login load eagerly (first-visit entry points must render instantly).
+// Everything else is lazy — visitors only download the pages they actually open.
 import LandingPage from './pages/LandingPage';
-import PricingPage from './pages/PricingPage';
-import PaymentSuccessPage from './pages/PaymentSuccessPage';
-import ContactPage from './pages/ContactPage';
-import TermsPage from './pages/TermsPage';
-import PrivacyPage from './pages/PrivacyPage';
-import NotFoundPage from './pages/NotFoundPage';
-import AdminPage from './pages/AdminPage';
+import LoginPage from './pages/LoginPage';
+import AppLayout from './components/layout/AppLayout';
+
+const RegisterPage = React.lazy(() => import('./pages/RegisterPage'));
+const VerifyOTPPage = React.lazy(() => import('./pages/VerifyOTPPage'));
+const ForgotPasswordPage = React.lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = React.lazy(() => import('./pages/ResetPasswordPage'));
+const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
+const TemplatesPage = React.lazy(() => import('./pages/TemplatesPage'));
+const NewJobPage = React.lazy(() => import('./pages/NewJobPage'));
+const JobDetailPage = React.lazy(() => import('./pages/JobDetailPage'));
+const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
+const JobsPage = React.lazy(() => import('./pages/JobsPage'));
+const PricingPage = React.lazy(() => import('./pages/PricingPage'));
+const PaymentSuccessPage = React.lazy(() => import('./pages/PaymentSuccessPage'));
+const ContactPage = React.lazy(() => import('./pages/ContactPage'));
+const TermsPage = React.lazy(() => import('./pages/TermsPage'));
+const PrivacyPage = React.lazy(() => import('./pages/PrivacyPage'));
+const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'));
+const AdminPage = React.lazy(() => import('./pages/AdminPage'));
+
+// Branded minimal loader shown while a lazy page chunk downloads (usually <100ms)
+function PageLoader() {
+  return (
+    <div style={{
+      minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        width: 28, height: 28, borderRadius: '50%',
+        border: '3px solid rgba(99,102,241,0.2)', borderTopColor: '#6366f1',
+        animation: 'pageLoaderSpin 0.7s linear infinite',
+      }} />
+      <style>{`@keyframes pageLoaderSpin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
 
 const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000;
 
@@ -101,9 +121,12 @@ const theme = createTheme({
   shape: { borderRadius: 12 },
   components: {
     MuiCssBaseline: {
+      // NOTE: Inter is self-hosted via @fontsource (imported in main.tsx) —
+      // no external Google Fonts request needed. A CSS @import here would be
+      // render-blocking AND a duplicate download.
       styleOverrides: `
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
         body { background: #e8e2d8 !important; color: #0c0c0c; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.04); }
@@ -316,6 +339,7 @@ export default function App() {
             <AuthInit />
             <PageTracker />
             <InactivityGuard>
+              <React.Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<PublicHome />} />
                 <Route path="/login" element={<LoginPage />} />
@@ -342,6 +366,7 @@ export default function App() {
 
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
+              </React.Suspense>
             </InactivityGuard>
           </BrowserRouter>
         </SnackbarProvider>

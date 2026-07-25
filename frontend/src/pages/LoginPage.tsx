@@ -1,9 +1,16 @@
+import { useEffect } from 'react';
 import { Box, Button, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import LogoIcon from '../components/LogoIcon';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+
+  // Prefetch the dashboard chunk while the user reads this page — by the time
+  // they finish signing in with Google, their next page is already downloaded.
+  useEffect(() => {
+    import('./DashboardPage').catch(() => {});
+  }, []);
   const handleGoogleLogin = () => {
     window.location.href = `${import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1'}/auth/google`;
   };

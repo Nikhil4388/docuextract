@@ -282,7 +282,7 @@ export default function LandingPage() {
           bgcolor: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.09)',
           borderRadius: 10, px: 1, py: 0.6,
         }}>
-          {[['Features', '#features'], ['How It Works', '#how'], ['FAQ', '#faq']].map(([label, href]) => (
+          {[['Features', '#features'], ['How It Works', '#how'], ['Security', '#security'], ['FAQ', '#faq']].map(([label, href]) => (
             <Box key={label} component="a" href={href} className="nav-link" sx={{
               px: 2, py: 0.7, borderRadius: 8, fontSize: 13.5, fontWeight: 600,
               color: '#374151', textDecoration: 'none', cursor: 'pointer',
