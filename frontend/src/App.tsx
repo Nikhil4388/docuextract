@@ -152,6 +152,12 @@ const theme = createTheme({
             transform: 'translateY(-1px)',
             boxShadow: '0 8px 24px rgba(99,102,241,0.4)',
           },
+          // Without this, the gradient stays vivid when disabled and only the
+          // text fades — looks broken. Grey it out properly like MUI default.
+          '&.Mui-disabled': {
+            background: '#e2e8f0',
+            color: '#94a3b8',
+          },
           transition: 'all 0.2s ease',
         },
       },

@@ -6,6 +6,7 @@ import {
 import { Key, Save } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
+import { toFriendly } from '../utils/friendlyError';
 import { useAuthStore } from '../store/authStore';
 
 export default function SettingsPage() {
@@ -15,6 +16,7 @@ export default function SettingsPage() {
   const [openaiKey, setOpenaiKey] = useState('');
   const [fullName, setFullName] = useState(user?.full_name ?? '');
   const [saved, setSaved] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const { data: keyStatus } = useQuery<{ anthropic: boolean; openai: boolean }>({
     queryKey: ['api-keys-status'],
@@ -27,19 +29,31 @@ export default function SettingsPage() {
         anthropic_api_key: anthropicKey || undefined,
         openai_api_key: openaiKey || undefined,
       }),
-    onSuccess: () => { setSaved('API keys saved!'); qc.invalidateQueries({ queryKey: ['api-keys-status'] }); },
+    onSuccess: () => {
+      setSaved('API keys saved!');
+      setAnthropicKey('');  // clear inputs — keys are write-only after save
+      setOpenaiKey('');
+      qc.invalidateQueries({ queryKey: ['api-keys-status'] });
+    },
+    onError: (err) => setError(toFriendly(err)),
   });
 
   const saveProfile = useMutation({
     mutationFn: () => api.patch('/users/me', { full_name: fullName }),
     onSuccess: () => setSaved('Profile updated!'),
+    onError: (err) => setError(toFriendly(err)),
   });
+
+  // Light format hints — non-blocking, just catch obvious paste mistakes
+  const anthropicLooksWrong = anthropicKey.length > 0 && !anthropicKey.startsWith('sk-ant-');
+  const openaiLooksWrong = openaiKey.length > 0 && !openaiKey.startsWith('sk-');
 
   return (
     <Box maxWidth={700}>
       <Typography variant="h5" fontWeight={700} mb={3}>Settings</Typography>
 
       {saved && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSaved(null)}>{saved}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
       {/* Profile */}
       <Paper sx={{ p: 3, borderRadius: 3, mb: 3 }}>
@@ -81,6 +95,8 @@ export default function SettingsPage() {
               value={anthropicKey}
               onChange={(e) => setAnthropicKey(e.target.value)}
               placeholder="sk-ant-..."
+              error={anthropicLooksWrong}
+              helperText={anthropicLooksWrong ? "Anthropic keys usually start with sk-ant- — double-check what you pasted" : undefined}
             />
           </Box>
 
@@ -100,6 +116,8 @@ export default function SettingsPage() {
               value={openaiKey}
               onChange={(e) => setOpenaiKey(e.target.value)}
               placeholder="sk-..."
+              error={openaiLooksWrong}
+              helperText={openaiLooksWrong ? "OpenAI keys usually start with sk- — double-check what you pasted" : undefined}
             />
           </Box>
 
