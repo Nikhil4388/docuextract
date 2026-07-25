@@ -30,7 +30,7 @@ def create_product(token):
         f"{BASE}/v1/catalogs/products",
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
         json={
-            "name": "MultiPDFToExcel Pro",
+            "name": "MultiPDFsToExcel Pro",
             "description": "Unlimited PDF data extraction to Excel",
             "type": "SERVICE",
             "category": "SOFTWARE",
@@ -48,7 +48,7 @@ def create_plan(token, product_id):
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
         json={
             "product_id": product_id,
-            "name": "MultiPDFToExcel Pro Monthly",
+            "name": "MultiPDFsToExcel Pro Monthly",
             "description": "Unlimited PDF extractions — $10/month",
             "status": "ACTIVE",
             "billing_cycles": [

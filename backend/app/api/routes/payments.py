@@ -91,7 +91,7 @@ async def create_checkout_session(
             "email_address": current_user.email,
         },
         "application_context": {
-            "brand_name": "MultiPDFToExcel",
+            "brand_name": "MultiPDFsToExcel",
             "locale": "en-US",
             "shipping_preference": "NO_SHIPPING",
             "user_action": "SUBSCRIBE_NOW",

@@ -57,7 +57,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         )
 
         # Remove the server banner (don't leak tech stack)
-        response.headers["Server"] = "MultiPDFToExcel"
+        response.headers["Server"] = "MultiPDFsToExcel"
         try:
             del response.headers["X-Powered-By"]
         except KeyError:

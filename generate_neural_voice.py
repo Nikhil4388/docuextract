@@ -31,12 +31,12 @@ SCENES = [
     ("s2",  "The old way? Open each file. Copy the data. Paste it in. Repeat. At fifteen seconds per document, four hundred PDFs means two hours — just to fill one column."),
     ("s3",  "And when one number is wrong — which it always is — you search through hundreds of files to find it. Then fix it. Then check everything... again."),
     ("s4",  "You shouldn't have to work like this. There had to be a better way. And now... there is."),
-    ("s5",  "Introducing MultiPDFToExcel. The AI that reads any PDF — and builds your spreadsheet for you. Automatically. No code. No templates. No manual work."),
+    ("s5",  "Introducing MultiPDFsToExcel. The AI that reads any PDF — and builds your spreadsheet for you. Automatically. No code. No templates. No manual work."),
     ("s6",  "Drop your PDFs into the browser — one or a thousand. Then tell the AI exactly what you need: vendor name, invoice number, date, total amount. In plain English. That's it."),
     ("s7",  "The AI reads every document. Clean printouts, handwritten tables, blurry fax scans, rotated pages — it doesn't care. Any PDF, any layout. It finds what you asked for."),
     ("s8",  "The result? A perfect spreadsheet. Every field, every row — formatted, accurate, and ready to download. What used to take eight hours... done in under two minutes."),
-    ("s9",  "One PDF or one thousand — same speed. Same accuracy. Every time. MultiPDFToExcel scales with your workload, not against it."),
-    ("s10", "MultiPDFToExcel. Any PDF. Any layout. One perfect spreadsheet — in minutes. Free to start. No credit card. No code. Just results. Visit multipdfstoexcel dot com today."),
+    ("s9",  "One PDF or one thousand — same speed. Same accuracy. Every time. MultiPDFsToExcel scales with your workload, not against it."),
+    ("s10", "MultiPDFsToExcel. Any PDF. Any layout. One perfect spreadsheet — in minutes. Free to start. No credit card. No code. Just results. Visit multipdfstoexcel dot com today."),
 ]
 
 async def gen_audio(scene_id, text):
