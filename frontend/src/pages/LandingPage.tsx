@@ -449,6 +449,82 @@ export default function LandingPage() {
         </Box>
       </Box>
 
+      {/* ── SECURITY & PRIVACY ── */}
+      <Box id="security" sx={{ px: { xs: 3, md: 8, lg: 12 }, pb: { xs: 10, md: 14 }, maxWidth: 1200, mx: 'auto' }}>
+        <Box ref={addRef(30)} className="reveal" sx={{ mb: { xs: 5, md: 8 }, textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 2.5, color: '#10b981', mb: 2 }}>
+            SECURITY & PRIVACY
+          </Typography>
+          <Typography sx={{
+            fontSize: { xs: 32, md: 48 }, fontWeight: 900, color: '#0c0c0c',
+            letterSpacing: -1.5, lineHeight: 1.1, mb: 2,
+          }}>
+            Your documents<br />stay yours.
+          </Typography>
+          <Typography sx={{ fontSize: 15.5, color: '#64748b', maxWidth: 520, mx: 'auto', lineHeight: 1.7 }}>
+            Invoices, bank statements, and contracts are sensitive. Here's exactly what happens
+            to your files — in plain English, no fine print.
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4,1fr)' }, gap: 2.5 }}>
+          {[
+            {
+              icon: '🗑️',
+              title: 'Files that delete themselves',
+              desc: 'Your PDFs are automatically and permanently deleted from our servers after 3 days. We don\'t keep copies, backups, or archives of your documents.',
+            },
+            {
+              icon: '🔒',
+              title: 'Bank-level encryption',
+              desc: 'Every file travels over an encrypted connection — the same technology your bank uses. Anything sensitive we store is locked with AES-256 encryption.',
+            },
+            {
+              icon: '🔑',
+              title: 'No passwords to steal',
+              desc: 'You sign in with your Google account. We never see, ask for, or store a password — so there\'s no password of yours that can ever leak from us.',
+            },
+            {
+              icon: '🚫',
+              title: 'Never used to train AI',
+              desc: 'Your documents are read once — to build your spreadsheet — and that\'s it. They are never used to train AI models, never sold, and never shared.',
+            },
+          ].map((s, i) => (
+            <Box key={s.title} ref={addRef(31 + i)} className={`reveal stagger-${i + 1}`}
+              sx={{
+                bgcolor: 'white', borderRadius: '20px', p: 3.5,
+                border: '1px solid rgba(16,185,129,0.18)',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
+                transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+                '&:hover': { transform: 'translateY(-5px)', boxShadow: '0 20px 48px rgba(16,185,129,0.12)', borderColor: 'rgba(16,185,129,0.4)' },
+              }}>
+              <Box sx={{
+                width: 48, height: 48, borderRadius: '14px', bgcolor: 'rgba(16,185,129,0.08)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2,
+              }}>
+                <Typography sx={{ fontSize: 24 }}>{s.icon}</Typography>
+              </Box>
+              <Typography sx={{ fontSize: 16, fontWeight: 800, color: '#0c0c0c', mb: 1 }}>{s.title}</Typography>
+              <Typography sx={{ fontSize: 13.5, color: '#64748b', lineHeight: 1.65 }}>{s.desc}</Typography>
+            </Box>
+          ))}
+        </Box>
+
+        {/* Trust strip */}
+        <Box ref={addRef(35)} className="reveal" sx={{
+          mt: 4, display: 'flex', flexWrap: 'wrap', gap: 1.5, justifyContent: 'center', alignItems: 'center',
+        }}>
+          {['🔐 HTTPS + TLS 1.3', '🛡️ AES-256 at rest', '⏱️ Auto-delete after 3 days', '👤 Only you can see your data'].map((t) => (
+            <Box key={t} sx={{
+              px: 2, py: 0.8, borderRadius: 99, bgcolor: 'rgba(16,185,129,0.07)',
+              border: '1px solid rgba(16,185,129,0.15)',
+            }}>
+              <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: '#047857' }}>{t}</Typography>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+
       {/* ── HOW IT WORKS ── */}
       <Box id="how" sx={{ px: { xs: 3, md: 8, lg: 12 }, pb: { xs: 10, md: 14 }, maxWidth: 1200, mx: 'auto' }}>
         <Box ref={addRef(1)} className="reveal" sx={{ mb: { xs: 6, md: 10 }, textAlign: 'center' }}>
