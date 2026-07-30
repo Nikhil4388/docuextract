@@ -5,7 +5,6 @@ from sqlalchemy import select
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime, timedelta
-import secrets
 import random
 import httpx
 
@@ -17,7 +16,7 @@ from app.core.security import (
 from app.core.config import settings
 from app.models.user import User, AuthProvider
 from app.api.deps import get_current_user
-from app.services.email_service import send_otp_email, send_password_reset_email
+from app.services.email_service import send_otp_email, send_password_reset_otp_email
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -80,16 +79,22 @@ async def register(
     result = await db.execute(select(User).where(User.email == payload.email))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Email already registered")
+    if len(payload.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    otp = _generate_otp()
     user = User(
         email=payload.email,
         hashed_password=get_password_hash(payload.password),
         full_name=payload.full_name,
         auth_provider=AuthProvider.EMAIL,
-        is_verified=True,
+        is_verified=False,
+        verification_token=otp,
+        reset_token_expires=datetime.utcnow() + timedelta(minutes=10),
     )
     db.add(user)
     await db.flush()
-    return {"message": "Registration successful. You can now log in.", "email": payload.email}
+    background_tasks.add_task(send_otp_email, user.email, otp, user.full_name)
+    return {"message": "Registration successful. Check your email for a verification code.", "email": payload.email}
 
 
 # ── OTP ───────────────────────────────────────────────────────────────────────
@@ -179,12 +184,12 @@ async def forgot_password(
     result = await db.execute(select(User).where(User.email == payload.email))
     user = result.scalar_one_or_none()
     if user:
-        token = secrets.token_urlsafe(32)
-        user.reset_token = token
-        user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
+        otp = _generate_otp()
+        user.reset_token = otp
+        user.reset_token_expires = datetime.utcnow() + timedelta(minutes=10)
         await db.commit()
-        background_tasks.add_task(send_password_reset_email, user.email, token)
-    return {"message": "If that email exists, a reset link was sent."}
+        background_tasks.add_task(send_password_reset_otp_email, user.email, otp, user.full_name)
+    return {"message": "If that email exists, a verification code was sent."}
 
 
 @router.post("/reset-password")
@@ -192,7 +197,7 @@ async def reset_password(payload: PasswordResetConfirm, db: AsyncSession = Depen
     result = await db.execute(select(User).where(User.reset_token == payload.token))
     user = result.scalar_one_or_none()
     if not user or (user.reset_token_expires and user.reset_token_expires < datetime.utcnow()):
-        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+        raise HTTPException(status_code=400, detail="Invalid or expired code")
     if len(payload.new_password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
     user.hashed_password = get_password_hash(payload.new_password)

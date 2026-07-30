@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Box, Button, TextField, Typography, Paper, Stack, Alert, CircularProgress } from '@mui/material';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 export default function ForgotPasswordPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -28,9 +29,15 @@ export default function ForgotPasswordPage() {
         <Paper sx={{ p: 4, maxWidth: 400, textAlign: 'center', borderRadius: 3 }}>
           <Typography variant="h5" fontWeight={700} gutterBottom>Check Your Email</Typography>
           <Typography color="text.secondary" mb={3}>
-            If <strong>{email}</strong> is registered, we sent a password reset link.
+            If <strong>{email}</strong> is registered, we sent a 6-digit code to reset your password.
           </Typography>
-          <Button component={Link} to="/login" variant="contained" sx={{ borderRadius: 2 }}>Back to Login</Button>
+          <Button
+            variant="contained" fullWidth sx={{ borderRadius: 2, mb: 1.5 }}
+            onClick={() => navigate('/reset-password', { state: { email } })}
+          >
+            Enter Code
+          </Button>
+          <Button component={Link} to="/login" variant="text" fullWidth>Back to Login</Button>
         </Paper>
       </Box>
     );
@@ -41,14 +48,14 @@ export default function ForgotPasswordPage() {
       <Paper elevation={8} sx={{ p: 4, width: 400, borderRadius: 3 }}>
         <Typography variant="h5" fontWeight={700} textAlign="center" gutterBottom>Forgot Password</Typography>
         <Typography variant="body2" color="text.secondary" textAlign="center" mb={3}>
-          Enter your email and we'll send a reset link.
+          Enter your email and we'll send you a 6-digit code.
         </Typography>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
             <TextField label="Email" type="email" fullWidth required value={email} onChange={(e) => setEmail(e.target.value)} autoFocus />
             <Button type="submit" variant="contained" fullWidth size="large" disabled={loading || !email} sx={{ borderRadius: 2 }}>
-              {loading ? <CircularProgress size={22} color="inherit" /> : 'Send Reset Link'}
+              {loading ? <CircularProgress size={22} color="inherit" /> : 'Send Code'}
             </Button>
             <Button component={Link} to="/login" variant="text" fullWidth>Back to Login</Button>
           </Stack>

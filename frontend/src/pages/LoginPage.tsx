@@ -1,10 +1,17 @@
-import { useEffect } from 'react';
-import { Box, Button, Typography } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState, FormEvent } from 'react';
+import { Box, Button, Typography, TextField, Alert, CircularProgress } from '@mui/material';
+import { Link, useNavigate } from 'react-router-dom';
 import LogoIcon from '../components/LogoIcon';
+import { useAuthStore } from '../store/authStore';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuthStore();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // Prefetch the dashboard chunk while the user reads this page — by the time
   // they finish signing in with Google, their next page is already downloaded.
@@ -13,6 +20,25 @@ export default function LoginPage() {
   }, []);
   const handleGoogleLogin = () => {
     window.location.href = `${import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1'}/auth/google`;
+  };
+
+  const handlePasswordLogin = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      await login(email, password);
+      navigate('/dashboard');
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail;
+      if (detail === 'Email not verified.') {
+        navigate('/verify-otp', { state: { email } });
+        return;
+      }
+      setError(detail || 'Invalid email or password');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -221,6 +247,49 @@ export default function LoginPage() {
             </svg>
             Continue with Google
           </Button>
+
+          {/* Divider */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+            <Box sx={{ flex: 1, height: '1px', bgcolor: 'rgba(0,0,0,0.1)' }} />
+            <Typography sx={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>OR SIGN IN WITH EMAIL</Typography>
+            <Box sx={{ flex: 1, height: '1px', bgcolor: 'rgba(0,0,0,0.1)' }} />
+          </Box>
+
+          {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
+
+          <Box component="form" onSubmit={handlePasswordLogin} sx={{ display: 'flex', flexDirection: 'column', gap: 1.6, mb: 1 }}>
+            <TextField
+              label="Email" type="email" fullWidth required size="small"
+              value={email} onChange={(e) => setEmail(e.target.value)}
+            />
+            <TextField
+              label="Password" type="password" fullWidth required size="small"
+              value={password} onChange={(e) => setPassword(e.target.value)}
+            />
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 0.5 }}>
+              <Box component={Link} to="/forgot-password" sx={{ fontSize: 12.5, color: '#6366f1', fontWeight: 600, textDecoration: 'none' }}>
+                Forgot password?
+              </Box>
+            </Box>
+            <Button
+              type="submit" fullWidth disabled={loading}
+              sx={{
+                py: 1.5, borderRadius: '14px', bgcolor: '#6366f1', color: 'white',
+                fontWeight: 700, fontSize: 14.5,
+                boxShadow: '0 4px 20px rgba(99,102,241,0.3)',
+                '&:hover': { bgcolor: '#5254cc' },
+              }}
+            >
+              {loading ? <CircularProgress size={22} color="inherit" /> : 'Sign in'}
+            </Button>
+          </Box>
+
+          <Typography sx={{ fontSize: 13.5, color: '#64748b', textAlign: 'center', mb: 4 }}>
+            New here?{' '}
+            <Box component={Link} to="/register" sx={{ color: '#6366f1', fontWeight: 700, textDecoration: 'none' }}>
+              Create an account
+            </Box>
+          </Typography>
 
           {/* Feature pills */}
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.2, justifyContent: 'center', mb: 6 }}>
