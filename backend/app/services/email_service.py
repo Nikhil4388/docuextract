@@ -1,55 +1,88 @@
 """
-Email service — sends directly over SMTP using your own email account.
-No third-party email API required. Set these in Railway (or .env locally):
+Email service — sends via the Gmail API over HTTPS (NOT raw SMTP).
 
-    SMTP_HOST      e.g. smtp.gmail.com
-    SMTP_PORT      587 (STARTTLS) or 465 (SSL)
-    SMTP_USER      the mailbox you're sending from, e.g. nikhil1996shelke@multipdfstoexcel.com
-    SMTP_PASSWORD  an app password (NOT your normal login password — see note below)
-    SMTP_TLS       true/false — only matters for port 587, ignored for 465
+Raw SMTP (ports 25/465/587) is blocked outbound on Railway's network to
+prevent spam abuse — confirmed via "[Errno 101] Network is unreachable"
+when we tried smtplib directly. The Gmail API works over plain HTTPS
+(port 443, same as every other outbound call this app already makes to
+Google/Anthropic/etc.), so it isn't affected by that block.
 
-Gmail / Google Workspace note: Google blocks plain password SMTP login. You
-must create an "App Password" (Google Account → Security → 2-Step Verification
-→ App passwords) and use that as SMTP_PASSWORD, with SMTP_USER as the full
-Gmail address. A normal account password will fail with "Application-specific
-password required".
+One-time setup (see backend/scripts/get_gmail_refresh_token.py for the
+exact steps): reuses your EXISTING GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET
+(the same OAuth app already used for "Sign in with Google" — no new OAuth
+client needed, you just add one extra authorized redirect URI to it).
+You authorize your own Gmail account with the gmail.send scope, which
+produces a refresh_token. Set these in Railway:
 
-If your domain email is hosted elsewhere (Zoho, Google Workspace, a cPanel
-host, etc.), use the SMTP host/port that provider gives you instead.
+    GOOGLE_CLIENT_ID       (already set)
+    GOOGLE_CLIENT_SECRET   (already set)
+    GMAIL_REFRESH_TOKEN    printed by the one-time script
+    GMAIL_USER             the Gmail address you authorized, e.g. yourname@gmail.com
+
+If any of those are missing, this falls back to a dev-mode no-op that
+just logs the email instead of sending it.
 """
+import base64
 import logging
-import smtplib
-from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Optional
 
+import httpx
+
 logger = logging.getLogger(__name__)
+
+
+def _get_access_token() -> Optional[str]:
+    from app.core.config import settings
+    try:
+        resp = httpx.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "client_id": settings.GOOGLE_CLIENT_ID,
+                "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                "refresh_token": settings.GMAIL_REFRESH_TOKEN,
+                "grant_type": "refresh_token",
+            },
+            timeout=10,
+        )
+        data = resp.json()
+        if "access_token" not in data:
+            logger.error(f"Gmail token refresh failed: {data}")
+            return None
+        return data["access_token"]
+    except Exception as e:
+        logger.error(f"Gmail token refresh request failed: {e}")
+        return None
 
 
 def send_email(to_email: str, subject: str, html_body: str) -> bool:
     from app.core.config import settings
 
-    if not settings.SMTP_HOST or not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+    if not (settings.GMAIL_REFRESH_TOKEN and settings.GOOGLE_CLIENT_ID
+            and settings.GOOGLE_CLIENT_SECRET and settings.GMAIL_USER):
         logger.warning(f"[DEV MODE - EMAIL NOT SENT]\nTo: {to_email}\nSubject: {subject}")
         return True
 
-    try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = f"MultiPDFsToExcel <{settings.SMTP_USER}>"
-        msg["To"] = to_email
-        msg.attach(MIMEText(html_body, "html"))
+    access_token = _get_access_token()
+    if not access_token:
+        return False
 
-        if settings.SMTP_PORT == 465:
-            with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
-                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-                server.sendmail(settings.SMTP_USER, [to_email], msg.as_string())
-        else:
-            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
-                if settings.SMTP_TLS:
-                    server.starttls()
-                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-                server.sendmail(settings.SMTP_USER, [to_email], msg.as_string())
+    try:
+        msg = MIMEText(html_body, "html")
+        msg["To"] = to_email
+        msg["From"] = f"MultiPDFsToExcel <{settings.GMAIL_USER}>"
+        msg["Subject"] = subject
+        raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
+
+        resp = httpx.post(
+            "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+            headers={"Authorization": f"Bearer {access_token}"},
+            json={"raw": raw},
+            timeout=10,
+        )
+        if resp.status_code >= 400:
+            logger.error(f"Gmail send failed ({resp.status_code}): {resp.text}")
+            return False
 
         logger.info(f"Email sent to {to_email}: {subject}")
         return True

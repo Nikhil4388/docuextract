@@ -80,6 +80,11 @@ class Settings(BaseSettings):
     RESEND_API_KEY: Optional[str] = None
     GMAIL_USER: Optional[str] = None
     GMAIL_APP_PASSWORD: Optional[str] = None
+    # Gmail API (HTTPS, not raw SMTP — Railway blocks outbound SMTP ports).
+    # Reuses the same GOOGLE_CLIENT_ID/SECRET as "Sign in with Google" above.
+    # Obtain the refresh token via backend/scripts/get_gmail_refresh_token.py
+    # run locally (one-time — see that script for setup steps).
+    GMAIL_REFRESH_TOKEN: Optional[str] = None
     BREVO_API_KEY: Optional[str] = None
     BREVO_SENDER_EMAIL: Optional[str] = None
     SMTP_HOST: Optional[str] = None
