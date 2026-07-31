@@ -1,37 +1,56 @@
 """
-Email service using Brevo (Sendinblue) HTTP API.
-Set BREVO_API_KEY and BREVO_SENDER_EMAIL in environment variables.
+Email service — sends directly over SMTP using your own email account.
+No third-party email API required. Set these in Railway (or .env locally):
+
+    SMTP_HOST      e.g. smtp.gmail.com
+    SMTP_PORT      587 (STARTTLS) or 465 (SSL)
+    SMTP_USER      the mailbox you're sending from, e.g. nikhil1996shelke@multipdfstoexcel.com
+    SMTP_PASSWORD  an app password (NOT your normal login password — see note below)
+    SMTP_TLS       true/false — only matters for port 587, ignored for 465
+
+Gmail / Google Workspace note: Google blocks plain password SMTP login. You
+must create an "App Password" (Google Account → Security → 2-Step Verification
+→ App passwords) and use that as SMTP_PASSWORD, with SMTP_USER as the full
+Gmail address. A normal account password will fail with "Application-specific
+password required".
+
+If your domain email is hosted elsewhere (Zoho, Google Workspace, a cPanel
+host, etc.), use the SMTP host/port that provider gives you instead.
 """
 import logging
-import requests
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 
 def send_email(to_email: str, subject: str, html_body: str) -> bool:
-    try:
-        from app.core.config import settings
-        if not settings.BREVO_API_KEY:
-            logger.warning(f"[DEV MODE - EMAIL NOT SENT]\nTo: {to_email}\nSubject: {subject}")
-            return True
+    from app.core.config import settings
 
-        sender_email = settings.BREVO_SENDER_EMAIL or "pdftodata.noreply@gmail.com"
-        response = requests.post(
-            "https://api.brevo.com/v3/smtp/email",
-            headers={
-                "api-key": settings.BREVO_API_KEY,
-                "Content-Type": "application/json",
-            },
-            json={
-                "sender": {"name": "DocuExtract", "email": sender_email},
-                "to": [{"email": to_email}],
-                "subject": subject,
-                "htmlContent": html_body,
-            },
-            timeout=10,
-        )
-        response.raise_for_status()
+    if not settings.SMTP_HOST or not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        logger.warning(f"[DEV MODE - EMAIL NOT SENT]\nTo: {to_email}\nSubject: {subject}")
+        return True
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = f"MultiPDFsToExcel <{settings.SMTP_USER}>"
+        msg["To"] = to_email
+        msg.attach(MIMEText(html_body, "html"))
+
+        if settings.SMTP_PORT == 465:
+            with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
+                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                server.sendmail(settings.SMTP_USER, [to_email], msg.as_string())
+        else:
+            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
+                if settings.SMTP_TLS:
+                    server.starttls()
+                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                server.sendmail(settings.SMTP_USER, [to_email], msg.as_string())
+
         logger.info(f"Email sent to {to_email}: {subject}")
         return True
     except Exception as e:
