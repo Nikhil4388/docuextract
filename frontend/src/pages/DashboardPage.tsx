@@ -39,11 +39,20 @@ function getGreeting() {
   return 'Good evening';
 }
 
+const GUIDE_DISMISSED_KEY = 'mpte_dashboard_guide_dismissed';
+
 export default function DashboardPage() {
   const navigate     = useNavigate();
   const { user }     = useAuthStore();
   const firstName    = user?.full_name?.split(' ')[0] ?? user?.email?.split('@')[0] ?? 'there';
 
+  const [showGuide, setShowGuide] = React.useState(
+    () => typeof window !== 'undefined' && !window.localStorage.getItem(GUIDE_DISMISSED_KEY)
+  );
+  const dismissGuide = () => {
+    window.localStorage.setItem(GUIDE_DISMISSED_KEY, '1');
+    setShowGuide(false);
+  };
 
   const { data: jobs, isLoading } = useQuery<ExtractionJob[]>({
     queryKey: ['jobs'],
@@ -85,6 +94,80 @@ export default function DashboardPage() {
         .dash-card { animation: fadeSlideUp 0.4s ease both; }
         .dash-card:hover { transform: translateY(-3px); transition: transform 0.2s ease, box-shadow 0.2s ease; }
       `}</style>
+
+      {/* ── FIRST-TIME GUIDANCE BANNER ── */}
+      {showGuide && (
+        <Box className="dash-card" sx={{
+          mb: 3, borderRadius: '20px', position: 'relative', overflow: 'hidden',
+          background: 'white',
+          border: '1px solid rgba(99,102,241,0.18)',
+          boxShadow: '0 4px 20px rgba(99,102,241,0.1)',
+          p: { xs: 2.5, md: 3 },
+        }}>
+          <Box
+            onClick={dismissGuide}
+            aria-label="Dismiss guide"
+            sx={{
+              position: 'absolute', top: 12, right: 12,
+              width: 28, height: 28, borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: '#94a3b8', fontSize: 16,
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.06)', color: '#0c0c0c' },
+              transition: 'all 0.15s ease',
+            }}
+          >
+            ✕
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+            <Typography sx={{ fontSize: 18 }}>👋</Typography>
+            <Typography sx={{ fontWeight: 800, fontSize: 16, color: '#0c0c0c' }}>
+              New here? Here's how it works
+            </Typography>
+          </Box>
+          <Typography sx={{ fontSize: 13, color: '#64748b', mb: 2.5 }}>
+            Three steps and you're done, no setup required.
+          </Typography>
+
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 2, mb: 2.5 }}>
+            {[
+              { n: '1', title: 'Upload your PDFs', sub: 'Invoices, agreements, forms — one or a few hundred', color: '#6366f1' },
+              { n: '2', title: 'Tell it what you need', sub: 'Vendor, date, amount — whatever columns you want', color: '#8b5cf6' },
+              { n: '3', title: 'Download your Excel', sub: 'Clean, organized, ready to use in seconds', color: '#06b6d4' },
+            ].map((s) => (
+              <Box key={s.n} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+                <Box sx={{
+                  width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                  background: s.color, color: 'white',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 13, fontWeight: 800,
+                }}>
+                  {s.n}
+                </Box>
+                <Box>
+                  <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: '#0c0c0c' }}>{s.title}</Typography>
+                  <Typography sx={{ fontSize: 12, color: '#64748b', mt: 0.2 }}>{s.sub}</Typography>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+
+          <Box
+            onClick={() => { dismissGuide(); navigate('/jobs/new'); }}
+            sx={{
+              display: 'inline-flex', alignItems: 'center', gap: 0.8, cursor: 'pointer',
+              px: 2.2, py: 1, borderRadius: 2.5,
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              '&:hover': { opacity: 0.9, transform: 'translateY(-1px)' },
+              transition: 'all 0.18s ease',
+              boxShadow: '0 4px 14px rgba(99,102,241,0.35)',
+            }}
+          >
+            <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 12.5 }}>Start your first extraction</Typography>
+            <Typography sx={{ color: 'white', fontSize: 14 }}>→</Typography>
+          </Box>
+        </Box>
+      )}
 
       {/* ── HERO ── */}
       <Box sx={{
